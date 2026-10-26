@@ -1,0 +1,15 @@
+{
+  "name": "avero",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Avero application starter",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  }
+}
