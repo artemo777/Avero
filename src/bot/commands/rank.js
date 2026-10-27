@@ -26,17 +26,17 @@ export const rankCommand = Object.freeze({
     const profile = await getMemberProfile(prisma, interaction.guildId, target.id);
     const xp = profile?.xp ?? 0;
     const level = levelForExperience(xp);
+    const currentLevelXp = experienceForLevel(level);
     const nextLevelXp = experienceForLevel(level + 1);
-    const progress = xp - experienceForLevel(level);
 
     await interaction.reply({
       embeds: [
         createEmbed({
-          title: ICONS.star + " " + target.username + "'s rank",
+          title: ICONS.level + " " + target.username + "'s rank",
           description: [
             "**Level:** " + level,
             "**Total XP:** " + xp,
-            "**Progress:** " + progress + " / " + (nextLevelXp - experienceForLevel(level)) + " XP to level " + (level + 1)
+            "**Progress:** " + (xp - currentLevelXp) + " / " + (nextLevelXp - currentLevelXp) + " XP to level " + (level + 1)
           ].join("\n"),
           color: THEME.colors.primary,
           footer: "Avero • Leveling"
