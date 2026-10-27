@@ -13,7 +13,8 @@ test("bot configuration requires a token without exposing its value", () => {
   }), {
     token: "test-token",
     clientId: "app-id",
-    guildId: "guild-id"
+    guildId: "guild-id",
+    levelRoleRewards: {}
   });
 });
 
