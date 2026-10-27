@@ -47,13 +47,26 @@ A Node.js Discord bot foundation with a small HTTP health-check service and a sh
 
 The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file.
 
-## Included command
+## Included commands
 
 - `/ping` — checks whether Avero is responding and returns an embed styled through `averoui/`.
+- `/rank [member]` — shows the selected member's level, total XP, and progress toward the next level.
 
-## Persistence foundation
+## Leveling and role rewards
 
-Avero uses PostgreSQL through Prisma. The first schema adds a `MemberProfile` per guild/user pair with XP, level, and the last message XP timestamp. The repository helpers support looking up and ensuring profiles, plus atomic XP increments. They are not wired to message events yet; leveling and role rewards will be added as a separate tested increment.
+Avero awards a random 15–25 XP for eligible guild messages, with a 60-second per-member cooldown. Bot messages and direct messages are ignored. XP and cooldown timestamps are stored in PostgreSQL, and levels are calculated from total XP: level `n` starts at `100 × n²` XP.
+
+Optional milestone role rewards can be configured in `LEVEL_ROLE_REWARDS` as a JSON object mapping levels to role IDs, for example:
+
+```dotenv
+LEVEL_ROLE_REWARDS={"5":"123456789012345678","10":"234567890123456789"}
+```
+
+The bot must have permission to manage roles, and each reward role must be below Avero's highest role in that server. Configure reward role IDs that exist in the server where you intend to use them.
+
+## Persistence
+
+Avero uses PostgreSQL through Prisma. The `MemberProfile` table stores one profile per guild/user pair, including XP, level, and the last message XP timestamp. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## HTTP health server
 
@@ -94,7 +107,8 @@ npm test
 │   ├── bot/
 │   │   ├── commands/
 │   │   ├── command-registry.js
-│   │   └── config.js
+│   │   ├── config.js
+│   │   └── leveling.js
 │   ├── bot.js
 │   ├── register-commands.js
 │   ├── app.js
@@ -103,4 +117,4 @@ npm test
 └── test/
 ```
 
-Leveling, games, leaderboards, boosts, donations, and voting will be added in separate tested increments.
+Games, leaderboards, boosts, donations, and voting will be added in separate tested increments.
