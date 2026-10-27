@@ -1,6 +1,6 @@
 # Avero
 
-A Node.js Discord bot foundation with a small HTTP health-check service and a shared `averoui/` response-style toolkit.
+A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
 ## Requirements
 
@@ -49,7 +49,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 
 ## Included commands
 
-- `/ping` — checks whether Avero is responding and returns an embed styled through `averoui/`.
+- `/ping` — checks the interaction and gateway latency with a styled Components V2 status panel.
 - `/rank [member]` — shows the selected member's level, total XP, and progress toward the next level.
 
 ## Leveling and role rewards
@@ -83,7 +83,14 @@ It listens on port `3000` by default. Set `PORT` to change it; valid values are 
 
 ## Shared AveroUI
 
-Use `averoui/index.js` as the public entry point for shared colors, semantic icons, Discord timestamps, Markdown escaping, validated mentions, HTTPS links, and embed payloads. New commands should use these helpers instead of defining their own visual style.
+Import shared helpers from `averoui/index.js`. The toolkit centralizes:
+
+- A deep violet, teal, and slate color palette.
+- Unicode-only semantic glyphs instead of default emoji.
+- Components V2 panels with accent colors, text displays, and consistent separators.
+- Discord timestamps, Markdown escaping, validated mentions, HTTPS links, and embed payload validation.
+
+Use `createPanel({ eyebrow, title, description, sections, footer, accentColor })` for a consistent Components V2 layout. Send it using `flags: MessageFlags.IsComponentsV2` and `components: [panel]`. New commands should reuse AveroUI rather than inventing one-off styles.
 
 ## Tests
 
@@ -99,6 +106,15 @@ npm test
 ```text
 .
 ├── averoui/
+│   ├── components.js
+│   ├── embeds.js
+│   ├── icons.js
+│   ├── index.js
+│   ├── links.js
+│   ├── mentions.js
+│   ├── text.js
+│   ├── theme.js
+│   └── timestamps.js
 ├── prisma/
 │   ├── migrations/
 │   └── schema.prisma

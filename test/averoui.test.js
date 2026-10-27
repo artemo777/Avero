@@ -11,12 +11,35 @@ import {
   channelMention,
   safeHttpsUrl,
   formatHyperlink,
-  createEmbed
+  createEmbed,
+  createPanel
 } from "../averoui/index.js";
 
-test("AveroUI exports a shared theme and semantic icons", () => {
+test("AveroUI exports a shared theme and Unicode-only semantic icons", () => {
   assert.equal(typeof THEME.colors.primary, "number");
-  assert.equal(ICONS.success, "✅");
+  assert.equal(ICONS.success, "✓");
+  assert.equal(ICONS.brand, "◈");
+  assert.equal(Object.values(ICONS).some((icon) => /[\u{1F300}-\u{1FAFF}]/u.test(icon)), false);
+});
+
+test("Components V2 panel uses the shared accent color, text displays, and separators", () => {
+  const panel = createPanel({
+    eyebrow: "AVERO / STATUS",
+    title: "◈ Ready",
+    description: "All systems operational.",
+    sections: ["**LATENCY**\n`42 ms`", "**GATEWAY**\n`CONNECTED`"],
+    footer: "AVEROUI / COMPONENTS V2",
+    accentColor: THEME.colors.success
+  });
+  const payload = panel.toJSON();
+
+  assert.equal(payload.type, 17);
+  assert.equal(payload.accent_color, THEME.colors.success);
+  assert.ok(payload.components.some((component) => component.type === 10));
+  assert.ok(payload.components.some((component) => component.type === 14));
+  assert.throws(() => createPanel({ accentColor: -1, title: "Invalid" }), /accentColor/);
+  assert.throws(() => createPanel({ sections: Array.from({ length: 9 }, () => "section") }), /at most 8/);
+  assert.throws(() => createPanel(), /at least one text block/);
 });
 
 test("Discord timestamps support valid styles and reject invalid values", () => {
