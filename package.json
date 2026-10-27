@@ -10,11 +10,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "bot": "node --env-file=.env src/bot.js",
-    "register:commands": "node --env-file=.env src/register-commands.js",
+    "bot": "node --import=dotenv/config src/bot.js",
+    "register:commands": "node --import=dotenv/config src/register-commands.js",
     "test": "node --test"
   },
   "dependencies": {
-    "discord.js": "^14.19.3"
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.4.7"
   }
 }
