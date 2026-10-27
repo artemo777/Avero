@@ -2,7 +2,7 @@
   "name": "avero",
   "version": "0.1.0",
   "private": true,
-  "description": "Avero application starter",
+  "description": "Avero Discord bot and health-check service",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -10,6 +10,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "bot": "node src/bot.js",
+    "register:commands": "node src/register-commands.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "discord.js": "^14.19.3"
   }
 }
