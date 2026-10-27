@@ -9,7 +9,7 @@ export function createCommandMap(commands) {
     if (typeof name !== "string" || !/^[a-z0-9_-]{1,32}$/.test(name)) {
       throw new TypeError("Each command must have a valid lowercase Discord command name.");
     }
-    if (!command.data.description || typeof command.data.description !== "string") {
+    if (typeof command.data.description !== "string" || command.data.description.length === 0) {
       throw new TypeError("Command " + name + " must have a description.");
     }
     if (typeof command.execute !== "function") {
@@ -25,7 +25,5 @@ export function createCommandMap(commands) {
 }
 
 export function getCommandDefinitions(commands) {
-  return createCommandMap(commands).values().map
-    ? [...createCommandMap(commands).values()].map((command) => command.data)
-    : [];
+  return [...createCommandMap(commands).values()].map((command) => command.data);
 }
