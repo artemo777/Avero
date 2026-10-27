@@ -7,7 +7,7 @@ import {
 import { THEME } from "./theme.js";
 
 const TEXT_LIMIT = 4000;
-const MAX_SECTIONS = 8;
+const MAX_SECTIONS = 6;
 
 function validateText(value, label, { optional = false } = {}) {
   if (optional && value === undefined) return undefined;
@@ -17,13 +17,9 @@ function validateText(value, label, { optional = false } = {}) {
   return value;
 }
 
-function addText(container, content) {
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
-}
-
 /**
- * Build a polished Discord Components V2 container using Avero's shared theme.
- * Each section is a separate text display, divided by consistent separators.
+ * Compact Components V2 panel. Content stays in one text block by default;
+ * separators are opt-in so short responses do not become tall stacks.
  */
 export function createPanel({
   eyebrow,
@@ -31,7 +27,8 @@ export function createPanel({
   description,
   sections = [],
   footer,
-  accentColor = THEME.colors.primary
+  accentColor = THEME.colors.primary,
+  separators = false
 } = {}) {
   if (!Number.isInteger(accentColor) || accentColor < 0 || accentColor > 0xFFFFFF) {
     throw new RangeError("Panel accentColor must be an integer between 0 and 0xFFFFFF.");
@@ -52,21 +49,25 @@ export function createPanel({
 
   const container = new ContainerBuilder().setAccentColor(accentColor);
   const blocks = [];
-
   if (safeEyebrow) blocks.push("-# " + safeEyebrow);
-  if (safeTitle) blocks.push("# " + safeTitle);
+  if (safeTitle) blocks.push("## " + safeTitle);
   if (safeDescription) blocks.push(safeDescription);
   blocks.push(...safeSections);
   if (safeFooter) blocks.push("-# " + safeFooter);
 
+  // One compact text display unless the caller explicitly asks for separators.
+  if (!separators) {
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(blocks.join("\n")));
+    return container;
+  }
+
   blocks.forEach((block, index) => {
     if (index > 0) {
       container.addSeparatorComponents(
-        new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Large)
+        new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
       );
     }
-    addText(container, block);
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(block));
   });
-
   return container;
 }

@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { createPanel, discordTimestamp, ICONS, THEME } from "../../../averoui/index.js";
+import { createPanel, ICONS, THEME } from "../../../averoui/index.js";
 
 export const pingCommand = Object.freeze({
   data: Object.freeze({
@@ -10,18 +10,13 @@ export const pingCommand = Object.freeze({
   async execute(interaction) {
     const interactionLatency = Math.max(0, Date.now() - interaction.createdTimestamp);
     const gatewayLatency = interaction.client.ws.ping;
-    const gatewayStatus = gatewayLatency >= 0 ? "`" + gatewayLatency + " ms`" : "`Connecting`";
+    const gatewayStatus = gatewayLatency >= 0 ? gatewayLatency + " ms" : "connecting";
 
     const panel = createPanel({
-      eyebrow: "AVERO  /  SYSTEM MONITOR",
-      title: ICONS.brand + " PONG",
-      description: ICONS.success + " **All systems operational**\nThe Discord interaction pipeline is responding normally.",
-      accentColor: THEME.colors.success,
-      sections: [
-        "**INTERACTION LATENCY**\n`" + interactionLatency + " ms`",
-        "**GATEWAY HEARTBEAT**\n" + gatewayStatus
-      ],
-      footer: "AVEROUI  /  COMPONENTS V2  /  " + discordTimestamp(new Date(interaction.createdTimestamp), "t")
+      title: ICONS.brand + "  Pong",
+      description: ICONS.success + "  **Online**  ·  Interaction `" + interactionLatency +
+        " ms`  ·  Gateway `" + gatewayStatus + "`",
+      accentColor: THEME.colors.success
     });
 
     await interaction.reply({

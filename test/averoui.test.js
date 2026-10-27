@@ -22,24 +22,29 @@ test("AveroUI exports a shared theme and Unicode-only semantic icons", () => {
   assert.equal(Object.values(ICONS).some((icon) => /[\u{1F300}-\u{1FAFF}]/u.test(icon)), false);
 });
 
-test("Components V2 panel uses the shared accent color, text displays, and separators", () => {
+test("Components V2 panels default to one compact text display", () => {
   const panel = createPanel({
-    eyebrow: "AVERO / STATUS",
     title: "◈ Ready",
-    description: "All systems operational.",
-    sections: ["**LATENCY**\n`42 ms`", "**GATEWAY**\n`CONNECTED`"],
-    footer: "AVEROUI / COMPONENTS V2",
+    description: "✓ **Online** · Latency `42 ms`",
+    sections: ["**Gateway** `CONNECTED`"],
     accentColor: THEME.colors.success
   });
   const payload = panel.toJSON();
 
   assert.equal(payload.type, 17);
   assert.equal(payload.accent_color, THEME.colors.success);
-  assert.ok(payload.components.some((component) => component.type === 10));
-  assert.ok(payload.components.some((component) => component.type === 14));
+  assert.equal(payload.components.length, 1);
+  assert.equal(payload.components[0].type, 10);
+  assert.match(payload.components[0].content, /Ready/);
+  assert.match(payload.components[0].content, /Gateway/);
   assert.throws(() => createPanel({ accentColor: -1, title: "Invalid" }), /accentColor/);
-  assert.throws(() => createPanel({ sections: Array.from({ length: 9 }, () => "section") }), /at most 8/);
+  assert.throws(() => createPanel({ sections: Array.from({ length: 7 }, () => "section") }), /at most 6/);
   assert.throws(() => createPanel(), /at least one text block/);
+});
+
+test("Components V2 separators are opt-in for layouts that need them", () => {
+  const panel = createPanel({ title: "Details", sections: ["One", "Two"], separators: true });
+  assert.ok(panel.toJSON().components.some((component) => component.type === 14));
 });
 
 test("Discord timestamps support valid styles and reject invalid values", () => {

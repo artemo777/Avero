@@ -37,7 +37,7 @@ test("command map rejects duplicate command names", () => {
   assert.throws(() => createCommandMap([pingCommand, pingCommand]), /Duplicate command name: ping/);
 });
 
-test("ping command uses the shared AveroUI Components V2 panel", async () => {
+test("ping command uses a compact shared AveroUI Components V2 panel", async () => {
   let response;
   await pingCommand.execute({
     createdTimestamp: Date.now(),
@@ -46,10 +46,10 @@ test("ping command uses the shared AveroUI Components V2 panel", async () => {
   });
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.equal(response.components.length, 1);
   const panel = response.components[0].toJSON();
   assert.equal(panel.type, 17);
   assert.equal(panel.accent_color, 0x2DD4BF);
-  assert.match(panel.components.map((component) => component.components?.[0]?.content ?? component.content ?? "").join(" "), /PONG|PONG/);
-  assert.ok(panel.components.some((component) => component.type === 14));
+  assert.equal(panel.components.length, 1);
+  assert.match(panel.components[0].content, /Pong/);
+  assert.match(panel.components[0].content, /Interaction/);
 });
