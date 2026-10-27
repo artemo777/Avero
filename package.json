@@ -12,10 +12,16 @@
     "dev": "node --watch src/server.js",
     "bot": "node --import=dotenv/config src/bot.js",
     "register:commands": "node --import=dotenv/config src/register-commands.js",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
     "test": "node --test"
   },
   "dependencies": {
+    "@prisma/client": "6.19.0",
     "discord.js": "^14.19.3",
     "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "prisma": "6.19.0"
   }
 }
