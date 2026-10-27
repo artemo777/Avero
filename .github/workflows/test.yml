@@ -1,0 +1,28 @@
+name: Test Avero
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feat/**", "skatesum/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node.js ${{ matrix.node-version }} tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Run test suite
+        run: npm test
