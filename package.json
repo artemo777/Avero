@@ -5,13 +5,13 @@
   "description": "Avero Discord bot and health-check service",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.6"
   },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "bot": "node src/bot.js",
-    "register:commands": "node src/register-commands.js",
+    "bot": "node --env-file=.env src/bot.js",
+    "register:commands": "node --env-file=.env src/register-commands.js",
     "test": "node --test"
   },
   "dependencies": {
