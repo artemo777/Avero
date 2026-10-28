@@ -37,7 +37,7 @@ function parseAllowedGuildIds(value) {
     throw new Error("AVERO_ALLOWED_GUILD_IDS must not contain duplicate server IDs.");
   }
   if (ids.length > 2) {
-    throw new Error("Avero game commands can be enabled for at most two servers.");
+    throw new Error("Avero can be enabled for at most two servers.");
   }
   return ids;
 }
