@@ -207,9 +207,11 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   const pageButtons = [];
   if (pageCount > 1) {
-    pageButtons.push(button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary));
-    pageButtons.push(button(userId, "collection_page", "Page " + (currentPage + 1) + "/" + pageCount, String(currentPage), ButtonStyle.Secondary));
-    pageButtons.push(button(userId, "collection_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1)), ButtonStyle.Secondary));
+    const previous = button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary);
+    const next = button(userId, "collection_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1)), ButtonStyle.Secondary);
+    previous.disabled = currentPage === 0;
+    next.disabled = currentPage === pageCount - 1;
+    pageButtons.push(previous, next);
   }
   return gamePayload(createGamePanel({
     title: "Your collection",
