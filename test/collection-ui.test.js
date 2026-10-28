@@ -33,9 +33,8 @@ test("inventory exposes item detail buttons and collection progress", async () =
   const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
   const json = panel(response);
   assert.match(allText(json), /2 \/ 6 starter collectibles/);
-  const gallery = json.components.find((component) => component.type === 12);
-  assert.equal(gallery.items.length, 2);
-  assert.equal(response.files.length, 2);
+  assert.equal(json.components.some((component) => component.type === 12), false);
+  assert.equal(response.files, undefined);
   assert.match(allText(json), /Select an item below for its details/);
   const itemButtons = buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|"));
   assert.equal(itemButtons.length, 2);
@@ -74,11 +73,20 @@ test("shop exposes item detail controls and item details return to the shop", as
   const response = await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1");
   const json = panel(response);
   assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
-  const gallery = json.components.find((component) => component.type === 12);
-  assert.equal(gallery.items.length, 6);
-  assert.equal(response.files.length, 6);
-  assert.ok(gallery.items.every((entry) => entry.media.url.startsWith("attachment://avero-collectible-")));
+  assert.equal(json.components.some((component) => component.type === 12), false);
+  assert.equal(response.files, undefined);
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
+  const ids = buttons(json).map((entry) => entry.custom_id);
+  assert.equal(new Set(ids).size, ids.length, "shop must never send duplicate component custom IDs");
+  for (const itemId of ["neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"]) {
+    const detailButton = buttons(json).find((entry) => entry.custom_id === "avero|user-1|item|" + itemId + ":0:shop");
+    const buyButton = buttons(json).find((entry) => entry.custom_id === "avero|user-1|buy|" + itemId);
+    assert.ok(detailButton, "missing detail control for " + itemId);
+    assert.ok(buyButton, "missing purchase control for " + itemId);
+    const textIndex = json.components.findIndex((component) => component.type === 10 && component.content.includes(itemId === "neon_badge" ? "Neon Badge" : itemId === "vault_badge" ? "Vault Badge" : itemId === "starlight_badge" ? "Starlight Badge" : itemId === "moonlit_token" ? "Moonlit Token" : itemId === "prism_crown" ? "Prism Crown" : "Avero Relic"));
+    assert.ok(textIndex >= 0);
+    assert.equal(json.components[textIndex + 1]?.type, 1, "each item control row should immediately follow its listing");
+  }
 
   const detail = panel(await renderItemDetails(fakePrisma([]), "guild-1", "user-1", "vault_badge", 0, "shop"));
   assert.ok(buttons(detail).some((entry) => entry.custom_id === "avero|user-1|shop"));
