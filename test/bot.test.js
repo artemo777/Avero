@@ -239,7 +239,7 @@ test("profile command combines wallet, XP, and collection data", async () => {
   assert.match(response.embeds[0].description, /Test Server/);
   assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
   assert.equal(response.embeds[0].fields[1].value, "2");
-  assert.equal(response.embeds[0].fields[2].value, "1 / 3");
+  assert.equal(response.embeds[0].fields[2].value, "1 / 6");
 });
 
 test("leaderboard sorts server members by the requested category", async () => {
