@@ -41,7 +41,7 @@ export function readComponentId(customId) {
 }
 export function createGamePanel({ title, description, sections = [], sectionButtons = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], canvas = false, artwork = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("## " + title + "\n" + description));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + eyebrow + "\n## " + title + "\n" + description));
   if (canvas || artwork.length) {
     const galleryItems = [];
     if (canvas) galleryItems.push(new MediaGalleryItemBuilder().setURL("attachment://avero-panel.png"));
