@@ -20,6 +20,12 @@ export const ASSETS = Object.freeze({
   rewardSparkle: Object.freeze({ id: "reward-sparkle", kind: "svg", path: "icons/reward-sparkle.svg", description: "Reward and milestone accent", uses: Object.freeze(["rewards","milestones"]) }),
   loader: Object.freeze({ id: "loader", kind: "svg", path: "icons/loader.svg", description: "Static loading spinner artwork", uses: Object.freeze(["loading-states","deferred-panels"]) }),
   brandMarkSvg: Object.freeze({ id: "brand-mark-svg", kind: "svg", path: "icons/brand-mark.svg", description: "Avero geometric brand mark", uses: Object.freeze(["headers","profile","canvas"]) }),
+  collectibleNeonBadge: Object.freeze({ id: "collectible-neon-badge", kind: "svg", path: "icons/collectible-neon-badge.svg", description: "Original neon badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  collectibleVaultBadge: Object.freeze({ id: "collectible-vault-badge", kind: "svg", path: "icons/collectible-vault-badge.svg", description: "Original vault badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  collectibleStarlightBadge: Object.freeze({ id: "collectible-starlight-badge", kind: "svg", path: "icons/collectible-starlight-badge.svg", description: "Original starlight badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  collectibleMoonlitToken: Object.freeze({ id: "collectible-moonlit-token", kind: "svg", path: "icons/collectible-moonlit-token.svg", description: "Original moonlit token collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  collectiblePrismCrown: Object.freeze({ id: "collectible-prism-crown", kind: "svg", path: "icons/collectible-prism-crown.svg", description: "Original prism crown collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  collectibleAveroRelic: Object.freeze({ id: "collectible-avero-relic", kind: "svg", path: "icons/collectible-avero-relic.svg", description: "Original Avero relic collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
   gamesHero: Object.freeze({ id: "games-hero", kind: "canvas", renderer: "renderAveroCanvas", description: "Generated Avero games and coins hero artwork", uses: Object.freeze(["games"]) })
 });
 
@@ -41,6 +47,19 @@ export function getRarityAssetId(rarity) {
   if (key === "epic") return "gem-epic";
   if (["legendary", "mythic"].includes(key)) return "gem-legendary";
   return "badge";
+}
+
+const COLLECTIBLE_ASSETS = Object.freeze({
+  neon_badge: "collectible-neon-badge",
+  vault_badge: "collectible-vault-badge",
+  starlight_badge: "collectible-starlight-badge",
+  moonlit_token: "collectible-moonlit-token",
+  prism_crown: "collectible-prism-crown",
+  avero_relic: "collectible-avero-relic"
+});
+
+export function getCollectibleAssetId(itemId) {
+  return COLLECTIBLE_ASSETS[String(itemId ?? "")] ?? "badge";
 }
 
 export function getAsset(id) {
