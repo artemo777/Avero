@@ -162,7 +162,7 @@ export async function renderShop(prisma, guildId, userId) {
   const sectionButtons = SHOP_ITEMS.map((item) => {
     const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id));
     const purchase = button(userId, "buy", owned.has(item.id) ? "Owned" : "Buy · " + item.price.toLocaleString("en-US"), item.id,
-      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? "✓" : "🛒");
+      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? "☑️" : "🛒");
     if (owned.has(item.id)) purchase.disabled = true;
     return [detail, purchase];
   });
