@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
+import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 
@@ -164,4 +164,17 @@ test("guess command rejects out-of-range input before touching the database", as
     content: "Choose a whole number from 1 to 5.",
     flags: MessageFlags.Ephemeral
   });
+});
+
+test("guild duplicate cleanup only removes commands that are registered globally", () => {
+  const guildCommands = [
+    { id: "1", name: "ping" },
+    { id: "2", name: "rank" },
+    { id: "3", name: "legacy-server-only" }
+  ];
+  const globalCommands = [{ name: "ping" }, { name: "rank" }, { name: "games" }];
+  assert.deepEqual(findGuildCommandDuplicates(guildCommands, globalCommands), [
+    { id: "1", name: "ping" },
+    { id: "2", name: "rank" }
+  ]);
 });
