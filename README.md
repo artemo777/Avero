@@ -47,7 +47,7 @@ Avero is intended to work only in the LightX server and the owner's test server.
    npm run register:commands
    ```
 
-   Set `DISCORD_GUILD_ID` to register commands to one test server for faster iteration; omit it to register globally. Even if commands are registered globally, every command and message-based XP is runtime-restricted to the IDs in `AVERO_ALLOWED_GUILD_IDS`.
+   Registration publishes commands only to the guilds listed in `AVERO_ALLOWED_GUILD_IDS`. Global command registration is deliberately disabled, and registration fails safely when the allowlist is empty. This keeps Avero's commands private to the intended servers.
 
 7. Start the bot:
 
