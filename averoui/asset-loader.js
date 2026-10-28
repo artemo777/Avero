@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getAsset } from "./assets.js";
 
 const ASSET_ROOT = path.resolve(fileURLToPath(new URL("../assets/", import.meta.url)));
 const ROOT_PREFIX = ASSET_ROOT + path.sep;
@@ -21,4 +22,13 @@ export async function loadAssetBuffer(relativePath) {
   }
 
   return readFile(resolvedPath);
+}
+
+/** Load a registered local SVG by catalogue ID. */
+export async function loadRegisteredAsset(id) {
+  const asset = getAsset(id);
+  if (!asset || typeof asset.path !== "string") {
+    throw new RangeError("Asset ID does not refer to a registered local file: " + id);
+  }
+  return loadAssetBuffer(asset.path);
 }
