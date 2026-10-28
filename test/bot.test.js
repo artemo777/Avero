@@ -193,7 +193,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.equal(names.length, 15);
 });
 
-test("games hub uses a wide Components V2 panel with a canvas and all game controls", () => {
+test("games hub uses a compact Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.equal(response.files, undefined);
@@ -234,7 +234,8 @@ test("profile command combines wallet, XP, and collection data", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "Ada");
+  assert.equal(response.embeds[0].author.name, "Ada");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
   assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
   assert.equal(response.embeds[0].fields[1].value, "2");
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
