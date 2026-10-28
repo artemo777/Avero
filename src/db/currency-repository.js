@@ -122,6 +122,71 @@ export async function claimWorkReward(
   });
 }
 
+export async function claimScavengeReward(
+  prisma,
+  guildId,
+  userId,
+  { amount = 35, cooldownMs = 600_000, itemId = null, duplicateBonus = 35, now = new Date() } = {}
+) {
+  const key = currencyKey(guildId, userId);
+  requirePositiveInteger(amount, "Scavenge reward");
+  requirePositiveInteger(duplicateBonus, "Duplicate collectible bonus");
+  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) {
+    throw new TypeError("Scavenge cooldown must be a positive safe integer.");
+  }
+  if (itemId !== null && (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId))) {
+    throw new TypeError("Scavenge item ID must be a simple lowercase identifier.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.currencyAccount.upsert({
+      where: { guildId_userId: key },
+      create: key,
+      update: {}
+    });
+    const updated = await tx.currencyAccount.updateMany({
+      where: {
+        ...key,
+        OR: [
+          { lastScavengeAt: null },
+          { lastScavengeAt: { lte: new Date(now.getTime() - cooldownMs) } }
+        ]
+      },
+      data: { balance: { increment: amount }, lastScavengeAt: now }
+    });
+    const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+    if (updated.count === 0) return { claimed: false, account, itemFound: false };
+
+    let foundItemId = null;
+    let bonus = 0;
+    if (itemId) {
+      const existing = await tx.currencyPurchase.findUnique({
+        where: { guildId_userId_itemId: { ...key, itemId } }
+      });
+      if (existing) {
+        bonus = duplicateBonus;
+        await tx.currencyAccount.updateMany({
+          where: key,
+          data: { balance: { increment: bonus } }
+        });
+      } else {
+        await tx.currencyPurchase.create({ data: { ...key, itemId, purchasedAt: now } });
+        foundItemId = itemId;
+      }
+    }
+    const finalAccount = bonus
+      ? await tx.currencyAccount.findUnique({ where: { guildId_userId: key } })
+      : account;
+    await tx.currencyTransaction.create({
+      data: { ...key, amount: amount + bonus, type: "scavenge", createdAt: now }
+    });
+    return { claimed: true, amount: amount + bonus, baseAmount: amount, bonus, account: finalAccount, itemId: foundItemId, duplicateItemId: bonus ? itemId : null };
+  });
+}
+
 export async function awardGameReward(
   prisma,
   guildId,
