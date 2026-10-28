@@ -85,7 +85,7 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
   assert.match(panel.components[0].content, /Interaction/);
 });
 
-test("RPS returns a private no-coins result", async () => {
+test("RPS returns a public no-coins result", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
   await rpsCommand.execute({
@@ -93,8 +93,8 @@ test("RPS returns a private no-coins result", async () => {
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
   });
-  assert.equal(response.ephemeral, true);
-  assert.match(response.embeds[0].title, /Rock, Paper, Scissors/);
+  assert.equal(response.flags, undefined);
+  assert.match(response.embeds[0].title, /DUEL DECK/);
   assert.match(response.embeds[0].description, /You:/);
   assert.match(response.embeds[0].description, /Avero:/);
   assert.match(response.embeds[0].footer.text, /no coins involved/i);
