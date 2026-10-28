@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
+import { getAssetSymbol, getRarityAssetId } from "../../averoui/assets.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
@@ -19,6 +20,10 @@ const WIN_REWARD = 25;
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
+const COIN_ICON = getAssetSymbol("coin");
+function collectibleIcon(item) {
+  return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
+}
 
 export function componentId(userId, action, arg = "") {
   return ["avero", userId, action, arg].filter((part) => part !== "").join("|");
@@ -106,7 +111,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### 🪙 " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
+    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
@@ -115,7 +120,7 @@ export async function renderBalance(prisma, guildId, userId) {
 export async function renderShop(prisma, guildId, userId) {
   const [purchases, account] = await Promise.all([getCurrencyPurchases(prisma, guildId, userId), getCurrencyAccount(prisma, guildId, userId)]);
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const rows = SHOP_ITEMS.map((item) => item.icon + " **" + item.name + "** · " + item.rarity + " · " +
+  const rows = SHOP_ITEMS.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity + " · " +
     (owned.has(item.id) ? "✓ **OWNED**" : "**" + item.price + " coins**") + "\n" + item.description);
   const detailButtons = SHOP_ITEMS.map((item) =>
     button(userId, "item", item.name, item.id + ":0:shop", ButtonStyle.Secondary, item.icon));
@@ -123,7 +128,7 @@ export async function renderShop(prisma, guildId, userId) {
     button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
   return gamePayload(createGamePanel({
     title: "The drop — collectible shop",
-    description: "### 🪙 " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.",
+    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.",
     sections: rows,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
@@ -139,7 +144,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const collection = pageItems.length
-    ? pageItems.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
+    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   const milestones = [
@@ -189,7 +194,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
   ]);
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
   return gamePayload(createGamePanel({
-    title: item.icon + " " + item.name,
+    title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
       (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") +
@@ -332,7 +337,7 @@ export function renderBuy(result, item, userId) {
   const success = result.purchased;
   const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
   const description = success
-    ? "### " + item.icon + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
+    ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
