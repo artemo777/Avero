@@ -1,4 +1,5 @@
 import { randomInt } from "node:crypto";
+import { MessageFlags } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../../../averoui/index.js";
 import { awardGameReward } from "../../db/currency-repository.js";
 
@@ -23,13 +24,13 @@ export const guessCommand = Object.freeze({
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Guess command requires a database client.");
     if (!interaction.guildId) {
-      await interaction.reply({ content: "Guess can only be played inside a server.", ephemeral: true });
+      await interaction.reply({ content: "Guess can only be played inside a server.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     const guess = interaction.options.getInteger("number", true);
     if (!Number.isSafeInteger(guess) || guess < MIN_GUESS || guess > MAX_GUESS) {
-      await interaction.reply({ content: "Choose a whole number from 1 to 5.", ephemeral: true });
+      await interaction.reply({ content: "Choose a whole number from 1 to 5.", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -37,12 +38,11 @@ export const guessCommand = Object.freeze({
     if (guess !== answer) {
       await interaction.reply({
         embeds: [createEmbed({
-          title: ICONS.info + "  Not this time!",
-          description: "The number was **" + answer + "**. Try again — playing is free!",
+          title: "◈  NOT THIS TIME",
+          description: "The number was **" + answer + "**. Try again — playing is free, and you never lose coins.",
           color: THEME.colors.primary,
-          footer: "Avero • Guessing game"
-        })],
-        ephemeral: true
+          footer: "AVERO • THE NUMBER GAME"
+        })]
       });
       return;
     }
@@ -52,13 +52,12 @@ export const guessCommand = Object.freeze({
     });
     await interaction.reply({
       embeds: [createEmbed({
-        title: ICONS.success + "  Correct guess!",
-        description: "The number was **" + answer + "**. You earned **" + WIN_REWARD +
-          " coins**! Your new balance is **" + result.account.balance.toLocaleString("en-US") + " coins**.",
+        title: "✦  PERFECT GUESS",
+        description: "The number was **" + answer + "**. You earned **+" + WIN_REWARD +
+          " coins**! Your new balance is **" + result.account.balance.toLocaleString("en-US") + " coins**.\n\nYour next collectible is getting closer.",
         color: THEME.colors.success,
-        footer: "Avero • No wager required"
-      })],
-      ephemeral: true
+        footer: "AVERO • NO WAGER REQUIRED"
+      })]
     });
   }
 });
