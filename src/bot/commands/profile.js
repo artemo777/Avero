@@ -1,8 +1,9 @@
-import { MessageFlags } from "discord.js";
+import { AttachmentBuilder, MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
+import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -35,11 +36,14 @@ export const profileCommand = Object.freeze({
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
 
+    const brandArtwork = await renderRegisteredAsset("brand-mark-svg", 256);
     await interaction.reply({
+      files: [new AttachmentBuilder(brandArtwork, { name: "avero-brand.png" })],
       embeds: [createEmbed({
         title: "✦ " + target.username,
         description: "Avero profile · " + interaction.guild.name,
         color: THEME.colors.primary,
+        thumbnail: "attachment://avero-brand.png",
         fields: [
           { name: "🪙 Wallet", value: (account?.balance ?? 0).toLocaleString("en-US") + " coins", inline: true },
           { name: "🏅 Level", value: String(level), inline: true },
