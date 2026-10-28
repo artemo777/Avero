@@ -75,7 +75,7 @@ test("shop exposes item detail controls and item details return to the shop", as
 test("collection shows earned and next milestones", async () => {
   const one = panel(await renderInventory(fakePrisma(["neon_badge"]), "guild-1", "user-1"));
   assert.match(allText(one), /First Find/);
-  assert.match(allText(one), /Next: \\*\\*Curator\\*\\* — 1\\/3 items/);
+  assert.match(allText(one), /Next: \*\*Curator\*\* — 1\/3 items/);
 
   const three = panel(await renderInventory(fakePrisma(["neon_badge", "vault_badge", "starlight_badge"]), "guild-1", "user-1"));
   assert.match(allText(three), /Curator/);
