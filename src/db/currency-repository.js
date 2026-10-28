@@ -121,3 +121,42 @@ export async function playCoinflip(
     return { played: true, won, change, account };
   });
 }
+
+export async function awardGameReward(
+  prisma,
+  guildId,
+  userId,
+  amount,
+  { type = "game_reward", now = new Date() } = {}
+) {
+  const key = currencyKey(guildId, userId);
+  requirePositiveInteger(amount, "Game reward");
+  if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) {
+    throw new TypeError("Game reward type must be a simple lowercase identifier.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.currencyAccount.upsert({
+      where: { guildId_userId: key },
+      create: key,
+      update: {}
+    });
+    const updated = await tx.currencyAccount.updateMany({
+      where: key,
+      data: { balance: { increment: amount } }
+    });
+    if (updated.count !== 1) {
+      throw new Error("Could not update the currency account for the game reward.");
+    }
+    const account = await tx.currencyAccount.findUnique({
+      where: { guildId_userId: key }
+    });
+    await tx.currencyTransaction.create({
+      data: { ...key, amount, type, createdAt: now }
+    });
+    return { awarded: true, amount, account };
+  });
+}
