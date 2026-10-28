@@ -308,7 +308,8 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id); break;
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
-    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;\n    case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
+    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
+    case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
       break;
