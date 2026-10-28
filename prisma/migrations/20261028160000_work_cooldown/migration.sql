@@ -1,0 +1,1 @@
+ALTER TABLE "CurrencyAccount" ADD COLUMN "lastWorkAt" TIMESTAMP(3);
