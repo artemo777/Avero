@@ -79,7 +79,7 @@ test("shop renders each collectible in its own wide Components V2 section", asyn
   assert.ok(textDisplays.length >= SHOP_ITEMS.length + 2);
   assert.match(panelText(response), /THE DROP/);
   for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
-  assert.equal(panel.components.filter((component) => component.type === 1).length, 1);
+  assert.equal(panel.components.filter((component) => component.type === 1).length, 2);
 });
 
 test("shop catalog has unique item IDs and positive prices", () => {
