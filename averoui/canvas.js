@@ -52,6 +52,31 @@ export function renderAveroCanvas({ eyebrow = "GAMES & COINS", title = "Avero", 
   ctx.textBaseline = "middle";
   ctx.fillText("A", 122, 130);
 
+  // Draw the shared Avero coin motif into every generated panel.
+  const coinX = WIDTH - 160;
+  const coinY = 170;
+  const coinGradient = ctx.createLinearGradient(coinX - 45, coinY - 45, coinX + 45, coinY + 45);
+  coinGradient.addColorStop(0, "#fff0a6");
+  coinGradient.addColorStop(0.5, "#ffbf45");
+  coinGradient.addColorStop(1, "#d87516");
+  ctx.save();
+  ctx.shadowColor = "rgba(255,191,69,0.35)";
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = coinGradient;
+  ctx.beginPath();
+  ctx.arc(coinX, coinY, 48, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#fff0b5";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.fillStyle = "#7c4619";
+  ctx.font = "700 54px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("$", coinX, coinY + 1);
+  ctx.restore();
+
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = accent;
