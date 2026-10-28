@@ -76,7 +76,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!command) return;
 
   if (!interaction.guildId) {
-    await interaction.reply({ content: "Avero commands can only be used inside a server.", ephemeral: true });
+    await interaction.reply({ content: "Avero commands can only be used inside a server.", flags: MessageFlags.Ephemeral });
     return;
   }
 
