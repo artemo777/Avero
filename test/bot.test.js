@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
-import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
+import { loadBotConfig, requireApplicationId, requireCommandRegistrationGuildIds } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 
 test("bot configuration requires a token without exposing its value", () => {
@@ -64,6 +64,13 @@ test("leveling settings are configurable and validated", () => {
 test("command registration requires the application ID", () => {
   assert.throws(() => requireApplicationId({}), /DISCORD_CLIENT_ID is required/);
   assert.equal(requireApplicationId({ clientId: "app-id" }), "app-id");
+});
+
+test("command registration is limited to the explicit allowlist and never global", () => {
+  assert.throws(() => requireCommandRegistrationGuildIds({ allowedGuildIds: [] }), /global command registration is disabled/);
+  assert.deepEqual(requireCommandRegistrationGuildIds({
+    allowedGuildIds: ["1434292419788017766", "1563505183382839316"]
+  }), ["1434292419788017766", "1563505183382839316"]);
 });
 
 test("command map validates and registers the ping command", () => {
