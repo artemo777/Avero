@@ -51,14 +51,18 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 
 ## Included commands
 
-- `/ping` — checks the interaction and gateway latency with a styled Components V2 status panel.
-- `/rank [member]` — shows the selected member's level, total XP, and progress toward the next level.
+- `/ping` — checks interaction and gateway latency.
+- `/help` — groups the available commands by category.
+- `/rank [member]` — shows level, total XP, and progress toward the next level.
+- `/profile [member]` — combines wallet, XP, and collection progress.
+- `/leaderboard [category]` — shows the server's top coin or XP rankings.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
-- `/work` — complete a short community-themed shift for 60–120 coins every 30 minutes.
-- `/guess number` — guess a number from 1 to 5 for a chance to earn 25 coins. Playing is free; no coins are risked.
-- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.\n- `/games` — open a button-driven quick-play hub for guessing and rock, paper, scissors.
-- `/shop` — browse the starter collectible drop, including rarity labels and prices.
+- `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
+- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win. Playing is free.
+- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
+- `/games` — open the button-driven quick-play hub.
+- `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — show your collection progress in the current server.
 
@@ -66,7 +70,7 @@ Currency is virtual and has no cash value. Each server has a separate wallet for
 
 ## Profile customization roadmap
 
-The starter shop is the foundation for a more expressive Avero profile system. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
+The collectible shop is the foundation for a more expressive Avero profile system. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
 
 - **Profile cards:** a `/profile` command that renders a shareable card with avatar, level, XP progress, coins, selected stats, badges, title, and bio.
 - **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
@@ -74,7 +78,7 @@ The starter shop is the foundation for a more expressive Avero profile system. P
 - **Rendering:** games and currency panels now use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
 - **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
 
-These are roadmap items, not implemented features yet. The current shop badges are starter collectibles and do not alter a Discord profile or unlock profile-card controls until that system is built.
+These are roadmap items, not implemented features yet. The current shop items are virtual collectibles and do not alter a Discord profile or unlock profile-card controls until that system is built.
 
 ## Leveling and role rewards
 
