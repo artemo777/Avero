@@ -4,6 +4,7 @@ import { MessageFlags } from "discord.js";
 import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
+import { commands } from "../src/bot/commands/index.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -177,4 +178,11 @@ test("guild duplicate cleanup only removes commands that are registered globally
     { id: "1", name: "ping" },
     { id: "2", name: "rank" }
   ]);
+});
+
+test("global command list includes games and has no duplicate names", () => {
+  const names = commands.map((command) => command.data.name);
+  assert.ok(names.includes("games"));
+  assert.equal(names.length, new Set(names).size);
+  assert.equal(names.length, 10);
 });
