@@ -95,8 +95,8 @@ test("RPS returns a public no-coins result", async () => {
   });
   assert.equal(response.flags, undefined);
   assert.match(response.embeds[0].title, /DUEL DECK/);
-  assert.match(response.embeds[0].description, /You:/);
-  assert.match(response.embeds[0].description, /Avero:/);
+  assert.match(response.embeds[0].description, /YOU/);
+  assert.match(response.embeds[0].description, /AVERO/);
   assert.match(response.embeds[0].footer.text, /no coins involved/i);
 });
 
@@ -111,14 +111,14 @@ test("RPS rejects direct messages and invalid choices", async () => {
   await rpsCommand.execute(interaction);
   assert.deepEqual(replies[0], {
     content: "Games can only be played inside a server.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 
   interaction.guildId = "guild-1";
   await rpsCommand.execute(interaction);
   assert.deepEqual(replies[1], {
     content: "Choose rock, paper, or scissors.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
 
@@ -138,8 +138,8 @@ test("daily and guess commands reject direct messages privately", async () => {
   await guessCommand.execute(interaction, { prisma: {} });
 
   assert.deepEqual(replies, [
-    { content: "Currency can only be used inside a server.", ephemeral: true },
-    { content: "Guess can only be played inside a server.", ephemeral: true }
+    { content: "Currency can only be used inside a server.", flags: MessageFlags.Ephemeral },
+    { content: "Guess can only be played inside a server.", flags: MessageFlags.Ephemeral }
   ]);
 });
 
