@@ -156,7 +156,7 @@ export async function renderShop(prisma, guildId, userId) {
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
   const sections = SHOP_ITEMS.map((item) => {
     const status = owned.has(item.id) ? "✓ OWNED" : "⟡ " + item.price.toLocaleString("en-US") + " coins";
-    return collectibleIcon(item) + " **" + item.name + "**  ·  " + item.rarity + "\\n" +
+    return collectibleIcon(item) + " **" + item.name + "**  ·  " + item.rarity + "\n" +
       status + "  ·  " + item.description;
   });
   const sectionButtons = SHOP_ITEMS.map((item) => {
@@ -168,7 +168,7 @@ export async function renderShop(prisma, guildId, userId) {
   });
   return gamePayload(createGamePanel({
     title: "Collectible shop",
-    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\\nBrowse the drop. Each item has its own details and purchase controls below.",
+    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nBrowse the drop. Each item has its own details and purchase controls below.",
     sections,
     sectionButtons,
     eyebrow: "THE DROP",
@@ -246,7 +246,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
-      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\\n✦ **Equipped on your profile**" : "") +
+      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped on your profile**" : "") +
       "\nCatalog price: **" + item.price.toLocaleString("en-US") + " coins**" +
       "\nYour balance: **" + (account?.balance ?? 0).toLocaleString("en-US") + " coins**",
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
