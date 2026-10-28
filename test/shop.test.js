@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { MessageFlags } from "discord.js";
 import { getCurrencyPurchases, purchaseCurrencyItem } from "../src/db/currency-repository.js";
 import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
