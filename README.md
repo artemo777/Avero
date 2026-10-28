@@ -2,12 +2,14 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
+Avero's game features are intended only for the LightX server and the owner's test server. They are not a public-bot onboarding feature. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
+
 ## Requirements
 
 - Node.js 20 or newer
 - npm
 - A Discord application and bot token from the Discord Developer Portal
-- PostgreSQL for persistent member data
+- PostgreSQL for persistent member and currency data
 
 ## Setup
 
@@ -31,15 +33,23 @@ A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Dis
    npm run db:migrate:deploy
    ```
 
-5. Register the slash commands:
+5. Set `AVERO_ALLOWED_GUILD_IDS` to the exact two intended Discord server IDs, separated by a comma. Game commands stay disabled if this variable is blank. Avero accepts at most two IDs.
+
+   ```dotenv
+   AVERO_ALLOWED_GUILD_IDS=LIGHTX_SERVER_ID,TEST_SERVER_ID
+   ```
+
+   Replace both example values with actual Discord server IDs. Do not use placeholder text in a live environment.
+
+6. Register the slash commands:
 
    ```sh
    npm run register:commands
    ```
 
-   Set `DISCORD_GUILD_ID` to register to one test server; omit it to register globally.
+   Set `DISCORD_GUILD_ID` to register commands to one test server for faster iteration; omit it to register globally. Even if commands are registered globally, the game commands are runtime-restricted to the IDs in `AVERO_ALLOWED_GUILD_IDS`.
 
-6. Start the bot:
+7. Start the bot:
 
    ```sh
    npm run bot
@@ -51,6 +61,11 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 
 - `/ping` — checks the interaction and gateway latency with a styled Components V2 status panel.
 - `/rank [member]` — shows the selected member's level, total XP, and progress toward the next level.
+- `/balance` — shows your Avero coin balance in the current server.
+- `/daily` — claims 100 coins once per 24-hour cooldown.
+- `/coinflip wager side` — wagers virtual coins on heads or tails; wagers must be between 1 and 100,000 coins.
+
+Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims and coinflip balance changes are performed with conditional database updates to protect against duplicate claims and concurrent spending. Currency transactions are recorded for auditing.
 
 ## Leveling and role rewards
 
@@ -74,7 +89,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. The `MemberProfile` table stores one profile per guild/user pair, including XP, level, and the last message XP timestamp. The database migration is not applied automatically; run the migration command above against your configured database.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including the daily cooldown timestamp. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## HTTP health server
 
@@ -114,20 +129,14 @@ npm test
 ```text
 .
 ├── averoui/
-│   ├── components.js
-│   ├── embeds.js
-│   ├── icons.js
-│   ├── index.js
-│   ├── links.js
-│   ├── mentions.js
-│   ├── text.js
-│   ├── theme.js
-│   └── timestamps.js
 ├── prisma/
 │   ├── migrations/
 │   └── schema.prisma
 ├── src/
 │   ├── db/
+│   │   ├── client.js
+│   │   ├── currency-repository.js
+│   │   └── member-repository.js
 │   ├── bot/
 │   │   ├── commands/
 │   │   ├── command-registry.js
@@ -136,9 +145,8 @@ npm test
 │   ├── bot.js
 │   ├── register-commands.js
 │   ├── app.js
-│   ├── config.js
 │   └── server.js
 └── test/
 ```
 
-Games, leaderboards, boosts, donations, and voting will be added in separate tested increments.
+The next game increments will add The Vault, Duel Deck, and secret achievements. These remain separate from the paused leveling migration.
