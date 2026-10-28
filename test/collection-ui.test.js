@@ -30,6 +30,9 @@ test("inventory exposes item detail buttons and collection progress", async () =
   const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
   const json = panel(response);
   assert.match(allText(json), /2 \/ 6 starter collectibles/);
+  const gallery = json.components.find((component) => component.type === 12);
+  assert.equal(gallery.items.length, 2);
+  assert.equal(response.files.length, 2);
   assert.match(allText(json), /Select an item below for its details/);
   const itemButtons = buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|"));
   assert.equal(itemButtons.length, 2);
@@ -51,6 +54,8 @@ test("item detail shows owned state and does not offer a second purchase", async
   const json = panel(response);
   assert.match(allText(json), /Neon Badge/);
   assert.match(allText(json), /In your collection/);
+  assert.equal(json.components.find((component) => component.type === 12).items.length, 1);
+  assert.equal(response.files.length, 1);
   assert.ok(!buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|neon_badge"));
 });
 
@@ -66,6 +71,10 @@ test("shop exposes item detail controls and item details return to the shop", as
   const response = await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1");
   const json = panel(response);
   assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
+  const gallery = json.components.find((component) => component.type === 12);
+  assert.equal(gallery.items.length, 6);
+  assert.equal(response.files.length, 6);
+  assert.ok(gallery.items.every((entry) => entry.media.url.startsWith("attachment://avero-collectible-")));
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
 
   const detail = panel(await renderItemDetails(fakePrisma([]), "guild-1", "user-1", "vault_badge", 0, "shop"));
