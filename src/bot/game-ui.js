@@ -8,6 +8,7 @@ import { getAssetSymbol, getCollectibleAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
+import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
 const DAILY_REWARD = 100;
@@ -208,17 +209,19 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     eyebrow: "COLLECTION",
     buttons: [button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Primary)]
   }));
-  const [purchases, account] = await Promise.all([
+  const [purchases, account, profile] = await Promise.all([
     getCurrencyPurchases(prisma, guildId, userId),
-    getCurrencyAccount(prisma, guildId, userId)
+    getCurrencyAccount(prisma, guildId, userId),
+    getMemberProfile(prisma, guildId, userId)
   ]);
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
+  const equipped = profile?.equippedBadgeItemId === item.id;
   const artwork = await collectibleArtwork([item]);
   return gamePayload(createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
-      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") +
+      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\\n✦ **Equipped on your profile**" : "") +
       "\nCatalog price: **" + item.price.toLocaleString("en-US") + " coins**" +
       "\nYour balance: **" + (account?.balance ?? 0).toLocaleString("en-US") + " coins**",
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
@@ -226,7 +229,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
       button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
-      ...(owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
+      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, "🏅")] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
       button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")
     ]
   }), artwork.files);
@@ -415,6 +418,25 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
       break;
+    case "equip_badge": {
+      const item = SHOP_ITEMS.find((candidate) => candidate.id === parsed.arg);
+      if (!item) {
+        await interaction.reply({ content: "That badge is no longer available.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      const result = await equipProfileBadge(prisma, interaction.guildId, interaction.user.id, item.id);
+      if (!result.equipped) {
+        await interaction.reply({ content: "You can only equip a badge you own. Unlock it in the shop first.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, item.id, 0, "inventory");
+      break;
+    }
+    case "unequip_badge": {
+      await unequipProfileBadge(prisma, interaction.guildId, interaction.user.id);
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
     case "buy": {
       const item = SHOP_ITEMS.find((candidate) => candidate.id === parsed.arg);
       if (!item) {
