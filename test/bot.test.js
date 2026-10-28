@@ -94,6 +94,7 @@ test("RPS returns a public no-coins result", async () => {
   let response;
   await rpsCommand.execute({
     guildId: "guild-1",
+    user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
   });
