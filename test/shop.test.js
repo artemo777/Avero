@@ -143,3 +143,25 @@ test("inventory displays owned collectibles and handles an empty collection", as
   await inventoryCommand.execute(emptyInteraction, { prisma });
   assert.match(replies[1].embeds[0].description, /collection is empty/);
 });
+
+
+test("purchases are isolated per server and invalid purchase inputs are rejected", async () => {
+  const prisma = createFakePrisma(500);
+  const item = SHOP_ITEMS[0];
+  const first = await purchaseCurrencyItem(prisma, "lightx", "same-user", item.id, item.price);
+  const otherServer = await purchaseCurrencyItem(prisma, "test-server", "same-user", item.id, item.price);
+
+  assert.equal(first.purchased, true);
+  assert.equal(otherServer.purchased, true);
+  assert.equal((await getCurrencyPurchases(prisma, "lightx", "same-user")).length, 1);
+  assert.equal((await getCurrencyPurchases(prisma, "test-server", "same-user")).length, 1);
+
+  const before = prisma.transactions.length;
+  await assert.rejects(purchaseCurrencyItem(prisma, "lightx", "bad-price", item.id, 0), /positive integer/);
+  await assert.rejects(purchaseCurrencyItem(prisma, "lightx", "bad-item", "Bad Item", item.price), /item ID/);
+  await assert.rejects(
+    purchaseCurrencyItem(prisma, "lightx", "bad-date", item.id, item.price, { now: new Date("invalid") }),
+    /valid Date/
+  );
+  assert.equal(prisma.transactions.length, before);
+});
