@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
@@ -95,7 +95,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           footer: "AveroUI • Shared response style"
         })
       ],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     };
 
     if (interaction.replied || interaction.deferred) {
