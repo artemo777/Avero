@@ -5,7 +5,7 @@ import {
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
 import { awardGameReward, claimDailyReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
-import { SHOP_ITEMS } from "./commands/shop.js";
+import { SHOP_ITEMS } from "./shop-catalog.js";
 
 const DAILY_REWARD = 100;
 const DAILY_COOLDOWN_MS = 86_400_000;
