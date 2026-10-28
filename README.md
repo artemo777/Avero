@@ -79,7 +79,7 @@ The collectible shop is the foundation for a more expressive Avero profile syste
 - **Rendering:** games and currency panels now use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
 - **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
 
-These are roadmap items, not implemented features yet. The current shop items are virtual collectibles and do not alter a Discord profile or unlock profile-card controls until that system is built.
+These are roadmap items, not implemented features yet. Owned collectibles can now be equipped as a profile badge from an item detail panel. Only items already in the member’s collection can be equipped; the selected badge is persisted per server and appears on `/profile`. The selection can be removed from the same item detail panel.
 
 ## Leveling and role rewards
 
@@ -103,7 +103,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, and scavenge cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, and scavenge cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## Shared AveroUI assets
 
