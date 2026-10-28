@@ -22,9 +22,9 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, footer = "AVERO • GAMES & COLLECTIONS", color = THEME.colors.primary, buttons = [] }) {
+export function createGamePanel({ title, description, footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  G A M E S\n## " + title + "\n" + description));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
   if (footer) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
@@ -64,8 +64,9 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎮 Quick play\nPick a number from **1–5** for a chance to earn **25 coins**. A correct guess earns the reward; a miss costs nothing.\n\n## ✂️ Duel deck\nChallenge Avero to **rock, paper, scissors**. This game is always free and never changes your balance.\n\nTap a button below to play instantly.",
-    footer: "QUICK PLAY • NO ENTRY FEES OR WAGERS",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins**. Free to play.\n\n## ✊ Rock, paper, scissors\nPlay Avero. No coins at stake.",
+eyebrow: "GAMES",
+    footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons
   }));
 }
@@ -74,7 +75,8 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### 🪙 " + balance.toLocaleString("en-US") + " Avero coins\nYour server wallet, your next unlock. Coins are virtual and have no cash value.\n\n**Ways to earn**\n✨ Daily drop · +100 every 24 hours\n🎯 Number game · +25 on a correct guess\n✂️ Rock, paper, scissors · free to play",
+    description: "### 🪙 " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
+eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
   }));
@@ -88,9 +90,10 @@ export async function renderShop(prisma, guildId, userId) {
     button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
   return gamePayload(createGamePanel({
     title: "The drop — collectible shop",
-    description: "### 🪙 " + (account?.balance ?? 0).toLocaleString("en-US") + " coins available\nPick up a collectible with one tap. Purchases are one-time per item in this server.\n\n" +
-      rows.join("\n\n") + "\n\n-# Future update: equipable badges, titles and profile themes.",
-    footer: "THE DROP • VIRTUAL ITEMS ONLY",
+    description: "### 🪙 " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.\n\n" +
+      rows.join("\n\n"),
+eyebrow: "THE DROP",
+    footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
@@ -99,13 +102,13 @@ export async function renderInventory(prisma, guildId, userId) {
   const itemMap = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
   const items = purchases.map((purchase) => itemMap.get(purchase.itemId)).filter(Boolean);
   const collection = items.length ? items.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
-    : "Your collection is waiting for its first unlock.\nThe Neon Badge is a great first pick — open the shop to see the drop.";
+    : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   return gamePayload(createGamePanel({
     title: "Your collection",
     description: "### 🎒 " + items.length + " / " + SHOP_ITEMS.length + " starter collectibles\n" +
       "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" + collection + "\n\n" +
-      (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!** You found every starter collectible." : "Every collectible is a first step toward future profile customization."),
+      (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set."),
     footer: "COLLECTION • SAVED PER SERVER",
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙"), button(userId, "daily", "Daily reward", "", ButtonStyle.Success, "✨")]
@@ -116,13 +119,15 @@ export function renderDaily(result, userId) {
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
-      description: "Your **+100 coin** drop is on cooldown.\n\nNext reward: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>\n\nKeep your collection plans ready — the next drop is on its way.",
+      description: "You already claimed **+100 coins**.\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
+eyebrow: "DAILY DROP",
       color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
-    description: "## ✨ +100 coins\nYour new balance is **" + result.account.balance.toLocaleString("en-US") + " coins**.\n\nA little boost for your next collectible. Come back in 24 hours for another drop.",
+    description: "## ✨ +100 coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**\n\nNext drop in 24 hours.",
+eyebrow: "DAILY DROP",
     color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
   }));
 }
