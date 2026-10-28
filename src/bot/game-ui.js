@@ -23,6 +23,10 @@ const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
 const COIN_ICON = getAssetSymbol("coin");
+function collectibleButtonEmoji(itemId) {
+  const emojis = { neon_badge: "🌟", vault_badge: "🔐", starlight_badge: "✨", moonlit_token: "🌙", prism_crown: "👑", avero_relic: "💠" };
+  return emojis[itemId] ?? "🏅";
+}
 function collectibleIcon(item) {
   return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
 }
@@ -140,7 +144,7 @@ export async function renderShop(prisma, guildId, userId) {
   const rows = SHOP_ITEMS.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity + " · " +
     (owned.has(item.id) ? "✓ **OWNED**" : "**" + item.price + " coins**") + "\n" + item.description);
   const detailButtons = SHOP_ITEMS.map((item) =>
-    button(userId, "item", item.name, item.id + ":0:shop", ButtonStyle.Secondary, item.icon));
+    button(userId, "item", item.name, item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   const buyButtons = SHOP_ITEMS.filter((item) => !owned.has(item.id)).map((item) =>
     button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
   const artwork = await collectibleArtwork(SHOP_ITEMS);
@@ -180,7 +184,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const milestoneProgress = nextMilestone
     ? "\nNext: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
     : "\n✧ All collection milestones complete!";
-  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, item.icon));
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   const pageButtons = [];
   if (pageCount > 1) {
     pageButtons.push(button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary));
