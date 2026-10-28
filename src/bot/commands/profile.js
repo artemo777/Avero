@@ -1,5 +1,5 @@
-import { MessageFlags } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { AttachmentBuilder, MessageFlags } from "discord.js";
+import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from "../../../averoui/index.js";
 import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
@@ -35,19 +35,12 @@ export const profileCommand = Object.freeze({
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
     const equippedItem = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
-    const badgeGlyphs = {
-      neon_badge: "🌟",
-      vault_badge: "🔐",
-      starlight_badge: "✨",
-      moonlit_token: "🌙",
-      prism_crown: "👑",
-      avero_relic: "💠"
-    };
-    const equippedGlyph = equippedItem ? " " + (badgeGlyphs[equippedItem.id] ?? "🏅") : "";
-    await interaction.reply({
-      allowedMentions: { parse: [] },
-      embeds: [createEmbed({
-        title: target.username + equippedGlyph,
+    const badgeFilename = "equipped-profile-badge.png";
+    const badgeFiles = equippedItem
+      ? [new AttachmentBuilder(await renderRegisteredAsset(getCollectibleAssetId(equippedItem.id), 96), { name: badgeFilename })]
+      : [];
+    const embed = createEmbed({
+        ...(equippedItem ? {} : { title: target.username }),
         description: "AVERO  /  " + interaction.guild.name + "\nLevel **" + level + "** · " +
           (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
@@ -59,7 +52,14 @@ export const profileCommand = Object.freeze({
           { name: "Equipped", value: equippedItem ? equippedItem.name : "None", inline: true }
         ],
         footer: "AVERO • SERVER PROFILE"
-      })]
+      });
+    if (equippedItem) {
+      embed.author = { name: target.username, icon_url: "attachment://" + badgeFilename };
+    }
+    await interaction.reply({
+      allowedMentions: { parse: [] },
+      embeds: [embed],
+      ...(badgeFiles.length ? { files: badgeFiles } : {})
     });
   }
 });
