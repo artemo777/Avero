@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
-import { loadBotConfig, requireApplicationId, requireCommandRegistrationGuildIds } from "../src/bot/config.js";
+import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 
 test("bot configuration requires a token without exposing its value", () => {
@@ -15,7 +15,6 @@ test("bot configuration requires a token without exposing its value", () => {
     token: "test-token",
     clientId: "app-id",
     guildId: "guild-id",
-    allowedGuildIds: [],
     levelRoleRewards: {},
     levelUpChannelId: undefined,
     messageXpCooldownMs: 60_000,
@@ -24,24 +23,13 @@ test("bot configuration requires a token without exposing its value", () => {
   });
 });
 
-test("server allowlist accepts at most two explicit Discord server IDs for the whole bot", () => {
+test("legacy guild allowlist environment values do not restrict bot configuration", () => {
   const config = loadBotConfig({
     DISCORD_TOKEN: "token",
-    AVERO_ALLOWED_GUILD_IDS: "123456789012345678, 234567890123456789"
+    AVERO_ALLOWED_GUILD_IDS: "not-a-server-id,anything"
   });
-  assert.deepEqual(config.allowedGuildIds, ["123456789012345678", "234567890123456789"]);
-  assert.throws(() => loadBotConfig({
-    DISCORD_TOKEN: "token",
-    AVERO_ALLOWED_GUILD_IDS: "not-a-server-id"
-  }), /AVERO_ALLOWED_GUILD_IDS/);
-  assert.throws(() => loadBotConfig({
-    DISCORD_TOKEN: "token",
-    AVERO_ALLOWED_GUILD_IDS: "123456789012345678,123456789012345678"
-  }), /duplicate/);
-  assert.throws(() => loadBotConfig({
-    DISCORD_TOKEN: "token",
-    AVERO_ALLOWED_GUILD_IDS: "123456789012345678,234567890123456789,345678901234567890"
-  }), /at most two servers/);
+  assert.equal(config.token, "token");
+  assert.equal("allowedGuildIds" in config, false);
 });
 
 test("leveling settings are configurable and validated", () => {
@@ -61,16 +49,10 @@ test("leveling settings are configurable and validated", () => {
   assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_XP_COOLDOWN_MS: "0" }), /positive safe integer/);
 });
 
-test("command registration requires the application ID", () => {
+
+test("command registration requires the application ID for global registration", () => {
   assert.throws(() => requireApplicationId({}), /DISCORD_CLIENT_ID is required/);
   assert.equal(requireApplicationId({ clientId: "app-id" }), "app-id");
-});
-
-test("command registration is limited to the explicit allowlist and never global", () => {
-  assert.throws(() => requireCommandRegistrationGuildIds({ allowedGuildIds: [] }), /global command registration is disabled/);
-  assert.deepEqual(requireCommandRegistrationGuildIds({
-    allowedGuildIds: ["1434292419788017766", "1563505183382839316"]
-  }), ["1434292419788017766", "1563505183382839316"]);
 });
 
 test("command map validates and registers the ping command", () => {
