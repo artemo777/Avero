@@ -135,9 +135,10 @@ export function renderGuess(guess, answer, result, userId) {
   const won = guess === answer;
   return gamePayload(createGamePanel({
     title: won ? "Perfect guess!" : "Not this time",
-    description: "### 🎯 Number challenge\nYour pick: **" + guess + "** · The number: **" + answer + "**\n\n" +
-      (won ? "✦ **+" + WIN_REWARD + " coins earned!**\nNew balance: **" + result.account.balance.toLocaleString("en-US") + " coins**." :
-        "No coins lost — playing is always free. Try another number below.") + "\n\n**Pick a number to play again**",
+    description: "### 🎯 Your pick: **" + guess + "** · Answer: **" + answer + "**\n\n" +
+      (won ? "✦ **+" + WIN_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**." :
+        "No coins lost. Try again.") + "\n\n**Play again**",
+    eyebrow: "GUESS",
     color: won ? THEME.colors.success : THEME.colors.primary,
     footer: "NUMBER GAME • NO WAGERS, NO ENTRY FEE",
     buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary))
@@ -152,7 +153,8 @@ export function renderRps(playerChoice, botChoice, userId) {
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
     description: "### " + symbols[playerChoice] + " You: " + LABELS[playerChoice] + "\n### " + symbols[botChoice] + " Avero: " + LABELS[botChoice] +
-      "\n\n" + outcome + "\n\nChoose again for another round — this game is always free.",
+      "\n\n" + outcome + "\n\n**Play another round** · Free",
+    eyebrow: "DUEL DECK",
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
     footer: "DUEL DECK • NO COINS INVOLVED",
     buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary))
@@ -163,9 +165,9 @@ export function renderBuy(result, item, userId) {
   const success = result.purchased;
   const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
   const description = success
-    ? "### " + item.icon + " " + item.name + "\nYou unlocked this collectible for **" + item.price + " coins**.\n\nWallet remaining: **" + result.account.balance.toLocaleString("en-US") + " coins**. Your collection is growing!"
+    ? "### " + item.icon + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
-      : "The **" + item.name + "** costs **" + item.price + " coins**. Your wallet has **" + result.account.balance.toLocaleString("en-US") + " coins**.\n\nEarn more with /daily or /guess.";
+      : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
     title, description, color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
     buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
