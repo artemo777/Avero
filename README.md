@@ -39,7 +39,7 @@ Avero can operate in any Discord server where it is installed and has the requir
    npm run register:commands
    ```
 
-   Registration publishes slash commands globally. They can be used in servers where Avero is installed and has permission; Discord may take a while to propagate global command updates.
+   Registration publishes slash commands globally. If `DISCORD_GUILD_ID` is set, the script also removes server-specific copies of commands that now exist globally (for example old `/ping` and `/rank` copies), while preserving unrelated server-only commands. Set it to your test server ID when cleaning up duplicates. Discord may take a while to propagate global command updates.
 
 6. Start the bot:
 
@@ -56,7 +56,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/guess number` — guess a number from 1 to 5 for a chance to earn 25 coins. Playing is free; no coins are risked.
-- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
+- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.\n- `/games` — open a button-driven quick-play hub for guessing and rock, paper, scissors.
 - `/shop` — browse the starter collectible drop, including rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — show your collection progress in the current server.
