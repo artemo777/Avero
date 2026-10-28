@@ -45,3 +45,15 @@ model CurrencyTransaction {
   @@index([guildId, userId, createdAt])
   @@index([guildId, type, createdAt])
 }
+
+
+model CurrencyPurchase {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  itemId      String
+  purchasedAt DateTime @default(now())
+
+  @@unique([guildId, userId, itemId])
+  @@index([guildId, userId])
+}
