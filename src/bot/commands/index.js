@@ -11,6 +11,7 @@ import { profileCommand } from "./profile.js";
 import { rankCommand } from "./rank.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
+import { scavengeCommand } from "./scavenge.js";
 import { workCommand } from "./work.js";
 
 export const commands = Object.freeze([
@@ -27,5 +28,6 @@ export const commands = Object.freeze([
   gamesCommand,
   rpsCommand,
   shopCommand,
-  workCommand
+  workCommand,
+  scavengeCommand
 ]);
