@@ -17,12 +17,12 @@ function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
   };
 }
 
-test("rock paper scissors returns a private game result without touching currency", async () => {
+test("rock paper scissors returns a public game result without touching currency", async () => {
   const { interaction, getResponse } = makeInteraction();
   await rpsCommand.execute(interaction);
   const response = getResponse();
 
-  assert.equal(response.ephemeral, true);
+  assert.equal(response.flags, undefined);
   assert.equal(response.embeds.length, 1);
   assert.match(response.embeds[0].description, /\*\*You:\*\* Rock/);
   assert.match(response.embeds[0].description, /\*\*Avero:\*\* (Rock|Paper|Scissors)/);
@@ -34,7 +34,7 @@ test("rock paper scissors rejects direct messages", async () => {
   await rpsCommand.execute(interaction);
   assert.deepEqual(getResponse(), {
     content: "Games can only be played inside a server.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
 
