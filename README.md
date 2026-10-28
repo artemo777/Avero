@@ -64,8 +64,11 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/guess number` — guess a number from 1 to 5 for a chance to earn 25 coins. Playing is free; no coins are risked.
+- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
+- `/shop` — browse server-specific collectible badges.
+- `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 
-Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims and game rewards are recorded in the transaction ledger. Free games never deduct coins to enter.
+Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative.
 
 ## Leveling and role rewards
 
@@ -89,7 +92,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including the daily cooldown timestamp. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. The database migration is not applied automatically; run the migration command above against your configured database.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including the daily cooldown timestamp. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## HTTP health server
 
@@ -149,4 +152,4 @@ npm test
 └── test/
 ```
 
-The next game increments will add The Vault, Duel Deck, and secret achievements. These remain separate from the paused leveling migration.
+The next game increments can add The Vault, Duel Deck, and secret achievements. These remain separate from the paused leveling migration.
