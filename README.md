@@ -59,6 +59,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
+- `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win. Playing is free.
 - `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
 - `/games` — open the button-driven quick-play hub.
@@ -66,7 +67,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — show your collection progress in the current server.
 
-Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, work shifts, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
+Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, work shifts, scavenge rewards, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
 
 ## Profile customization roadmap
 
@@ -102,7 +103,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including daily and work cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, and scavenge cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## HTTP health server
 
