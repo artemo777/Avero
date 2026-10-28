@@ -17,7 +17,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
-const gameCommandNames = new Set(["balance", "daily", "guess", "rps", "shop", "buy", "inventory"]);
+const gameCommandNames = new Set(["balance", "daily", "guess", "shop", "buy", "inventory"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -74,7 +74,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton()) {
     if (!interaction.customId.startsWith("avero|")) return;
     try {
-      await handleGameComponent(interaction, { prisma: getPrismaClient() });
+      const action = interaction.customId.split("|")[2];
+      await handleGameComponent(interaction, { prisma: action === "rps" ? undefined : getPrismaClient() });
     } catch (error) {
       console.error("Game component failed:", error);
       const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
