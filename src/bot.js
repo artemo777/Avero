@@ -26,7 +26,7 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (!message.guildId || message.author.bot || !message.member) return;
+  if (!message.guildId || !config.allowedGuildIds.includes(message.guildId) || message.author.bot || !message.member) return;
 
   try {
     const prisma = getPrismaClient();
@@ -75,16 +75,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const command = commandMap.get(interaction.commandName);
   if (!command) return;
 
-  if (gameCommandNames.has(interaction.commandName)) {
-    if (!interaction.guildId || !config.allowedGuildIds.includes(interaction.guildId)) {
-      await interaction.reply({
-        content: config.allowedGuildIds.length
-          ? "Avero games are only enabled in the configured LightX and test servers."
-          : "Avero games are disabled until AVERO_ALLOWED_GUILD_IDS is configured with the intended server IDs.",
-        ephemeral: true
-      });
-      return;
-    }
+  if (!interaction.guildId || !config.allowedGuildIds.includes(interaction.guildId)) {
+    await interaction.reply({
+      content: config.allowedGuildIds.length
+        ? "Avero is only enabled in the configured LightX and test servers."
+        : "Avero is disabled until AVERO_ALLOWED_GUILD_IDS is configured with the intended server IDs.",
+      ephemeral: true
+    });
+    return;
   }
 
   try {
