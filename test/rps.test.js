@@ -1,0 +1,48 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { rpsCommand } from "../src/bot/commands/rps.js";
+
+function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
+  let response;
+  return {
+    interaction: {
+      guildId,
+      options: { getString: (name) => {
+        assert.equal(name, "choice");
+        return choice;
+      } },
+      reply: async (payload) => { response = payload; }
+    },
+    getResponse: () => response
+  };
+}
+
+test("rock paper scissors returns a private game result without touching currency", async () => {
+  const { interaction, getResponse } = makeInteraction();
+  await rpsCommand.execute(interaction);
+  const response = getResponse();
+
+  assert.equal(response.ephemeral, true);
+  assert.equal(response.embeds.length, 1);
+  assert.match(response.embeds[0].description, /\*\*You:\*\* Rock/);
+  assert.match(response.embeds[0].description, /\*\*Avero:\*\* (Rock|Paper|Scissors)/);
+  assert.match(response.embeds[0].footer.text, /no coins involved/i);
+});
+
+test("rock paper scissors rejects direct messages", async () => {
+  const { interaction, getResponse } = makeInteraction({ guildId: null });
+  await rpsCommand.execute(interaction);
+  assert.deepEqual(getResponse(), {
+    content: "Games can only be played inside a server.",
+    ephemeral: true
+  });
+});
+
+test("rock paper scissors validates the choice", async () => {
+  const { interaction, getResponse } = makeInteraction({ choice: "banana" });
+  await rpsCommand.execute(interaction);
+  assert.deepEqual(getResponse(), {
+    content: "Choose rock, paper, or scissors.",
+    ephemeral: true
+  });
+});
