@@ -171,7 +171,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     await interaction.reply({ content: "Avero games and currency are available inside a server.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  if (!prisma) throw new Error("Game component requires a database client.");
+  if (!prisma && parsed.action !== "rps") throw new Error("Game component requires a database client.");
   let payload;
   switch (parsed.action) {
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
