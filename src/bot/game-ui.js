@@ -41,7 +41,7 @@ export function readComponentId(customId) {
 }
 export function createGamePanel({ title, description, sections = [], sectionButtons = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], canvas = false, artwork = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("## " + title + "\n" + description));
   if (canvas || artwork.length) {
     const galleryItems = [];
     if (canvas) galleryItems.push(new MediaGalleryItemBuilder().setURL("attachment://avero-panel.png"));
@@ -49,7 +49,6 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(...galleryItems));
   }
   for (const [index, section] of sections.entries()) {
-    container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
     const sectionRow = sectionButtons[index];
     if (sectionRow?.length) {
@@ -62,10 +61,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
       container.addActionRowComponents(row);
     }
   }
-  if (footer) {
-    container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
-  }
+
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(button.style ?? ButtonStyle.Secondary);
@@ -134,7 +130,7 @@ export function renderGames(userId) {
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
-    canvas: true
+    canvas: false
   }));
 }
 export async function renderBalance(prisma, guildId, userId) {
@@ -198,12 +194,6 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   ];
   const earnedMilestones = milestones.filter((milestone) => items.length >= milestone.count);
   const nextMilestone = milestones.find((milestone) => items.length < milestone.count);
-  const milestoneText = earnedMilestones.length
-    ? earnedMilestones.map((milestone) => "✓ **" + milestone.name + "**").join(" · ")
-    : "◇ No collection milestones yet";
-  const milestoneProgress = nextMilestone
-    ? "\nNext: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
-    : "\n✧ All collection milestones complete!";
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   const pageButtons = [];
   if (pageCount > 1) {
@@ -216,11 +206,9 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your collection",
     eyebrow: "COLLECTION",
-    description: "### 🎒 " + items.length + " / " + SHOP_ITEMS.length + " starter collectibles\n" +
-      "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" +
-      collection + "\n\n" + (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set.") +
-      "\n\n### 🏆 Collection milestones\n" + milestoneText + milestoneProgress +
-      (pageCount > 1 ? "\n\n-# Showing page " + (currentPage + 1) + " of " + pageCount + " · Select an item for details." : items.length ? "\n\n-# Select an item below for its details." : ""),
+    description: "🎒 **" + items.length + "/" + SHOP_ITEMS.length + " collectibles** · " + progress + "%\n" +
+      collection +
+      (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + "/" + pageCount : ""),
     footer: "COLLECTION • SAVED PER SERVER",
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
