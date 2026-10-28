@@ -18,12 +18,19 @@ function makePrisma(initialProfile) {
       upsert: async () => profile,
       findUnique: async () => ({ ...profile }),
       updateMany: async ({ where, data }) => {
-        const cutoff = where.OR[1].lastMessageXpAt.lte;
-        const eligible = profile.lastMessageXpAt === null || profile.lastMessageXpAt <= cutoff;
-        if (!eligible) return { count: 0 };
-        profile.xp += data.xp.increment;
-        profile.lastMessageXpAt = data.lastMessageXpAt;
-        return { count: 1 };
+        if (where.OR) {
+          const cutoff = where.OR[1].lastMessageXpAt.lte;
+          const eligible = profile.lastMessageXpAt === null || profile.lastMessageXpAt <= cutoff;
+          if (!eligible) return { count: 0 };
+          profile.xp += data.xp.increment;
+          profile.lastMessageXpAt = data.lastMessageXpAt;
+          return { count: 1 };
+        }
+        if (where.level && profile.level < where.level.lt) {
+          profile.level = data.level;
+          return { count: 1 };
+        }
+        return { count: 0 };
       },
       update: async ({ data }) => {
         profile = { ...profile, ...data };
@@ -64,6 +71,7 @@ test("message XP is awarded once per cooldown and updates the level", async () =
   assert.equal(first.previousLevel, 0);
   assert.equal(first.profile.xp, 105);
   assert.equal(first.profile.level, 1);
+  assert.equal(first.leveledUp, true);
 
   const second = await recordMessageExperience(prisma, "guild-1", "user-1", {
     amount: 20,
@@ -71,6 +79,7 @@ test("message XP is awarded once per cooldown and updates the level", async () =
     now: new Date(now.getTime() + 10_000)
   });
   assert.equal(second.awarded, false);
+  assert.equal(second.leveledUp, undefined);
   assert.equal(prisma.read().xp, 105);
 });
 

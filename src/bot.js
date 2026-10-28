@@ -35,7 +35,7 @@ client.on(Events.MessageCreate, async (message) => {
     });
     if (!result.awarded) return;
 
-    if (result.profile.level > result.previousLevel) {
+    if (result.leveledUp) {
       const grantedLevels = await grantLevelRoleRewards(
         message.member,
         result.previousLevel,

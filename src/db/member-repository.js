@@ -105,16 +105,30 @@ export async function recordMessageExperience(
     where: { guildId_userId: key }
   });
   const level = levelForExperience(profile.xp);
-  const updatedProfile = level === profile.level
-    ? profile
-    : await prisma.memberProfile.update({
-        where: { guildId_userId: key },
-        data: { level }
-      });
+  let leveledUp = false;
+  let levelBeforeUpdate = profile.level;
+
+  if (level > profile.level) {
+    // The conditional update makes the stored level monotonic under concurrent messages.
+    // Only the event that successfully advances the level should announce the level-up.
+    const levelUpdate = await prisma.memberProfile.updateMany({
+      where: {
+        ...key,
+        level: { lt: level }
+      },
+      data: { level }
+    });
+    leveledUp = levelUpdate.count > 0;
+  }
+
+  const updatedProfile = await prisma.memberProfile.findUnique({
+    where: { guildId_userId: key }
+  });
 
   return {
     awarded: true,
-    previousLevel,
+    previousLevel: leveledUp ? levelBeforeUpdate : updatedProfile.level,
+    leveledUp,
     profile: updatedProfile
   };
 }
