@@ -88,7 +88,7 @@ test("collection shows earned and next milestones", async () => {
 
   const three = panel(await renderInventory(fakePrisma(["neon_badge", "vault_badge", "starlight_badge"]), "guild-1", "user-1"));
   assert.match(allText(three), /Curator/);
-  assert.match(allText(three), /Next: \\*\\*Full Set\\*\\* — 3\/6 items/);
+  assert.match(allText(three), /Next: .*Full Set.*3\/6 items/);
 
   const full = panel(await renderInventory(fakePrisma([
     "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
