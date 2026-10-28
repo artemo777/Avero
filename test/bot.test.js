@@ -15,8 +15,29 @@ test("bot configuration requires a token without exposing its value", () => {
     token: "test-token",
     clientId: "app-id",
     guildId: "guild-id",
-    levelRoleRewards: {}
+    levelRoleRewards: {},
+    levelUpChannelId: undefined,
+    messageXpCooldownMs: 60_000,
+    minMessageXp: 15,
+    maxMessageXp: 25
   });
+});
+
+test("leveling settings are configurable and validated", () => {
+  const config = loadBotConfig({
+    DISCORD_TOKEN: "token",
+    LEVEL_UP_CHANNEL_ID: "123456789012345678",
+    LEVEL_XP_COOLDOWN_MS: "90000",
+    LEVEL_MIN_MESSAGE_XP: "8",
+    LEVEL_MAX_MESSAGE_XP: "18"
+  });
+  assert.equal(config.levelUpChannelId, "123456789012345678");
+  assert.equal(config.messageXpCooldownMs, 90_000);
+  assert.equal(config.minMessageXp, 8);
+  assert.equal(config.maxMessageXp, 18);
+  assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_UP_CHANNEL_ID: "not-a-channel" }), /LEVEL_UP_CHANNEL_ID/);
+  assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_MIN_MESSAGE_XP: "30", LEVEL_MAX_MESSAGE_XP: "10" }), /greater than or equal/);
+  assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_XP_COOLDOWN_MS: "0" }), /positive safe integer/);
 });
 
 test("command registration requires the application ID", () => {

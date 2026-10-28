@@ -3,7 +3,7 @@ import { createEmbed, ICONS, THEME } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
-import { grantLevelRoleRewards, MESSAGE_XP_COOLDOWN_MS, randomMessageExperience } from "./bot/leveling.js";
+import { grantLevelRoleRewards, randomMessageExperience } from "./bot/leveling.js";
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { recordMessageExperience } from "./db/member-repository.js";
 
@@ -30,8 +30,8 @@ client.on(Events.MessageCreate, async (message) => {
   try {
     const prisma = getPrismaClient();
     const result = await recordMessageExperience(prisma, message.guildId, message.author.id, {
-      amount: randomMessageExperience(),
-      cooldownMs: MESSAGE_XP_COOLDOWN_MS
+      amount: randomMessageExperience(Math.random, config.minMessageXp, config.maxMessageXp),
+      cooldownMs: config.messageXpCooldownMs
     });
     if (!result.awarded) return;
 
@@ -45,7 +45,20 @@ client.on(Events.MessageCreate, async (message) => {
       const rewardText = grantedLevels.length
         ? " Reward role(s) granted for level " + grantedLevels.join(", ") + "."
         : "";
-      await message.channel.send({
+      let announcementChannel = message.channel;
+      if (config.levelUpChannelId) {
+        try {
+          announcementChannel = message.guild.channels.cache.get(config.levelUpChannelId)
+            ?? await message.guild.channels.fetch(config.levelUpChannelId);
+          if (!announcementChannel?.isTextBased() || typeof announcementChannel.send !== "function") {
+            throw new Error("Configured level-up channel is not a text-based channel.");
+          }
+        } catch (error) {
+          console.error("Configured level-up channel is unavailable:", error);
+          return;
+        }
+      }
+      await announcementChannel.send({
         content: ICONS.success + " " + message.author + " reached level " + result.profile.level + "!" + rewardText,
         allowedMentions: { users: [message.author.id] }
       }).catch((error) => console.error("Level-up announcement failed:", error));

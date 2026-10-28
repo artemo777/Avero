@@ -2,8 +2,11 @@ export const MESSAGE_XP_COOLDOWN_MS = 60_000;
 export const MIN_MESSAGE_XP = 15;
 export const MAX_MESSAGE_XP = 25;
 
-export function randomMessageExperience(random = Math.random) {
-  return MIN_MESSAGE_XP + Math.floor(random() * (MAX_MESSAGE_XP - MIN_MESSAGE_XP + 1));
+export function randomMessageExperience(random = Math.random, min = MIN_MESSAGE_XP, max = MAX_MESSAGE_XP) {
+  if (!Number.isSafeInteger(min) || min < 1 || !Number.isSafeInteger(max) || max < min) {
+    throw new TypeError("Message XP range must use positive safe integers with max at least min.");
+  }
+  return min + Math.floor(random() * (max - min + 1));
 }
 
 export function parseLevelRoleRewards(value) {

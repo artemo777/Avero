@@ -54,7 +54,15 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 
 ## Leveling and role rewards
 
-Avero awards a random 15–25 XP for eligible guild messages, with a 60-second per-member cooldown. Bot messages and direct messages are ignored. XP and cooldown timestamps are stored in PostgreSQL, and levels are calculated from total XP: level `n` starts at `100 × n²` XP.
+Avero awards a random amount of XP for eligible guild messages. The defaults are 15–25 XP and a 60-second per-member cooldown; both are configurable. Bot messages and direct messages are ignored. XP and cooldown timestamps are stored in PostgreSQL, and levels keep the square progression: level `n` starts at `100 × n²` XP.
+
+Configure leveling with these optional environment variables:
+
+- `LEVEL_UP_CHANNEL_ID` — Discord text channel for level-up announcements. If unset, announcements go to the channel where the XP was earned.
+- `LEVEL_XP_COOLDOWN_MS` — per-member XP cooldown in milliseconds (default: `60000`).
+- `LEVEL_MIN_MESSAGE_XP` and `LEVEL_MAX_MESSAGE_XP` — inclusive random XP range (defaults: `15` and `25`).
+
+The cooldown and XP bounds must be positive whole numbers, and the maximum XP must be at least the minimum XP. A configured announcement channel must be accessible to Avero and support messages.
 
 Optional milestone role rewards can be configured in `LEVEL_ROLE_REWARDS` as a JSON object mapping levels to role IDs, for example:
 

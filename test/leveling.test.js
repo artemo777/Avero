@@ -92,9 +92,12 @@ test("message XP validates amount and cooldown", async () => {
   );
 });
 
-test("message XP rolls random values into the inclusive 15–25 range", () => {
+test("message XP uses the configured inclusive range", () => {
   assert.equal(randomMessageExperience(() => 0), 15);
   assert.equal(randomMessageExperience(() => 0.999999), 25);
+  assert.equal(randomMessageExperience(() => 0, 8, 18), 8);
+  assert.equal(randomMessageExperience(() => 0.999999, 8, 18), 18);
+  assert.throws(() => randomMessageExperience(Math.random, 0, 10), /positive safe integers/);
 });
 
 test("role reward configuration validates milestone levels and role IDs", () => {
