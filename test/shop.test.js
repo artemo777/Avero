@@ -71,7 +71,7 @@ function createFakePrisma(initialBalance = 0) {
 }
 
 
-test("shop renders each collectible in its own wide Components V2 section", async () => {
+test("shop renders compact item sections with purchase controls directly beneath each collectible", async () => {
   const response = await renderShop(createFakePrisma(500), "guild-1", "user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
@@ -79,7 +79,15 @@ test("shop renders each collectible in its own wide Components V2 section", asyn
   assert.ok(textDisplays.length >= SHOP_ITEMS.length + 2);
   assert.match(panelText(response), /THE DROP/);
   for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
-  assert.equal(panel.components.filter((component) => component.type === 1).length, SHOP_ITEMS.length + 1, "one compact control row per item plus one navigation row");
+  const rows = panel.components.filter((component) => component.type === 1);
+  assert.equal(rows.length, SHOP_ITEMS.length + 1, "one compact control row per item plus one navigation row");
+  const componentIds = rows.flatMap((row) => row.components.map((component) => component.custom_id));
+  assert.equal(new Set(componentIds).size, componentIds.length, "all component custom IDs are unique");
+  for (const item of SHOP_ITEMS) {
+    const listingIndex = panel.components.findIndex((component) => component.type === 10 && component.content.includes(item.name));
+    assert.ok(listingIndex >= 0, item.name + " has a listing");
+    assert.equal(panel.components[listingIndex + 1]?.type, 1, item.name + " controls immediately follow its listing");
+  }
 });
 
 test("shop catalog has unique item IDs and positive prices", () => {
