@@ -110,8 +110,8 @@ Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per gui
 Reusable visual assets live in one place instead of being scattered through commands:
 
 - `averoui/icons.js` — small text-safe glyphs used in Discord UI.
-- `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for future third-party artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
-- `assets/` — repository-local images, SVGs, and other static files. Use `loadAssetBuffer("icons/coin.png")` from `averoui/asset-loader.js` to load a local file; paths are restricted to this folder.
+- `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
+- `assets/icons/` — original Avero SVGs: coin, common/rare/epic/legendary gems, collectible badge, reward sparkle, loader, and brand mark. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
 
 This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. A database can be added later only if assets need to be uploaded or managed dynamically while the bot is running. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
