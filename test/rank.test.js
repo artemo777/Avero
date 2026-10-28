@@ -39,7 +39,7 @@ test("rank command shows level, total XP, and progress to the next level", async
   await rankCommand.execute(interaction, { prisma });
 
   const embed = getResponse().embeds[0].toJSON();
-  assert.equal(embed.title, "◈ ExampleUser's rank");
+  assert.equal(embed.title, "✦ ExampleUser's rank");
   assert.match(embed.description, /\*\*Level:\*\* 1/);
   assert.match(embed.description, /\*\*Total XP:\*\* 250/);
   assert.match(embed.description, /\*\*Progress:\*\* 150 \/ 300 XP to level 2/);
