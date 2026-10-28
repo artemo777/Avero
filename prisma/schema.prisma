@@ -14,6 +14,7 @@ model MemberProfile {
   xp               Int      @default(0)
   level            Int      @default(0)
   lastMessageXpAt  DateTime?
+  equippedBadgeItemId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
