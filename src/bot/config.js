@@ -36,9 +36,6 @@ function parseAllowedGuildIds(value) {
   if (new Set(ids).size !== ids.length) {
     throw new Error("AVERO_ALLOWED_GUILD_IDS must not contain duplicate server IDs.");
   }
-  if (ids.length > 2) {
-    throw new Error("Avero can be enabled for at most two servers.");
-  }
   return ids;
 }
 
@@ -53,7 +50,6 @@ export function loadBotConfig(env = process.env) {
     token: requiredString(env.DISCORD_TOKEN, "DISCORD_TOKEN"),
     clientId: env.DISCORD_CLIENT_ID?.trim() || undefined,
     guildId: env.DISCORD_GUILD_ID?.trim() || undefined,
-    allowedGuildIds: parseAllowedGuildIds(env.AVERO_ALLOWED_GUILD_IDS),
     levelRoleRewards: parseLevelRoleRewards(env.LEVEL_ROLE_REWARDS),
     levelUpChannelId: optionalChannelId(env.LEVEL_UP_CHANNEL_ID),
     messageXpCooldownMs: optionalPositiveInteger(env, "LEVEL_XP_COOLDOWN_MS", MESSAGE_XP_COOLDOWN_MS),
@@ -69,11 +65,3 @@ export function requireApplicationId(config) {
   return config.clientId;
 }
 
-export function requireCommandRegistrationGuildIds(config) {
-  if (!Array.isArray(config.allowedGuildIds) || config.allowedGuildIds.length === 0) {
-    throw new Error(
-      "AVERO_ALLOWED_GUILD_IDS must contain at least one intended server ID; global command registration is disabled."
-    );
-  }
-  return config.allowedGuildIds;
-}
