@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { MessageFlags } from "discord.js";
 import { guessCommand } from "../src/bot/commands/guess.js";
 
 function makePrisma() {
