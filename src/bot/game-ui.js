@@ -128,22 +128,64 @@ export async function renderShop(prisma, guildId, userId) {
     buttons: [...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
-export async function renderInventory(prisma, guildId, userId) {
+export async function renderInventory(prisma, guildId, userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const itemMap = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
   const items = purchases.map((purchase) => itemMap.get(purchase.itemId)).filter(Boolean);
-  const collection = items.length ? items.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
+  const pageSize = 4;
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
+  const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const collection = pageItems.length
+    ? pageItems.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id, ButtonStyle.Secondary, item.icon));
+  const pageButtons = [];
+  if (pageCount > 1) {
+    pageButtons.push(button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary));
+    pageButtons.push(button(userId, "collection_page", "Page " + (currentPage + 1) + "/" + pageCount, String(currentPage), ButtonStyle.Secondary));
+    pageButtons.push(button(userId, "collection_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1)), ButtonStyle.Secondary));
+  }
   return gamePayload(createGamePanel({
     title: "Your collection",
     eyebrow: "COLLECTION",
     description: "### 🎒 " + items.length + " / " + SHOP_ITEMS.length + " starter collectibles\n" +
-      "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" + collection + "\n\n" +
-      (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set."),
+      "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" +
+      collection + "\n\n" + (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set.") +
+      (pageCount > 1 ? "\n\n-# Showing page " + (currentPage + 1) + " of " + pageCount + " · Select an item for details." : items.length ? "\n\n-# Select an item below for its details." : ""),
     footer: "COLLECTION • SAVED PER SERVER",
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙"), button(userId, "daily", "Daily reward", "", ButtonStyle.Success, "✨")]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+  }));
+}
+export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0) {
+  const item = SHOP_ITEMS.find((candidate) => candidate.id === itemId);
+  if (!item) return gamePayload(createGamePanel({
+    title: "Collectible unavailable",
+    description: "That item is no longer in the Avero catalog.",
+    eyebrow: "COLLECTION",
+    buttons: [button(userId, "inventory", "Back to collection", String(page), ButtonStyle.Primary)]
+  }));
+  const [purchases, account] = await Promise.all([
+    getCurrencyPurchases(prisma, guildId, userId),
+    getCurrencyAccount(prisma, guildId, userId)
+  ]);
+  const owned = purchases.some((purchase) => purchase.itemId === item.id);
+  return gamePayload(createGamePanel({
+    title: item.icon + " " + item.name,
+    eyebrow: "ITEM DETAILS",
+    description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
+      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") +
+      "\nCatalog price: **" + item.price.toLocaleString("en-US") + " coins**" +
+      "\nYour balance: **" + (account?.balance ?? 0).toLocaleString("en-US") + " coins**",
+    footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
+    color: owned ? THEME.colors.success : THEME.colors.primary,
+    buttons: [
+      button(userId, "inventory", "Back to collection", String(page), ButtonStyle.Secondary, "🎒"),
+      ...(owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
+      button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")
+    ]
   }));
 }
 export function renderScavenge(result, userId, spot, item) {
@@ -306,7 +348,17 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
-    case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id); break;
+    case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
+    case "collection_page": {
+      const page = Number(parsed.arg);
+      if (!Number.isInteger(page) || page < 0 || page > 100) {
+        await interaction.reply({ content: "That collection page is invalid.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, page);
+      break;
+    }
+    case "item": payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg); break;
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
     case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
