@@ -65,7 +65,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
-- `/inventory` — browse your server collection with pagination and per-item detail panels; unowned collectibles can be unlocked directly from their detail view.
+- `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view.
 
 Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, work shifts, scavenge rewards, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
 
