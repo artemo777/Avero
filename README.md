@@ -63,9 +63,9 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/rank [member]` — shows the selected member's level, total XP, and progress toward the next level.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
-- `/coinflip wager side` — wagers virtual coins on heads or tails; wagers must be between 1 and 100,000 coins.
+- `/guess number` — guess a number from 1 to 5 for a chance to earn 25 coins. Playing is free; no coins are risked.
 
-Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims and coinflip balance changes are performed with conditional database updates to protect against duplicate claims and concurrent spending. Currency transactions are recorded for auditing.
+Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims and game rewards are recorded in the transaction ledger. Free games never deduct coins to enter.
 
 ## Leveling and role rewards
 
