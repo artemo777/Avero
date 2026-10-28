@@ -117,6 +117,8 @@ export async function renderShop(prisma, guildId, userId) {
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
   const rows = SHOP_ITEMS.map((item) => item.icon + " **" + item.name + "** · " + item.rarity + " · " +
     (owned.has(item.id) ? "✓ **OWNED**" : "**" + item.price + " coins**") + "\n" + item.description);
+  const detailButtons = SHOP_ITEMS.map((item) =>
+    button(userId, "item", item.name, item.id + ":0:shop", ButtonStyle.Secondary, item.icon));
   const buyButtons = SHOP_ITEMS.filter((item) => !owned.has(item.id)).map((item) =>
     button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
   return gamePayload(createGamePanel({
@@ -125,7 +127,7 @@ export async function renderShop(prisma, guildId, userId) {
     sections: rows,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
-    buttons: [...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [...detailButtons, ...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
 export async function renderInventory(prisma, guildId, userId, page = 0) {
@@ -140,7 +142,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     ? pageItems.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
-  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage, ButtonStyle.Secondary, item.icon));
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, item.icon));
   const pageButtons = [];
   if (pageCount > 1) {
     pageButtons.push(button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary));
@@ -159,13 +161,13 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
-export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0) {
+export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
   const item = SHOP_ITEMS.find((candidate) => candidate.id === itemId);
   if (!item) return gamePayload(createGamePanel({
     title: "Collectible unavailable",
     description: "That item is no longer in the Avero catalog.",
     eyebrow: "COLLECTION",
-    buttons: [button(userId, "inventory", "Back to collection", String(page), ButtonStyle.Primary)]
+    buttons: [button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Primary)]
   }));
   const [purchases, account] = await Promise.all([
     getCurrencyPurchases(prisma, guildId, userId),
@@ -182,7 +184,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
-      button(userId, "inventory", "Back to collection", String(page), ButtonStyle.Secondary, "🎒"),
+      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
       ...(owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
       button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")
     ]
@@ -359,10 +361,11 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
       break;
     }
     case "item": {
-      const separator = parsed.arg.lastIndexOf(":");
-      const itemId = separator < 0 ? parsed.arg : parsed.arg.slice(0, separator);
-      const page = separator < 0 ? 0 : Number(parsed.arg.slice(separator + 1));
-      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, itemId, Number.isInteger(page) && page >= 0 ? page : 0);
+      const parts = parsed.arg.split(":");
+      const itemId = parts[0];
+      const page = Number(parts[1] ?? 0);
+      const source = parts[2] === "shop" ? "shop" : "inventory";
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, itemId, Number.isInteger(page) && page >= 0 ? page : 0, source);
       break;
     }
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
