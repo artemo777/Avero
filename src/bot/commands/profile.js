@@ -50,8 +50,8 @@ export const profileCommand = Object.freeze({
       badgeFiles = [new AttachmentBuilder(badgeCanvas.toBuffer("image/png"), { name: badgeFilename })];
     }
     const embed = createEmbed({
-        ...(equippedItem ? {} : { title: target.username }),
-        description: "AVERO  /  " + interaction.guild.name + "\nLevel **" + level + "** · " +
+        ...(badgeItems.length ? {} : { title: target.username }),
+        description: "Level **" + level + "** · " +
           (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
         fields: [
