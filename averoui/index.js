@@ -8,3 +8,4 @@ export { createEmbed } from "./embeds.js";
 export { createPanel } from "./components.js";
 export { ASSETS, getAsset, getAssetSymbol, getRarityAssetId, listAssets } from "./assets.js";
 export { loadAssetBuffer, loadRegisteredAsset } from "./asset-loader.js";
+export { renderRegisteredAsset } from "./render-asset.js";
