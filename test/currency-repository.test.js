@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimDailyReward, getCurrencyAccount, playCoinflip } from "../src/db/currency-repository.js";
+import { awardGameReward, claimDailyReward, getCurrencyAccount, playCoinflip } from "../src/db/currency-repository.js";
 
 function createFakePrisma() {
   const accounts = new Map();
@@ -117,4 +117,34 @@ test("currency repository rejects invalid wagers and rewards", async () => {
   const prisma = createFakePrisma();
   await assert.rejects(claimDailyReward(prisma, "lightx", "user-3", { amount: 0 }), /Daily reward amount/);
   await assert.rejects(playCoinflip(prisma, "lightx", "user-3", 0, true), /Wager/);
+});
+
+test("game rewards update the server-scoped balance and create a ledger entry", async () => {
+  const prisma = createFakePrisma();
+  const now = new Date("2026-10-28T12:00:00.000Z");
+
+  const result = await awardGameReward(prisma, "lightx", "winner-1", 25, {
+    type: "guess_win",
+    now
+  });
+
+  assert.equal(result.awarded, true);
+  assert.equal(result.amount, 25);
+  assert.equal(result.account.balance, 25);
+  assert.deepEqual(prisma.transactions, [{
+    guildId: "lightx",
+    userId: "winner-1",
+    amount: 25,
+    type: "guess_win",
+    createdAt: now
+  }]);
+
+  const otherServer = await getCurrencyAccount(prisma, "test-server", "winner-1");
+  assert.equal(otherServer, null);
+});
+
+test("game reward rejects invalid amounts and ledger types", async () => {
+  const prisma = createFakePrisma();
+  await assert.rejects(awardGameReward(prisma, "lightx", "winner-2", 0), /Game reward/);
+  await assert.rejects(awardGameReward(prisma, "lightx", "winner-2", 10, { type: "Bad Type" }), /lowercase identifier/);
 });
