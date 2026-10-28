@@ -5,12 +5,15 @@ import {
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
-import { awardGameReward, claimDailyReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
+import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
 const DAILY_REWARD = 100;
 const DAILY_COOLDOWN_MS = 86_400_000;
 const WORK_COOLDOWN_MS = 1_800_000;
+const SCAVENGE_COOLDOWN_MS = 600_000;
+const SCAVENGE_SPOTS = Object.freeze(["the old server archive", "the neon-lit plaza", "the quiet train platform", "the workshop storage room", "the moonlit garden", "the forgotten message board"]);
+const SCAVENGE_ITEMS = Object.freeze([{ id: "neon_badge", weight: 55 }, { id: "vault_badge", weight: 25 }, { id: "starlight_badge", weight: 13 }, { id: "moonlit_token", weight: 6 }, { id: "prism_crown", weight: 1 }]);
 const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a tiny server banner", "Helped organize the event board", "Delivered a stack of digital mail", "Tidied the Avero workshop"]);
 const WIN_REWARD = 25;
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
@@ -78,6 +81,7 @@ function navButtons(userId, includeDaily = false) {
     button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
   ];
   buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, "🧰"));
+  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, "🔎"));
   if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
   return buttons;
 }
@@ -141,6 +145,53 @@ export async function renderInventory(prisma, guildId, userId) {
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙"), button(userId, "daily", "Daily reward", "", ButtonStyle.Success, "✨")]
   }));
+}
+export function renderScavenge(result, userId, spot, item) {
+  if (!result.claimed) {
+    const next = new Date(result.account.lastScavengeAt.getTime() + SCAVENGE_COOLDOWN_MS);
+    return gamePayload(createGamePanel({
+      title: "Nothing new to search yet",
+      description: "You have already checked the area recently.\n\nTry again: <t:" + Math.floor(next.getTime() / 1000) + ":R>",
+      eyebrow: "SCAVENGE",
+      color: THEME.colors.warning,
+      footer: "SCAVENGE • ONE SEARCH EVERY 10 MINUTES",
+      buttons: navButtons(userId, true)
+    }));
+  }
+  const dropText = result.itemId && item
+    ? "\n\n🎁 **Collectible found!**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
+    : result.duplicateItemId && item
+      ? "\n\n🔁 You found another " + item.icon + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
+      : "";
+  return gamePayload(createGamePanel({
+    title: result.itemId ? "Something rare!" : "Search complete",
+    description: "### 🔎 You searched " + spot + ".\n\n✦ **+" + result.amount + " coins**" + dropText +
+      "\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext search in 10 minutes.",
+    eyebrow: "SCAVENGE",
+    color: result.itemId ? THEME.colors.success : THEME.colors.primary,
+    footer: "SCAVENGE • COINS AND COLLECTIBLES SAVED",
+    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, "🔎"), ...navButtons(userId, true).slice(0, 4)]
+  }));
+}
+export async function runScavenge(prisma, guildId, userId) {
+  const spot = SCAVENGE_SPOTS[randomInt(SCAVENGE_SPOTS.length)];
+  const amount = randomInt(25, 56);
+  const drop = randomInt(100) < 12;
+  let itemId = null;
+  if (drop) {
+    const totalWeight = SCAVENGE_ITEMS.reduce((sum, candidate) => sum + candidate.weight, 0);
+    let ticket = randomInt(totalWeight);
+    for (const candidate of SCAVENGE_ITEMS) {
+      ticket -= candidate.weight;
+      if (ticket < 0) { itemId = candidate.id; break; }
+    }
+  }
+  const result = await claimScavengeReward(prisma, guildId, userId, {
+    amount,
+    cooldownMs: SCAVENGE_COOLDOWN_MS,
+    itemId
+  });
+  return renderScavenge(result, userId, spot, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null);
 }
 export function renderWork(result, userId, task) {
   if (!result.claimed) {
@@ -257,7 +308,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id); break;
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
-    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
+    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;\n    case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
       break;
