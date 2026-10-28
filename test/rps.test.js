@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { MessageFlags } from "discord.js";
 import { rpsCommand } from "../src/bot/commands/rps.js";
 
 function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
