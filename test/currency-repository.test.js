@@ -108,3 +108,34 @@ test("game reward rejects invalid amounts and ledger types", async () => {
   await assert.rejects(awardGameReward(prisma, "lightx", "winner-2", 0), /Game reward/);
   await assert.rejects(awardGameReward(prisma, "lightx", "winner-2", 10, { type: "Bad Type" }), /lowercase identifier/);
 });
+
+
+test("daily reward is available exactly at the cooldown boundary", async () => {
+  const prisma = createFakePrisma();
+  const firstAt = new Date("2026-10-27T12:00:00.000Z");
+  const nextAt = new Date(firstAt.getTime() + 86_400_000);
+
+  const first = await claimDailyReward(prisma, "lightx", "boundary-user", { now: firstAt });
+  const tooEarly = await claimDailyReward(prisma, "lightx", "boundary-user", {
+    now: new Date(nextAt.getTime() - 1)
+  });
+  const atBoundary = await claimDailyReward(prisma, "lightx", "boundary-user", { now: nextAt });
+
+  assert.equal(first.claimed, true);
+  assert.equal(tooEarly.claimed, false);
+  assert.equal(atBoundary.claimed, true);
+  assert.equal(atBoundary.account.balance, 200);
+  assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 2);
+});
+
+test("currency repository rejects invalid identifiers, cooldowns, and dates", async () => {
+  const prisma = createFakePrisma();
+  await assert.rejects(getCurrencyAccount(prisma, "", "user"), /guildId/);
+  await assert.rejects(claimDailyReward(prisma, "guild", "user", { amount: 0 }), /Daily reward amount/);
+  await assert.rejects(claimDailyReward(prisma, "guild", "user", { cooldownMs: 0 }), /Daily cooldown/);
+  await assert.rejects(
+    claimDailyReward(prisma, "guild", "user", { now: new Date("invalid") }),
+    /valid Date/
+  );
+  assert.equal(prisma.transactions.length, 0);
+});
