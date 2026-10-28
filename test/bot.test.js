@@ -15,12 +15,33 @@ test("bot configuration requires a token without exposing its value", () => {
     token: "test-token",
     clientId: "app-id",
     guildId: "guild-id",
+    allowedGuildIds: [],
     levelRoleRewards: {},
     levelUpChannelId: undefined,
     messageXpCooldownMs: 60_000,
     minMessageXp: 15,
     maxMessageXp: 25
   });
+});
+
+test("game allowlist accepts at most two explicit Discord server IDs", () => {
+  const config = loadBotConfig({
+    DISCORD_TOKEN: "token",
+    AVERO_ALLOWED_GUILD_IDS: "123456789012345678, 234567890123456789"
+  });
+  assert.deepEqual(config.allowedGuildIds, ["123456789012345678", "234567890123456789"]);
+  assert.throws(() => loadBotConfig({
+    DISCORD_TOKEN: "token",
+    AVERO_ALLOWED_GUILD_IDS: "not-a-server-id"
+  }), /AVERO_ALLOWED_GUILD_IDS/);
+  assert.throws(() => loadBotConfig({
+    DISCORD_TOKEN: "token",
+    AVERO_ALLOWED_GUILD_IDS: "123456789012345678,123456789012345678"
+  }), /duplicate/);
+  assert.throws(() => loadBotConfig({
+    DISCORD_TOKEN: "token",
+    AVERO_ALLOWED_GUILD_IDS: "123456789012345678,234567890123456789,345678901234567890"
+  }), /at most two servers/);
 });
 
 test("leveling settings are configurable and validated", () => {
