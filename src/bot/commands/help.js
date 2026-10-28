@@ -17,7 +17,6 @@ export const helpCommand = Object.freeze({
           { name: "🏅 Profile & ranks", value: "`/profile` Member stats\n`/leaderboard` Top coins or XP\n`/rank` Level and XP" },
           { name: "🛠️ Utility", value: "`/help` This menu\n`/ping` Bot latency" }
         ],
-        footer: "AVERO • COMMAND GUIDE"
       })]
     });
   }
