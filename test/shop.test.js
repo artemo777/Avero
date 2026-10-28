@@ -76,7 +76,7 @@ test("shop renders compact item sections with purchase controls directly beneath
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
   const textDisplays = panel.components.filter((component) => component.type === 10);
-  assert.ok(textDisplays.length >= SHOP_ITEMS.length + 2);
+  assert.equal(textDisplays.length, SHOP_ITEMS.length + 1);
   assert.match(panelText(response), /THE DROP/);
   for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
   const rows = panel.components.filter((component) => component.type === 1);
