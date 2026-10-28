@@ -23,6 +23,26 @@ export const ASSETS = Object.freeze({
   gamesHero: Object.freeze({ id: "games-hero", kind: "canvas", renderer: "renderAveroCanvas", description: "Generated Avero games and coins hero artwork", uses: Object.freeze(["games"]) })
 });
 
+const ASSET_SYMBOLS = Object.freeze({
+  coin: "◉", "gem-common": "◇", "gem-rare": "⬡", "gem-epic": "✧",
+  "gem-legendary": "✦", badge: "⬢", "reward-sparkle": "✧", loader: "◌", "brand-mark-svg": "◈"
+});
+
+export function getAssetSymbol(id) {
+  const asset = getAsset(id);
+  if (!asset) return "·";
+  return ASSET_SYMBOLS[asset.id] ?? asset.value ?? "·";
+}
+
+export function getRarityAssetId(rarity) {
+  const key = String(rarity ?? "").toLowerCase();
+  if (key === "common") return "gem-common";
+  if (["uncommon", "rare"].includes(key)) return "gem-rare";
+  if (key === "epic") return "gem-epic";
+  if (["legendary", "mythic"].includes(key)) return "gem-legendary";
+  return "badge";
+}
+
 export function getAsset(id) {
   return Object.values(ASSETS).find((asset) => asset.id === id) ?? null;
 }
