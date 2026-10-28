@@ -5,6 +5,7 @@ import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
 import { grantLevelRoleRewards, randomMessageExperience } from "./bot/leveling.js";
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
+import { handleGameComponent } from "./bot/game-ui.js";
 import { recordMessageExperience } from "./db/member-repository.js";
 
 let config;
@@ -16,7 +17,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
-const gameCommandNames = new Set(["balance", "daily", "guess", "shop", "buy", "inventory"]);
+const gameCommandNames = new Set(["balance", "daily", "guess", "rps", "shop", "buy", "inventory"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -70,6 +71,18 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton()) {
+    if (!interaction.customId.startsWith("avero|")) return;
+    try {
+      await handleGameComponent(interaction, { prisma: getPrismaClient() });
+    } catch (error) {
+      console.error("Game component failed:", error);
+      const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
 
   const command = commandMap.get(interaction.commandName);
