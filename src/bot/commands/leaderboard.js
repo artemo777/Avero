@@ -48,7 +48,6 @@ export const leaderboardCommand = Object.freeze({
         title: category === "coins" ? "🪙 Coin leaderboard" : "🏅 XP leaderboard",
         description,
         color: THEME.colors.primary,
-        footer: "AVERO • THIS SERVER"
       })]
     });
   }
