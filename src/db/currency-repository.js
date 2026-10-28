@@ -74,6 +74,54 @@ export async function claimDailyReward(
   });
 }
 
+export async function claimWorkReward(
+  prisma,
+  guildId,
+  userId,
+  { amount = 80, cooldownMs = 1_800_000, now = new Date() } = {}
+) {
+  const key = currencyKey(guildId, userId);
+  requirePositiveInteger(amount, "Work reward");
+  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) {
+    throw new TypeError("Work cooldown must be a positive safe integer.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.currencyAccount.upsert({
+      where: { guildId_userId: key },
+      create: key,
+      update: {}
+    });
+
+    const updated = await tx.currencyAccount.updateMany({
+      where: {
+        ...key,
+        OR: [
+          { lastWorkAt: null },
+          { lastWorkAt: { lte: new Date(now.getTime() - cooldownMs) } }
+        ]
+      },
+      data: {
+        balance: { increment: amount },
+        lastWorkAt: now
+      }
+    });
+
+    const account = await tx.currencyAccount.findUnique({
+      where: { guildId_userId: key }
+    });
+    if (updated.count === 0) return { claimed: false, account };
+
+    await tx.currencyTransaction.create({
+      data: { ...key, amount, type: "work", createdAt: now }
+    });
+    return { claimed: true, amount, account };
+  });
+}
+
 export async function awardGameReward(
   prisma,
   guildId,
