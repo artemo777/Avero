@@ -16,6 +16,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
+const gameCommandNames = new Set(["balance", "daily", "coinflip"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -74,8 +75,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const command = commandMap.get(interaction.commandName);
   if (!command) return;
 
+  if (gameCommandNames.has(interaction.commandName)) {
+    if (!interaction.guildId || !config.allowedGuildIds.includes(interaction.guildId)) {
+      await interaction.reply({
+        content: config.allowedGuildIds.length
+          ? "Avero games are only enabled in the configured LightX and test servers."
+          : "Avero games are disabled until AVERO_ALLOWED_GUILD_IDS is configured with the intended server IDs.",
+        ephemeral: true
+      });
+      return;
+    }
+  }
+
   try {
-    const prisma = interaction.commandName === "rank" ? getPrismaClient() : undefined;
+    const needsDatabase = interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName);
+    const prisma = needsDatabase ? getPrismaClient() : undefined;
     await command.execute(interaction, { prisma });
   } catch (error) {
     console.error("Command execution failed (" + interaction.commandName + "):", error);
