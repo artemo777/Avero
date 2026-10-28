@@ -1,4 +1,5 @@
 import { AttachmentBuilder, MessageFlags } from "discord.js";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from "../../../averoui/index.js";
 import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
@@ -35,10 +36,19 @@ export const profileCommand = Object.freeze({
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
     const equippedItem = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
-    const badgeFilename = "equipped-profile-badge.png";
-    const badgeFiles = equippedItem
-      ? [new AttachmentBuilder(await renderRegisteredAsset(getCollectibleAssetId(equippedItem.id), 96), { name: badgeFilename })]
-      : [];
+    const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
+    const badgeFilename = "profile-badges.png";
+    let badgeFiles = [];
+    if (badgeItems.length) {
+      const badgeCanvas = createCanvas(96, 96);
+      const ctx = badgeCanvas.getContext("2d");
+      for (const [index, item] of badgeItems.slice(0, 6).entries()) {
+        const asset = await renderRegisteredAsset(getCollectibleAssetId(item.id), 32);
+        const image = await loadImage(asset);
+        ctx.drawImage(image, (index % 3) * 32, Math.floor(index / 3) * 32, 32, 32);
+      }
+      badgeFiles = [new AttachmentBuilder(badgeCanvas.toBuffer("image/png"), { name: badgeFilename })];
+    }
     const embed = createEmbed({
         ...(equippedItem ? {} : { title: target.username }),
         description: "AVERO  /  " + interaction.guild.name + "\nLevel **" + level + "** · " +
@@ -49,11 +59,10 @@ export const profileCommand = Object.freeze({
           { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
-          { name: "Equipped", value: equippedItem ? equippedItem.name : "None", inline: true }
-        ],
-        footer: "AVERO • SERVER PROFILE"
+          { name: "Badges", value: badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None", inline: false }
+        ]
       });
-    if (equippedItem) {
+    if (badgeItems.length) {
       embed.author = { name: target.username, icon_url: "attachment://" + badgeFilename };
     }
     await interaction.reply({
