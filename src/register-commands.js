@@ -1,6 +1,6 @@
 import { REST, Routes } from "discord.js";
 import { commands } from "./bot/commands/index.js";
-import { getCommandDefinitions } from "./bot/command-registry.js";
+import { findGuildCommandDuplicates, getCommandDefinitions } from "./bot/command-registry.js";
 import {
   loadBotConfig,
   requireApplicationId
@@ -20,7 +20,22 @@ const body = getCommandDefinitions(commands);
 
 try {
   await rest.put(Routes.applicationCommands(config.clientId), { body });
-  console.log("Registered " + commands.length + " Avero global slash command(s).");
+  console.log("Registered " + body.length + " Avero global slash command(s): " + body.map((command) => "/" + command.name).join(", ") + ".");
+  if (config.guildId) {
+    const guildRoute = Routes.applicationGuildCommands(config.clientId, config.guildId);
+    const guildCommands = await rest.get(guildRoute);
+    const duplicates = findGuildCommandDuplicates(guildCommands, body);
+    for (const command of duplicates) {
+      await rest.delete(Routes.applicationGuildCommand(config.clientId, config.guildId, command.id));
+    }
+    if (duplicates.length) {
+      console.log("Removed " + duplicates.length + " old server-specific duplicate command(s): " + duplicates.map((command) => "/" + command.name).join(", ") + ".");
+    } else {
+      console.log("No server-specific duplicates found in DISCORD_GUILD_ID.");
+    }
+  } else {
+    console.log("Set DISCORD_GUILD_ID in .env to clean old server-specific copies in your test server.");
+  }
   console.log("Global commands can take time to appear after registration.");
 } catch (error) {
   const status = Number(error?.status ?? error?.httpStatus ?? 0);
