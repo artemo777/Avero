@@ -51,9 +51,9 @@ export function createGamePanel({ title, description, sections = [], footer = "A
 export function gamePayload(panel) {
   const serialized = panel.toJSON();
   const header = serialized.components.find((component) => component.type === 10)?.content ?? "";
-  const lines = header.split("\\n");
+  const lines = header.split("\n");
   const eyebrow = (lines[0] ?? "").split("//").at(-1)?.trim() || "GAMES & COINS";
-  const title = (lines[1] ?? "## Avero").replace(/^##\\s*/, "");
+  const title = (lines[1] ?? "## Avero").replace(/^##\s*/, "");
   const image = renderAveroCanvas({ eyebrow, title, accentColor: serialized.accent_color ?? THEME.colors.primary });
   return {
     flags: MessageFlags.IsComponentsV2,
