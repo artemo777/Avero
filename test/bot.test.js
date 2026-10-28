@@ -242,6 +242,28 @@ test("profile command combines wallet, XP, and collection data", async () => {
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
 });
 
+test("profile shows the actual equipped collectible artwork beside the username", async () => {
+  let response;
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 250 }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "prism_crown" }] },
+    memberProfile: { findUnique: async () => ({ xp: 0, level: 0, equippedBadgeItemId: "prism_crown" }) }
+  };
+  await profileCommand.execute({
+    guildId: "guild-1",
+    guild: { name: "Test Server" },
+    user: { id: "user-1", username: "Ada" },
+    options: { getUser: () => null },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+
+  assert.equal(response.embeds[0].author.name, "Ada");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://equipped-profile-badge.png");
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "equipped-profile-badge.png");
+  assert.equal(response.embeds[0].title, undefined);
+});
+
 test("leaderboard sorts server members by the requested category", async () => {
   let response;
   const prisma = {
