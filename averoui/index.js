@@ -6,5 +6,5 @@ export { userMention, roleMention, channelMention } from "./mentions.js";
 export { safeHttpsUrl, formatHyperlink } from "./links.js";
 export { createEmbed } from "./embeds.js";
 export { createPanel } from "./components.js";
-export { ASSETS, getAsset, listAssets } from "./assets.js";
+export { ASSETS, getAsset, getAssetSymbol, getRarityAssetId, listAssets } from "./assets.js";
 export { loadAssetBuffer, loadRegisteredAsset } from "./asset-loader.js";
