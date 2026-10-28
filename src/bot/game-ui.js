@@ -142,6 +142,19 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     ? pageItems.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
+  const milestones = [
+    { count: 1, name: "First Find" },
+    { count: 3, name: "Curator" },
+    { count: SHOP_ITEMS.length, name: "Full Set" }
+  ];
+  const earnedMilestones = milestones.filter((milestone) => items.length >= milestone.count);
+  const nextMilestone = milestones.find((milestone) => items.length < milestone.count);
+  const milestoneText = earnedMilestones.length
+    ? earnedMilestones.map((milestone) => "✓ **" + milestone.name + "**").join(" · ")
+    : "◇ No collection milestones yet";
+  const milestoneProgress = nextMilestone
+    ? "\\nNext: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
+    : "\\n✧ All collection milestones complete!";
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, item.icon));
   const pageButtons = [];
   if (pageCount > 1) {
@@ -155,6 +168,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     description: "### 🎒 " + items.length + " / " + SHOP_ITEMS.length + " starter collectibles\n" +
       "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" +
       collection + "\n\n" + (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set.") +
+      "\n\n### 🏆 Collection milestones\n" + milestoneText + milestoneProgress +
       (pageCount > 1 ? "\n\n-# Showing page " + (currentPage + 1) + " of " + pageCount + " · Select an item for details." : items.length ? "\n\n-# Select an item below for its details." : ""),
     footer: "COLLECTION • SAVED PER SERVER",
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
