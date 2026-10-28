@@ -22,9 +22,13 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
+export function createGamePanel({ title, description, sections = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
+  for (const section of sections) {
+    container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
+  }
   if (footer) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
@@ -90,9 +94,9 @@ export async function renderShop(prisma, guildId, userId) {
     button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
   return gamePayload(createGamePanel({
     title: "The drop — collectible shop",
-    description: "### 🪙 " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.\n\n" +
-      rows.join("\n\n"),
-eyebrow: "THE DROP",
+    description: "### 🪙 " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.",
+    sections: rows,
+    eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
