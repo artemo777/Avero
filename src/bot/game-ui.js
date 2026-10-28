@@ -369,7 +369,7 @@ export function renderRps(playerChoice, botChoice, userId) {
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
     description: "### " + symbols[playerChoice] + " You: " + LABELS[playerChoice] + "\n### " + symbols[botChoice] + " Avero: " + LABELS[botChoice] +
-      "\n\n" + outcome + "\n\n**Play another round** · Free",
+      "\n\n" + outcome + "\n\n**Play another round** · Free · No coins involved",
     eyebrow: "DUEL DECK",
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
     footer: "DUEL DECK • NO COINS INVOLVED",
