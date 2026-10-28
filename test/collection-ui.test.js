@@ -12,6 +12,9 @@ function fakePrisma(itemIds = [], balance = 800) {
     },
     currencyAccount: {
       findUnique: async () => ({ balance })
+    },
+    memberProfile: {
+      findUnique: async () => null
     }
   };
 }
