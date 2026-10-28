@@ -5,6 +5,7 @@ import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } f
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { commands } from "../src/bot/commands/index.js";
+import { renderGames } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -185,4 +186,18 @@ test("global command list includes games and has no duplicate names", () => {
   assert.ok(names.includes("games"));
   assert.equal(names.length, new Set(names).size);
   assert.equal(names.length, 10);
+});
+
+test("games hub uses a wide Components V2 panel with compact copy and all game controls", () => {
+  const response = renderGames("user-1");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const panel = response.components[0].toJSON();
+  const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+  assert.match(text, /A V E R O.*GAMES/);
+  assert.match(text, /Guess the number/);
+  assert.match(text, /25 coins/);
+  assert.doesNotMatch(text, /Tap a button below to play instantly/);
+  const rows = panel.components.filter((component) => component.type === 1);
+  assert.equal(rows.length, 2);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 8);
 });
