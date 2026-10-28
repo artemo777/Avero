@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderInventory, renderItemDetails } from "../src/bot/game-ui.js";
+import { renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
   return {
@@ -60,4 +60,14 @@ test("unowned item detail offers a direct unlock action", async () => {
   assert.match(allText(json), /Not collected yet/);
   assert.match(allText(json), /300 coins/);
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|vault_badge"));
+});
+
+test("shop exposes item detail controls and item details return to the shop", async () => {
+  const response = await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1");
+  const json = panel(response);
+  assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
+
+  const detail = panel(await renderItemDetails(fakePrisma([]), "guild-1", "user-1", "vault_badge", 0, "shop"));
+  assert.ok(buttons(detail).some((entry) => entry.custom_id === "avero|user-1|shop"));
 });
