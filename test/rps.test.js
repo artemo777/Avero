@@ -27,11 +27,12 @@ test("rock paper scissors returns a public game result without touching currency
   await rpsCommand.execute(interaction);
   const response = getResponse();
 
-  assert.equal(response.flags, undefined);
-  assert.equal(response.embeds.length, 1);
-  assert.match(response.embeds[0].description, /\*\*YOU\*\*\nRock/);
-  assert.match(response.embeds[0].description, /\*\*AVERO\*\*\n(Rock|Paper|Scissors)/);
-  assert.match(response.embeds[0].footer.text, /no coins involved/i);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /You: Rock/);
+  assert.match(text, /Avero: (Rock|Paper|Scissors)/);
+  assert.match(text, /no coins involved/i);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
 });
 
 test("rock paper scissors rejects direct messages", async () => {
