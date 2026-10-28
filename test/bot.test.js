@@ -85,6 +85,10 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
   assert.match(panel.components[0].content, /Interaction/);
 });
 
+function panelText(response) {
+  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+}
+
 test("RPS returns a public no-coins result", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
@@ -93,11 +97,13 @@ test("RPS returns a public no-coins result", async () => {
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
   });
-  assert.equal(response.flags, undefined);
-  assert.match(response.embeds[0].title, /DUEL DECK/);
-  assert.match(response.embeds[0].description, /YOU/);
-  assert.match(response.embeds[0].description, /AVERO/);
-  assert.match(response.embeds[0].footer.text, /no coins involved/i);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /DUEL DECK/);
+  assert.match(text, /You:/);
+  assert.match(text, /Avero:/);
+  assert.match(text, /no coins involved/i);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
 });
 
 test("RPS rejects direct messages and invalid choices", async () => {
