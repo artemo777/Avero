@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero is intended to work only in the LightX server and the owner's test server. Commands and message-based XP are blocked everywhere else. It is not a public-bot onboarding feature. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
+Avero can operate in any Discord server where it is installed and has the required permissions. Slash commands are registered globally. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
 
 ## Requirements
 
@@ -33,23 +33,15 @@ Avero is intended to work only in the LightX server and the owner's test server.
    npm run db:migrate:deploy
    ```
 
-5. Set `AVERO_ALLOWED_GUILD_IDS` to the exact intended Discord server IDs, separated by a comma. All commands and message-based XP stay disabled if this variable is blank. Avero accepts at most two IDs.
-
-   ```dotenv
-   AVERO_ALLOWED_GUILD_IDS=LIGHTX_SERVER_ID,TEST_SERVER_ID
-   ```
-
-   Replace both example values with actual Discord server IDs. Do not use placeholder text in a live environment.
-
-6. Register the slash commands:
+5. Register the slash commands:
 
    ```sh
    npm run register:commands
    ```
 
-   Registration publishes commands only to the guilds listed in `AVERO_ALLOWED_GUILD_IDS`. Global command registration is deliberately disabled, and registration fails safely when the allowlist is empty. This keeps Avero's commands private to the intended servers.
+   Registration publishes slash commands globally. They can be used in servers where Avero is installed and has permission; Discord may take a while to propagate global command updates.
 
-7. Start the bot:
+6. Start the bot:
 
    ```sh
    npm run bot
