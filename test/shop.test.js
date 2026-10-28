@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { getCurrencyPurchases, purchaseCurrencyItem } from "../src/db/currency-repository.js";
 import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
+import { inventoryCommand } from "../src/bot/commands/inventory.js";
 
 function createFakePrisma(initialBalance = 0) {
   const accounts = new Map();
@@ -117,4 +118,28 @@ test("shop and buy commands require database context and reject direct messages"
   assert.ok(replies.every((reply) => reply.ephemeral));
   await assert.rejects(shopCommand.execute(interaction), /requires a database/);
   await assert.rejects(buyCommand.execute(interaction), /requires a database/);
+});
+
+
+test("inventory displays owned collectibles and handles an empty collection", async () => {
+  const prisma = createFakePrisma(500);
+  const item = SHOP_ITEMS[0];
+  await purchaseCurrencyItem(prisma, "lightx", "user-5", item.id, item.price);
+  const replies = [];
+  const interaction = {
+    guildId: "lightx",
+    user: { id: "user-5" },
+    async reply(payload) { replies.push(payload); }
+  };
+
+  await inventoryCommand.execute(interaction, { prisma });
+  assert.match(replies[0].embeds[0].description, /Neon Badge/);
+
+  const emptyInteraction = {
+    ...interaction,
+    user: { id: "user-without-items" },
+    async reply(payload) { replies.push(payload); }
+  };
+  await inventoryCommand.execute(emptyInteraction, { prisma });
+  assert.match(replies[1].embeds[0].description, /collection is empty/);
 });
