@@ -39,7 +39,7 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, sections = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], canvas = false, artwork = [] }) {
+export function createGamePanel({ title, description, sections = [], sectionButtons = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], canvas = false, artwork = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
   if (canvas || artwork.length) {
@@ -48,9 +48,19 @@ export function createGamePanel({ title, description, sections = [], footer = "A
     for (const filename of artwork) galleryItems.push(new MediaGalleryItemBuilder().setURL("attachment://" + filename));
     container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(...galleryItems));
   }
-  for (const section of sections) {
+  for (const [index, section] of sections.entries()) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
+    const sectionRow = sectionButtons[index];
+    if (sectionRow?.length) {
+      const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
+        const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(entry.style ?? ButtonStyle.Secondary);
+        if (entry.emoji) builder.setEmoji(entry.emoji);
+        if (entry.disabled) builder.setDisabled(true);
+        return builder;
+      }));
+      container.addActionRowComponents(row);
+    }
   }
   if (footer) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
@@ -139,24 +149,35 @@ export async function renderBalance(prisma, guildId, userId) {
   }));
 }
 export async function renderShop(prisma, guildId, userId) {
-  const [purchases, account] = await Promise.all([getCurrencyPurchases(prisma, guildId, userId), getCurrencyAccount(prisma, guildId, userId)]);
+  const [purchases, account] = await Promise.all([
+    getCurrencyPurchases(prisma, guildId, userId),
+    getCurrencyAccount(prisma, guildId, userId)
+  ]);
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const rows = SHOP_ITEMS.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity + " · " +
-    (owned.has(item.id) ? "✓ **OWNED**" : "**" + item.price + " coins**") + "\n" + item.description);
-  const detailButtons = SHOP_ITEMS.map((item) =>
-    button(userId, "item", item.name, item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
-  const buyButtons = SHOP_ITEMS.filter((item) => !owned.has(item.id)).map((item) =>
-    button(userId, "buy", item.name + " · " + item.price, item.id, ButtonStyle.Primary, "🛒"));
-  const artwork = await collectibleArtwork(SHOP_ITEMS);
+  const sections = SHOP_ITEMS.map((item) => {
+    const status = owned.has(item.id) ? "✓ OWNED" : "⟡ " + item.price.toLocaleString("en-US") + " coins";
+    return collectibleIcon(item) + " **" + item.name + "**  ·  " + item.rarity + "\\n" +
+      status + "  ·  " + item.description;
+  });
+  const sectionButtons = SHOP_ITEMS.map((item) => {
+    const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id));
+    const purchase = button(userId, "buy", owned.has(item.id) ? "Owned" : "Buy · " + item.price.toLocaleString("en-US"), item.id,
+      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? "✓" : "🛒");
+    if (owned.has(item.id)) purchase.disabled = true;
+    return [detail, purchase];
+  });
   return gamePayload(createGamePanel({
-    title: "The drop — collectible shop",
-    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nOne purchase per item in this server.",
-    sections: rows,
-    artwork: artwork.filenames,
+    title: "Collectible shop",
+    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\\nBrowse the drop. Each item has its own details and purchase controls below.",
+    sections,
+    sectionButtons,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
-    buttons: [...detailButtons, ...buyButtons, button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
-  }), artwork.files);
+    buttons: [
+      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
+      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+    ]
+  }));
 }
 export async function renderInventory(prisma, guildId, userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
@@ -234,7 +255,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     buttons: [
       button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
       ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, "🏅")] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
-      button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")
+      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
     ]
   }), artwork.files);
 }
