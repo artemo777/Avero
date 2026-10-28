@@ -153,8 +153,8 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     ? earnedMilestones.map((milestone) => "✓ **" + milestone.name + "**").join(" · ")
     : "◇ No collection milestones yet";
   const milestoneProgress = nextMilestone
-    ? "\\nNext: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
-    : "\\n✧ All collection milestones complete!";
+    ? "\nNext: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
+    : "\n✧ All collection milestones complete!";
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, item.icon));
   const pageButtons = [];
   if (pageCount > 1) {
