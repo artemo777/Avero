@@ -12,6 +12,7 @@ function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
   return {
     interaction: {
       guildId,
+      user: { id: "user-1" },
       options: { getString: (name) => {
         assert.equal(name, "choice");
         return choice;
