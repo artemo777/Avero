@@ -55,6 +55,20 @@ function navButtons(userId, includeDaily = false) {
   if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
   return buttons;
 }
+export function renderGames(userId) {
+  const gameButtons = [
+    ...[1, 2, 3, 4, 5].map((number) =>
+      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, "🎯")),
+    ...CHOICES.map((choice) =>
+      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️"))
+  ];
+  return gamePayload(createGamePanel({
+    title: "Choose your game",
+    description: "## 🎮 Quick play\nPick a number from **1–5** for a chance to earn **25 coins**. A correct guess earns the reward; a miss costs nothing.\n\n## ✂️ Duel deck\nChallenge Avero to **rock, paper, scissors**. This game is always free and never changes your balance.\n\nTap a button below to play instantly.",
+    footer: "QUICK PLAY • NO ENTRY FEES OR WAGERS",
+    buttons: gameButtons
+  }));
+}
 export async function renderBalance(prisma, guildId, userId) {
   const account = await getCurrencyAccount(prisma, guildId, userId);
   const balance = account?.balance ?? 0;
@@ -174,6 +188,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
   if (!prisma && parsed.action !== "rps") throw new Error("Game component requires a database client.");
   let payload;
   switch (parsed.action) {
+    case "games": payload = renderGames(interaction.user.id); break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id); break;
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
