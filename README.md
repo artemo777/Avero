@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero's game features are intended only for the LightX server and the owner's test server. They are not a public-bot onboarding feature. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
+Avero is intended to work only in the LightX server and the owner's test server. Commands and message-based XP are blocked everywhere else. It is not a public-bot onboarding feature. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ Avero's game features are intended only for the LightX server and the owner's te
    npm run db:migrate:deploy
    ```
 
-5. Set `AVERO_ALLOWED_GUILD_IDS` to the exact two intended Discord server IDs, separated by a comma. Game commands stay disabled if this variable is blank. Avero accepts at most two IDs.
+5. Set `AVERO_ALLOWED_GUILD_IDS` to the exact intended Discord server IDs, separated by a comma. All commands and message-based XP stay disabled if this variable is blank. Avero accepts at most two IDs.
 
    ```dotenv
    AVERO_ALLOWED_GUILD_IDS=LIGHTX_SERVER_ID,TEST_SERVER_ID
