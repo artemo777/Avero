@@ -1,3 +1,4 @@
+import { MessageFlags } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../../../averoui/index.js";
 import { claimDailyReward } from "../../db/currency-repository.js";
 
@@ -13,7 +14,7 @@ export const dailyCommand = Object.freeze({
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Daily command requires a database client.");
     if (!interaction.guildId) {
-      await interaction.reply({ content: "Currency can only be used inside a server.", ephemeral: true });
+      await interaction.reply({ content: "Currency can only be used inside a server.", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -29,21 +30,20 @@ export const dailyCommand = Object.freeze({
           title: ICONS.warning + "  Daily already claimed",
           description: "Your next reward is available " + "<t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>.",
           color: THEME.colors.warning,
-          footer: "Avero • Currency"
+          footer: "AVERO • YOUR NEXT DROP"
         })],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
 
     await interaction.reply({
       embeds: [createEmbed({
-        title: ICONS.success + "  Daily reward claimed",
-        description: "You received **" + DAILY_REWARD + " coins**.\nNew balance: **" + result.account.balance.toLocaleString("en-US") + " coins**.",
+        title: "✦  DAILY DROP CLAIMED",
+        description: "You received **+" + DAILY_REWARD + " coins**.\nNew balance: **" + result.account.balance.toLocaleString("en-US") + " coins**.\n\nCome back tomorrow to keep your collection fund growing.",
         color: THEME.colors.success,
-        footer: "Avero • Come back tomorrow"
-      })],
-      ephemeral: true
+        footer: "AVERO • A LITTLE SOMETHING EVERY DAY"
+      })]
     });
   }
 });
