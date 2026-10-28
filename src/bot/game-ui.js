@@ -140,7 +140,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     ? pageItems.map((item) => item.icon + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
-  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id, ButtonStyle.Secondary, item.icon));
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage, ButtonStyle.Secondary, item.icon));
   const pageButtons = [];
   if (pageCount > 1) {
     pageButtons.push(button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary));
@@ -358,7 +358,13 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
       payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, page);
       break;
     }
-    case "item": payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg); break;
+    case "item": {
+      const separator = parsed.arg.lastIndexOf(":");
+      const itemId = separator < 0 ? parsed.arg : parsed.arg.slice(0, separator);
+      const page = separator < 0 ? 0 : Number(parsed.arg.slice(separator + 1));
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, itemId, Number.isInteger(page) && page >= 0 ? page : 0);
+      break;
+    }
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
     case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
