@@ -83,6 +83,36 @@ test("coinflip cannot spend more than the available balance", async () => {
   assert.equal(prisma.transactions.length, 2);
 });
 
+
+test("parallel daily claims award coins only once", async () => {
+  const prisma = createFakePrisma();
+  const now = new Date("2026-10-28T12:00:00.000Z");
+
+  const results = await Promise.all([
+    claimDailyReward(prisma, "lightx", "user-concurrent-daily", { amount: 100, now }),
+    claimDailyReward(prisma, "lightx", "user-concurrent-daily", { amount: 100, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.claimed).length, 1);
+  assert.equal((await getCurrencyAccount(prisma, "lightx", "user-concurrent-daily")).balance, 100);
+  assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 1);
+});
+
+test("parallel coinflips cannot spend the same coins twice", async () => {
+  const prisma = createFakePrisma();
+  const now = new Date("2026-10-28T12:00:00.000Z");
+  await claimDailyReward(prisma, "lightx", "user-concurrent-bets", { amount: 100, now });
+
+  const results = await Promise.all([
+    playCoinflip(prisma, "lightx", "user-concurrent-bets", 80, false, { now }),
+    playCoinflip(prisma, "lightx", "user-concurrent-bets", 80, false, { now })
+  ]);
+
+  assert.equal(results.filter((result) => result.played).length, 1);
+  assert.equal((await getCurrencyAccount(prisma, "lightx", "user-concurrent-bets")).balance, 20);
+  assert.equal(prisma.transactions.filter((transaction) => transaction.type === "coinflip_loss").length, 1);
+});
+
 test("currency repository rejects invalid wagers and rewards", async () => {
   const prisma = createFakePrisma();
   await assert.rejects(claimDailyReward(prisma, "lightx", "user-3", { amount: 0 }), /Daily reward amount/);
