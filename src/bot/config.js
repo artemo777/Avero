@@ -27,18 +27,6 @@ function optionalChannelId(value) {
   return channelId;
 }
 
-function parseAllowedGuildIds(value) {
-  if (!value?.trim()) return [];
-  const ids = value.split(",").map((id) => id.trim());
-  if (ids.some((id) => !/^[0-9]{17,20}$/.test(id))) {
-    throw new Error("AVERO_ALLOWED_GUILD_IDS must be a comma-separated list of Discord server IDs.");
-  }
-  if (new Set(ids).size !== ids.length) {
-    throw new Error("AVERO_ALLOWED_GUILD_IDS must not contain duplicate server IDs.");
-  }
-  return ids;
-}
-
 export function loadBotConfig(env = process.env) {
   const minMessageXp = optionalPositiveInteger(env, "LEVEL_MIN_MESSAGE_XP", MIN_MESSAGE_XP);
   const maxMessageXp = optionalPositiveInteger(env, "LEVEL_MAX_MESSAGE_XP", MAX_MESSAGE_XP);
