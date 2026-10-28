@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
-import { getAssetSymbol, getRarityAssetId } from "../../averoui/assets.js";
+import { getAssetSymbol, getCollectibleAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
@@ -86,7 +86,7 @@ async function collectibleArtwork(items) {
   const filenames = [];
   for (const [index, item] of items.entries()) {
     const filename = "avero-collectible-" + index + ".png";
-    const image = await renderRegisteredAsset(getRarityAssetId(item.rarity), 192);
+    const image = await renderRegisteredAsset(getCollectibleAssetId(item.id), 192);
     filenames.push(filename);
     files.push(new AttachmentBuilder(image, { name: filename }));
   }
