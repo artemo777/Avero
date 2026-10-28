@@ -6,7 +6,6 @@ import { loadBotConfig } from "./bot/config.js";
 import { grantLevelRoleRewards, randomMessageExperience } from "./bot/leveling.js";
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { recordMessageExperience } from "./db/member-repository.js";
-import { isAllowedGuild } from "./bot/server-allowlist.js";
 
 let config;
 try {
@@ -27,7 +26,7 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (!message.guildId || !isAllowedGuild(message.guildId, config.allowedGuildIds) || message.author.bot || !message.member) return;
+  if (!message.guildId || message.author.bot || !message.member) return;
 
   try {
     const prisma = getPrismaClient();
@@ -76,13 +75,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const command = commandMap.get(interaction.commandName);
   if (!command) return;
 
-  if (!interaction.guildId || !isAllowedGuild(interaction.guildId, config.allowedGuildIds)) {
-    await interaction.reply({
-      content: config.allowedGuildIds.length
-        ? "Avero is only enabled in the configured LightX and test servers."
-        : "Avero is disabled until AVERO_ALLOWED_GUILD_IDS is configured with the intended server IDs.",
-      ephemeral: true
-    });
+  if (!interaction.guildId) {
+    await interaction.reply({ content: "Avero commands can only be used inside a server.", ephemeral: true });
     return;
   }
 
