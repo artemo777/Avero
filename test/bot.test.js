@@ -191,7 +191,10 @@ test("global command list includes games and has no duplicate names", () => {
 test("games hub uses a wide Components V2 panel with compact copy and all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "avero-panel.png");
   const panel = response.components[0].toJSON();
+  assert.ok(panel.components.some((component) => component.type === 12));
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
   assert.match(text, /A V E R O.*GAMES/);
   assert.match(text, /Guess the number/);
