@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { MessageFlags } from "discord.js";
 import { renderRps } from "../game-ui.js";
 
@@ -25,11 +26,7 @@ export const rpsCommand = Object.freeze({
       await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
       return;
     }
-    const botChoice = CHOICES[randomChoice()];
+    const botChoice = CHOICES[randomInt(CHOICES.length)];
     await interaction.reply(renderRps(playerChoice, botChoice, interaction.user.id));
   }
 });
-
-function randomChoice() {
-  return Math.floor(Math.random() * CHOICES.length);
-}
