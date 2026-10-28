@@ -5,6 +5,7 @@ import { getCurrencyPurchases, purchaseCurrencyItem } from "../src/db/currency-r
 import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
 import { inventoryCommand } from "../src/bot/commands/inventory.js";
+import { renderShop } from "../src/bot/game-ui.js";
 
 function panelText(response) {
   return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
@@ -68,6 +69,18 @@ function createFakePrisma(initialBalance = 0) {
   };
   return prisma;
 }
+
+
+test("shop renders each collectible in its own wide Components V2 section", async () => {
+  const response = await renderShop(createFakePrisma(500), "guild-1", "user-1");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const panel = response.components[0].toJSON();
+  const textDisplays = panel.components.filter((component) => component.type === 10);
+  assert.ok(textDisplays.length >= SHOP_ITEMS.length + 2);
+  assert.match(panelText(response), /THE DROP/);
+  for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
+  assert.equal(panel.components.filter((component) => component.type === 1).length, 1);
+});
 
 test("shop catalog has unique item IDs and positive prices", () => {
   assert.equal(new Set(SHOP_ITEMS.map((item) => item.id)).size, SHOP_ITEMS.length);
