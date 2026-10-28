@@ -3,6 +3,10 @@ import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { guessCommand } from "../src/bot/commands/guess.js";
 
+function panelText(response) {
+  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+}
+
 function makePrisma() {
   const accounts = new Map();
   const transactions = [];
@@ -58,10 +62,10 @@ test("guess command responds and never requires a wager", async () => {
   await guessCommand.execute(interaction, { prisma });
 
   const response = getResponse();
-  assert.ok(response.embeds?.length === 1);
-  assert.equal(response.flags, undefined);
+  assert.ok(response.components?.length === 1);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const account = prisma.accounts.get("guild-1:user-1");
-  assert.equal(account?.balance ?? 0, response.embeds[0].description.includes("earned **25 coins**") ? 25 : 0);
+  assert.equal(account?.balance ?? 0, panelText(response).includes("+25 coins earned") ? 25 : 0);
   assert.equal(prisma.transactions.length, account?.balance ? 1 : 0);
 });
 
