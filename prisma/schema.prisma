@@ -20,3 +20,28 @@ model MemberProfile {
   @@unique([guildId, userId])
   @@index([guildId, xp])
 }
+
+model CurrencyAccount {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  balance      Int      @default(0)
+  lastDailyAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, balance])
+}
+
+model CurrencyTransaction {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  amount    Int
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([guildId, userId, createdAt])
+  @@index([guildId, type, createdAt])
+}
