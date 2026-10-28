@@ -189,7 +189,8 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("leaderboard"));
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
-  assert.equal(names.length, 13);
+  assert.ok(names.includes("work"));
+  assert.equal(names.length, 14);
 });
 
 test("games hub uses a wide Components V2 panel with a canvas and all game controls", () => {
