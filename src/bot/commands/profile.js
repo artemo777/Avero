@@ -48,7 +48,7 @@ export const profileCommand = Object.freeze({
       allowedMentions: { parse: [] },
       embeds: [createEmbed({
         title: target.username + equippedGlyph,
-        description: "AVERO  /  " + interaction.guild.name + "\\nLevel **" + level + "** · " +
+        description: "AVERO  /  " + interaction.guild.name + "\nLevel **" + level + "** · " +
           (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
         fields: [
