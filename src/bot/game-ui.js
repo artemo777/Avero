@@ -23,12 +23,14 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, sections = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
+export function createGamePanel({ title, description, sections = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], canvas = false }) {
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
-  container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
-    new MediaGalleryItemBuilder().setURL("attachment://avero-panel.png")
-  ));
+  if (canvas) {
+    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
+      new MediaGalleryItemBuilder().setURL("attachment://avero-panel.png")
+    ));
+  }
   for (const section of sections) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
@@ -50,6 +52,9 @@ export function createGamePanel({ title, description, sections = [], footer = "A
 }
 export function gamePayload(panel) {
   const serialized = panel.toJSON();
+  const hasCanvas = serialized.components.some((component) => component.type === 12);
+  if (!hasCanvas) return { flags: MessageFlags.IsComponentsV2, components: [panel] };
+
   const header = serialized.components.find((component) => component.type === 10)?.content ?? "";
   const lines = header.split("\n");
   const eyebrow = (lines[0] ?? "").split("//").at(-1)?.trim() || "GAMES & COINS";
@@ -83,9 +88,10 @@ export function renderGames(userId) {
   return gamePayload(createGamePanel({
     title: "Choose your game",
     description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins**. Free to play.\n\n## ✊ Rock, paper, scissors\nPlay Avero. No coins at stake.",
-eyebrow: "GAMES",
+    eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
-    buttons: gameButtons
+    buttons: gameButtons,
+    canvas: true
   }));
 }
 export async function renderBalance(prisma, guildId, userId) {
@@ -94,7 +100,7 @@ export async function renderBalance(prisma, guildId, userId) {
   return gamePayload(createGamePanel({
     title: "Your wallet",
     description: "### 🪙 " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
-eyebrow: "WALLET",
+    eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
   }));
@@ -139,14 +145,14 @@ export function renderDaily(result, userId) {
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
       description: "You already claimed **+100 coins**.\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
-eyebrow: "DAILY DROP",
+      eyebrow: "DAILY DROP",
       color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
     description: "## ✨ +100 coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**\n\nNext drop in 24 hours.",
-eyebrow: "DAILY DROP",
+    eyebrow: "DAILY DROP",
     color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
   }));
 }
@@ -248,6 +254,10 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
       break;
     default: return false;
   }
-  await interaction.update({ components: payload.components });
+  await interaction.update({
+    components: payload.components,
+    files: payload.files ?? [],
+    attachments: []
+  });
   return true;
 }
