@@ -58,7 +58,7 @@ test("guess command responds and never requires a wager", async () => {
 
   const response = getResponse();
   assert.ok(response.embeds?.length === 1);
-  assert.equal(response.ephemeral, true);
+  assert.equal(response.flags, undefined);
   const account = prisma.accounts.get("guild-1:user-1");
   assert.equal(account?.balance ?? 0, response.embeds[0].description.includes("earned **25 coins**") ? 25 : 0);
   assert.equal(prisma.transactions.length, account?.balance ? 1 : 0);
@@ -72,6 +72,6 @@ test("guess command rejects direct messages", async () => {
 
   assert.deepEqual(getResponse(), {
     content: "Guess can only be played inside a server.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
