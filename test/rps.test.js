@@ -3,6 +3,10 @@ import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { rpsCommand } from "../src/bot/commands/rps.js";
 
+function panelText(response) {
+  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+}
+
 function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
   let response;
   return {
