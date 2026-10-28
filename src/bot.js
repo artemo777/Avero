@@ -17,7 +17,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
-const gameCommandNames = new Set(["balance", "daily", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work"]);
+const gameCommandNames = new Set(["balance", "daily", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work", "scavenge"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
