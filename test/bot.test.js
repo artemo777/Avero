@@ -200,7 +200,7 @@ test("games hub uses a wide Components V2 panel with a canvas and all game contr
   const panel = response.components[0].toJSON();
   assert.ok(!panel.components.some((component) => component.type === 12));
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
-  assert.doesNotMatch(text, /A V E R O|AVERO\\s*\\//);
+  assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
   assert.match(text, /Guess the number/);
   assert.match(text, /25 coins/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
@@ -259,7 +259,8 @@ test("profile shows multiple owned badge artworks in purchase order beside the u
   assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
   assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Neon Badge, Prism Crown/);
 });
-\ntest("profile shows the actual equipped collectible artwork beside the username", async () => {
+
+test("profile shows the actual equipped collectible artwork beside the username", async () => {
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
