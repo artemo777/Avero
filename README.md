@@ -73,13 +73,13 @@ Currency is virtual and has no cash value. Each server has a separate wallet for
 
 The collectible shop is the foundation for a more expressive Avero profile system. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
 
-- **Profile cards:** a `/profile` command that renders a shareable card with avatar, level, XP progress, coins, selected stats, badges, title, and bio.
+- **Profile cards:** evolve the compact `/profile` summary into a shareable card with avatar, XP progress, coins, selected stats, badges, title, and bio.
 - **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
 - **Rendering:** games and currency panels now use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
 - **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
 
-These are roadmap items, not implemented features yet. Owned collectibles can now be equipped as a profile badge from an item detail panel. Only items already in the member’s collection can be equipped; the selected badge is persisted per server and appears on `/profile`. The selection can be removed from the same item detail panel.
+These are roadmap items, not implemented features yet. Owned collectibles can be equipped as a profile badge from an item detail panel. Only items already in the member’s collection can be equipped; the selected badge is persisted per server and appears as a small icon beside the username on `/profile`. The selection can be removed from the same item detail panel.
 
 ## Leveling and role rewards
 
@@ -113,8 +113,8 @@ Reusable visual assets live in one place instead of being scattered through comm
 - `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
 - `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, and six individually illustrated shop collectibles (Neon Badge, Vault Badge, Starlight Badge, Moonlit Token, Prism Crown, and Avero Relic). Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
-- `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments. `/profile` now renders the saved Avero brand-mark SVG as its embed thumbnail; the SVG remains the source asset.
-- Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels. The shop now attaches a gallery of unique artwork for all six collectibles; inventory shows item-specific artwork for the current page, and item-detail panels show the selected collectible illustration. Registered SVGs are rasterized to PNG attachments at runtime with `renderRegisteredAsset`, so the SVG files remain the source artwork. Generated canvas hero panels also include a branded coin motif.
+- `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments. Item-detail panels use registered collectible artwork; compact profile and shop panels avoid oversized decorative galleries.
+- Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels. The shop lists each collectible with its Details and Buy controls immediately underneath; inventory stays compact with item buttons and pagination, while item-detail panels show the selected collectible illustration. Registered SVGs are rasterized to PNG attachments at runtime with `renderRegisteredAsset`, so the SVG files remain the source artwork. Generated canvas hero panels also include a branded coin motif.
 
 This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. A database can be added later only if assets need to be uploaded or managed dynamically while the bot is running. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
 
