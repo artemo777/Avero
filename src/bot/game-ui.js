@@ -5,11 +5,13 @@ import {
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
-import { awardGameReward, claimDailyReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
+import { awardGameReward, claimDailyReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
 const DAILY_REWARD = 100;
 const DAILY_COOLDOWN_MS = 86_400_000;
+const WORK_COOLDOWN_MS = 1_800_000;
+const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a tiny server banner", "Helped organize the event board", "Delivered a stack of digital mail", "Tidied the Avero workshop"]);
 const WIN_REWARD = 25;
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
@@ -75,6 +77,7 @@ function navButtons(userId, includeDaily = false) {
     button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, "🎒"),
     button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
   ];
+  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, "🧰"));
   if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
   return buttons;
 }
@@ -99,7 +102,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### 🪙 " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
+    description: "### 🪙 " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
@@ -138,6 +141,36 @@ export async function renderInventory(prisma, guildId, userId) {
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙"), button(userId, "daily", "Daily reward", "", ButtonStyle.Success, "✨")]
   }));
+}
+export function renderWork(result, userId, task) {
+  if (!result.claimed) {
+    const nextWork = new Date(result.account.lastWorkAt.getTime() + WORK_COOLDOWN_MS);
+    return gamePayload(createGamePanel({
+      title: "Shift already completed",
+      description: "Your last shift is still on cooldown.\n\nNext shift: <t:" + Math.floor(nextWork.getTime() / 1000) + ":R>",
+      eyebrow: "WORKSHOP",
+      color: THEME.colors.warning,
+      footer: "WORK • ONE SHIFT EVERY 30 MINUTES",
+      buttons: navButtons(userId, true)
+    }));
+  }
+  return gamePayload(createGamePanel({
+    title: "Shift complete!",
+    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nYour next shift is available in 30 minutes.",
+    eyebrow: "WORKSHOP",
+    color: THEME.colors.success,
+    footer: "WORK • REWARD SAVED TO YOUR SERVER WALLET",
+    buttons: navButtons(userId, true)
+  }));
+}
+export async function runWork(prisma, guildId, userId) {
+  const task = WORK_TASKS[randomInt(WORK_TASKS.length)];
+  const amount = randomInt(60, 121);
+  const result = await claimWorkReward(prisma, guildId, userId, {
+    amount,
+    cooldownMs: WORK_COOLDOWN_MS
+  });
+  return renderWork(result, userId, task);
 }
 export function renderDaily(result, userId) {
   if (!result.claimed) {
@@ -224,6 +257,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id); break;
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
+    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
       break;
