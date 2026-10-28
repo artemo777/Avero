@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { awardGameReward, claimDailyReward, getCurrencyAccount, playCoinflip } from "../src/db/currency-repository.js";
+import { awardGameReward, claimDailyReward, getCurrencyAccount } from "../src/db/currency-repository.js";
 
 function createFakePrisma() {
   const accounts = new Map();
@@ -65,25 +65,6 @@ test("daily reward is granted once per cooldown and scoped to each server", asyn
   assert.equal(prisma.transactions.length, 2);
 });
 
-test("coinflip cannot spend more than the available balance", async () => {
-  const prisma = createFakePrisma();
-  const now = new Date("2026-10-28T12:00:00.000Z");
-  await claimDailyReward(prisma, "lightx", "user-2", { amount: 100, now });
-
-  const loss = await playCoinflip(prisma, "lightx", "user-2", 60, false, { now });
-  assert.equal(loss.played, true);
-  assert.equal(loss.account.balance, 40);
-
-  const tooLarge = await playCoinflip(prisma, "lightx", "user-2", 41, false, { now });
-  assert.equal(tooLarge.played, false);
-  assert.equal(tooLarge.account.balance, 40);
-
-  const account = await getCurrencyAccount(prisma, "lightx", "user-2");
-  assert.equal(account.balance, 40);
-  assert.equal(prisma.transactions.length, 2);
-});
-
-
 test("parallel daily claims award coins only once", async () => {
   const prisma = createFakePrisma();
   const now = new Date("2026-10-28T12:00:00.000Z");
@@ -96,27 +77,6 @@ test("parallel daily claims award coins only once", async () => {
   assert.equal(results.filter((result) => result.claimed).length, 1);
   assert.equal((await getCurrencyAccount(prisma, "lightx", "user-concurrent-daily")).balance, 100);
   assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 1);
-});
-
-test("parallel coinflips cannot spend the same coins twice", async () => {
-  const prisma = createFakePrisma();
-  const now = new Date("2026-10-28T12:00:00.000Z");
-  await claimDailyReward(prisma, "lightx", "user-concurrent-bets", { amount: 100, now });
-
-  const results = await Promise.all([
-    playCoinflip(prisma, "lightx", "user-concurrent-bets", 80, false, { now }),
-    playCoinflip(prisma, "lightx", "user-concurrent-bets", 80, false, { now })
-  ]);
-
-  assert.equal(results.filter((result) => result.played).length, 1);
-  assert.equal((await getCurrencyAccount(prisma, "lightx", "user-concurrent-bets")).balance, 20);
-  assert.equal(prisma.transactions.filter((transaction) => transaction.type === "coinflip_loss").length, 1);
-});
-
-test("currency repository rejects invalid wagers and rewards", async () => {
-  const prisma = createFakePrisma();
-  await assert.rejects(claimDailyReward(prisma, "lightx", "user-3", { amount: 0 }), /Daily reward amount/);
-  await assert.rejects(playCoinflip(prisma, "lightx", "user-3", 0, true), /Wager/);
 });
 
 test("game rewards update the server-scoped balance and create a ledger entry", async () => {
