@@ -6,6 +6,10 @@ import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
 import { inventoryCommand } from "../src/bot/commands/inventory.js";
 
+function panelText(response) {
+  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+}
+
 function createFakePrisma(initialBalance = 0) {
   const accounts = new Map();
   const purchases = new Map();
@@ -134,7 +138,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
   };
 
   await inventoryCommand.execute(interaction, { prisma });
-  assert.match(replies[0].embeds[0].description, /Neon Badge/);
+  assert.match(panelText(replies[0]), /Neon Badge/);
 
   const emptyInteraction = {
     ...interaction,
@@ -142,7 +146,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
     async reply(payload) { replies.push(payload); }
   };
   await inventoryCommand.execute(emptyInteraction, { prisma });
-  assert.match(replies[1].embeds[0].description, /waiting for its first unlock/);
+  assert.match(panelText(replies[1]), /waiting for its first unlock/);
 });
 
 
