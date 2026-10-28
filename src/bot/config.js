@@ -10,7 +10,7 @@ function requiredString(value, name) {
 function optionalPositiveInteger(env, name, fallback) {
   const raw = env[name]?.trim();
   if (!raw) return fallback;
-  if (!/^\d+$/.test(raw)) throw new Error(name + " must be a positive safe integer.");
+  if (!/^\\d+$/.test(raw)) throw new Error(name + " must be a positive safe integer.");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < 1) {
     throw new Error(name + " must be a positive safe integer.");
@@ -21,10 +21,25 @@ function optionalPositiveInteger(env, name, fallback) {
 function optionalChannelId(value) {
   const channelId = value?.trim();
   if (!channelId) return undefined;
-  if (!/^\d{17,20}$/.test(channelId)) {
+  if (!/^\\d{17,20}$/.test(channelId)) {
     throw new Error("LEVEL_UP_CHANNEL_ID must be a valid Discord channel ID.");
   }
   return channelId;
+}
+
+function parseAllowedGuildIds(value) {
+  if (!value?.trim()) return [];
+  const ids = value.split(",").map((id) => id.trim());
+  if (ids.some((id) => !/^\\d{17,20}$/.test(id))) {
+    throw new Error("AVERO_ALLOWED_GUILD_IDS must be a comma-separated list of Discord server IDs.");
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new Error("AVERO_ALLOWED_GUILD_IDS must not contain duplicate server IDs.");
+  }
+  if (ids.length > 2) {
+    throw new Error("Avero game commands can be enabled for at most two servers.");
+  }
+  return ids;
 }
 
 export function loadBotConfig(env = process.env) {
@@ -38,6 +53,7 @@ export function loadBotConfig(env = process.env) {
     token: requiredString(env.DISCORD_TOKEN, "DISCORD_TOKEN"),
     clientId: env.DISCORD_CLIENT_ID?.trim() || undefined,
     guildId: env.DISCORD_GUILD_ID?.trim() || undefined,
+    allowedGuildIds: parseAllowedGuildIds(env.AVERO_ALLOWED_GUILD_IDS),
     levelRoleRewards: parseLevelRoleRewards(env.LEVEL_ROLE_REWARDS),
     levelUpChannelId: optionalChannelId(env.LEVEL_UP_CHANNEL_ID),
     messageXpCooldownMs: optionalPositiveInteger(env, "LEVEL_XP_COOLDOWN_MS", MESSAGE_XP_COOLDOWN_MS),
