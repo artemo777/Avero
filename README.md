@@ -105,6 +105,17 @@ The bot must have permission to manage roles, and each reward role must be below
 
 Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, and scavenge cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
 
+## Shared AveroUI assets
+
+Reusable visual assets live in one place instead of being scattered through commands:
+
+- `averoui/icons.js` — small text-safe glyphs used in Discord UI.
+- `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for future third-party artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
+- `assets/` — repository-local images, SVGs, and other static files. Use `loadAssetBuffer("icons/coin.png")` from `averoui/asset-loader.js` to load a local file; paths are restricted to this folder.
+- `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
+
+This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. A database can be added later only if assets need to be uploaded or managed dynamically while the bot is running. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
+
 ## HTTP health server
 
 The existing health-check server remains separate from the Discord bot:
