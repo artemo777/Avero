@@ -57,11 +57,23 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/guess number` — guess a number from 1 to 5 for a chance to earn 25 coins. Playing is free; no coins are risked.
 - `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
-- `/shop` — browse server-specific collectible badges.
+- `/shop` — browse the starter collectible drop, including rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
-- `/inventory` — view your collectibles in the current server.
+- `/inventory` — show your collection progress in the current server.
 
-Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative.
+Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
+
+## Profile customization roadmap
+
+The starter shop is the foundation for a more expressive Avero profile system. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
+
+- **Profile cards:** a `/profile` command that renders a shareable card with avatar, level, XP progress, coins, selected stats, badges, title, and bio.
+- **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
+- **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
+- **Rendering:** evaluate a canvas-based image renderer when profile-card implementation starts. Validate image URLs and animation/file size limits, and keep the first version focused on reliable static cards before adding GIF backgrounds.
+- **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
+
+These are roadmap items, not implemented features yet. The current shop badges are starter collectibles and do not alter a Discord profile or unlock profile-card controls until that system is built.
 
 ## Leveling and role rewards
 
