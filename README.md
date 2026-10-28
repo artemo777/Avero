@@ -67,6 +67,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
 - `/shop` — browse server-specific collectible badges.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
+- `/inventory` — view your collectibles in the current server.
 
 Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative.
 
