@@ -126,7 +126,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins**. Free to play.\n\n## ✊ Rock, paper, scissors\nPlay Avero. No coins at stake.",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins**. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · No coins involved.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
@@ -212,10 +212,10 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your collection",
     eyebrow: "COLLECTION",
-    description: "🎒 **" + items.length + " / " + SHOP_ITEMS.length + " starter collectibles** · " + progress + "%\\n" +
+    description: "🎒 **" + items.length + " / " + SHOP_ITEMS.length + " starter collectibles** · " + progress + "%\n" +
       collection +
-      "\\n🏆 " + milestoneSummary + milestoneProgress +
-      (pageCount > 1 ? "\\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\\n-# Select an item below for its details." : ""),
+      "\n🏆 " + milestoneSummary + milestoneProgress +
+      (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
