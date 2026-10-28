@@ -115,7 +115,7 @@ test("shop and buy commands require database context and reject direct messages"
   await shopCommand.execute(interaction, { prisma: createFakePrisma() });
   await buyCommand.execute(interaction, { prisma: createFakePrisma() });
   assert.equal(replies.length, 2);
-  assert.ok(replies.every((reply) => reply.ephemeral));
+  assert.ok(replies.every((reply) => reply.flags === MessageFlags.Ephemeral));
   await assert.rejects(shopCommand.execute(interaction), /requires a database/);
   await assert.rejects(buyCommand.execute(interaction), /requires a database/);
 });
@@ -141,7 +141,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
     async reply(payload) { replies.push(payload); }
   };
   await inventoryCommand.execute(emptyInteraction, { prisma });
-  assert.match(replies[1].embeds[0].description, /collection is empty/);
+  assert.match(replies[1].embeds[0].description, /waiting for its first unlock/);
 });
 
 
