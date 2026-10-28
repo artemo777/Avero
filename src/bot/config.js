@@ -1,4 +1,4 @@
-import { MAX_MESSAGE_XP, MESSAGE_XP_COOLDOWN_MS, MIN_MESSAGE_XP, parseLevelRoleRewards } from "./leveling.js";
+import { MESSAGE_XP_COOLDOWN_MS, MIN_MESSAGE_XP, MAX_MESSAGE_XP, parseLevelRoleRewards } from "./leveling.js";
 
 function requiredString(value, name) {
   if (typeof value !== "string" || value.trim() === "") {
@@ -10,7 +10,7 @@ function requiredString(value, name) {
 function optionalPositiveInteger(env, name, fallback) {
   const raw = env[name]?.trim();
   if (!raw) return fallback;
-  if (!/^\\d+$/.test(raw)) throw new Error(name + " must be a positive safe integer.");
+  if (!/^\d+$/.test(raw)) throw new Error(name + " must be a positive safe integer.");
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < 1) {
     throw new Error(name + " must be a positive safe integer.");
@@ -21,7 +21,7 @@ function optionalPositiveInteger(env, name, fallback) {
 function optionalChannelId(value) {
   const channelId = value?.trim();
   if (!channelId) return undefined;
-  if (!/^\\d{17,20}$/.test(channelId)) {
+  if (!/^\d{17,20}$/.test(channelId)) {
     throw new Error("LEVEL_UP_CHANNEL_ID must be a valid Discord channel ID.");
   }
   return channelId;
