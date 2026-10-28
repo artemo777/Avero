@@ -69,9 +69,9 @@ export function gamePayload(panel, files = []) {
   const attachments = [...files];
   if (hasCanvas) {
     const header = serialized.components.find((component) => component.type === 10)?.content ?? "";
-    const lines = header.split("\\n");
+    const lines = header.split("\n");
     const eyebrow = (lines[0] ?? "").split("//").at(-1)?.trim() || "GAMES & COINS";
-    const title = (lines[1] ?? "## Avero").replace(/^##\\s*/, "");
+    const title = (lines[1] ?? "## Avero").replace(/^##\s*/, "");
     const image = renderAveroCanvas({ eyebrow, title, accentColor: serialized.accent_color ?? THEME.colors.primary });
     attachments.push(new AttachmentBuilder(image, { name: "avero-panel.png" }));
   }
