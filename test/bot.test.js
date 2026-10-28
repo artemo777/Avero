@@ -197,11 +197,11 @@ test("games hub uses a wide Components V2 panel with a canvas and all game contr
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "avero-panel.png");
+  assert.equal(response.files, undefined);
   const panel = response.components[0].toJSON();
-  assert.ok(panel.components.some((component) => component.type === 12));
+  assert.ok(!panel.components.some((component) => component.type === 12));
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
-  assert.match(text, /A V E R O.*GAMES/);
+  assert.doesNotMatch(text, /A V E R O|AVERO\\s*\\//);
   assert.match(text, /Guess the number/);
   assert.match(text, /25 coins/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
@@ -242,7 +242,26 @@ test("profile command combines wallet, XP, and collection data", async () => {
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
 });
 
-test("profile shows the actual equipped collectible artwork beside the username", async () => {
+
+test("profile shows multiple owned badge artworks in purchase order beside the username", async () => {
+  let response;
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 250 }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "prism_crown" }] },
+    memberProfile: { findUnique: async () => ({ xp: 0, equippedBadgeItemId: "prism_crown" }) }
+  };
+  await profileCommand.execute({
+    guildId: "guild-1",
+    guild: { name: "Test Server" },
+    user: { id: "user-1", username: "Ada" },
+    options: { getUser: () => null },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+  assert.equal(response.embeds[0].author.name, "Ada");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Neon Badge, Prism Crown/);
+});
+\ntest("profile shows the actual equipped collectible artwork beside the username", async () => {
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
@@ -258,9 +277,9 @@ test("profile shows the actual equipped collectible artwork beside the username"
   }, { prisma });
 
   assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://equipped-profile-badge.png");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "equipped-profile-badge.png");
+  assert.equal(response.files[0].name, "profile-badges.png");
   assert.equal(response.embeds[0].title, undefined);
 });
 
