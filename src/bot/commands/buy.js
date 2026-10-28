@@ -1,7 +1,7 @@
 import { MessageFlags } from "discord.js";
 import { renderBuy } from "../game-ui.js";
 import { purchaseCurrencyItem } from "../../db/currency-repository.js";
-import { SHOP_ITEMS } from "./shop.js";
+import { SHOP_ITEMS } from "../shop-catalog.js";
 
 export const buyCommand = Object.freeze({
   data: Object.freeze({
