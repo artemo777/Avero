@@ -24,7 +24,7 @@ test("bot configuration requires a token without exposing its value", () => {
   });
 });
 
-test("game allowlist accepts at most two explicit Discord server IDs", () => {
+test("server allowlist accepts at most two explicit Discord server IDs for the whole bot", () => {
   const config = loadBotConfig({
     DISCORD_TOKEN: "token",
     AVERO_ALLOWED_GUILD_IDS: "123456789012345678, 234567890123456789"
