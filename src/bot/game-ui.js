@@ -1,9 +1,10 @@
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags,
+  ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags,
   SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
+import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
@@ -25,6 +26,9 @@ export function readComponentId(customId) {
 export function createGamePanel({ title, description, sections = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# A V E R O  / /  " + eyebrow + "\n## " + title + "\n" + description));
+  container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
+    new MediaGalleryItemBuilder().setURL("attachment://avero-panel.png")
+  ));
   for (const section of sections) {
     container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(section));
@@ -45,7 +49,17 @@ export function createGamePanel({ title, description, sections = [], footer = "A
   return container;
 }
 export function gamePayload(panel) {
-  return { flags: MessageFlags.IsComponentsV2, components: [panel] };
+  const serialized = panel.toJSON();
+  const header = serialized.components.find((component) => component.type === 10)?.content ?? "";
+  const lines = header.split("\\n");
+  const eyebrow = (lines[0] ?? "").split("//").at(-1)?.trim() || "GAMES & COINS";
+  const title = (lines[1] ?? "## Avero").replace(/^##\\s*/, "");
+  const image = renderAveroCanvas({ eyebrow, title, accentColor: serialized.accent_color ?? THEME.colors.primary });
+  return {
+    flags: MessageFlags.IsComponentsV2,
+    components: [panel],
+    files: [new AttachmentBuilder(image, { name: "avero-panel.png" })]
+  };
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
