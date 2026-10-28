@@ -102,3 +102,40 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
   assert.match(panel.components[0].content, /Pong/);
   assert.match(panel.components[0].content, /Interaction/);
 });
+
+test("RPS returns a private no-coins result", async () => {
+  const { rpsCommand } = await import("../src/bot/commands/rps.js");
+  let response;
+  await rpsCommand.execute({
+    guildId: "guild-1",
+    options: { getString: () => "rock" },
+    reply: async (payload) => { response = payload; }
+  });
+  assert.equal(response.ephemeral, true);
+  assert.match(response.embeds[0].title, /Rock, Paper, Scissors/);
+  assert.match(response.embeds[0].description, /You:/);
+  assert.match(response.embeds[0].description, /Avero:/);
+  assert.match(response.embeds[0].footer.text, /no coins involved/i);
+});
+
+test("RPS rejects direct messages and invalid choices", async () => {
+  const { rpsCommand } = await import("../src/bot/commands/rps.js");
+  const replies = [];
+  const interaction = {
+    guildId: null,
+    options: { getString: () => "coinflip" },
+    reply: async (payload) => { replies.push(payload); }
+  };
+  await rpsCommand.execute(interaction);
+  assert.deepEqual(replies[0], {
+    content: "Games can only be played inside a server.",
+    ephemeral: true
+  });
+
+  interaction.guildId = "guild-1";
+  await rpsCommand.execute(interaction);
+  assert.deepEqual(replies[1], {
+    content: "Choose rock, paper, or scissors.",
+    ephemeral: true
+  });
+});
