@@ -25,8 +25,8 @@ test("rock paper scissors returns a public game result without touching currency
 
   assert.equal(response.flags, undefined);
   assert.equal(response.embeds.length, 1);
-  assert.match(response.embeds[0].description, /\*\*You:\*\* Rock/);
-  assert.match(response.embeds[0].description, /\*\*Avero:\*\* (Rock|Paper|Scissors)/);
+  assert.match(response.embeds[0].description, /\*\*YOU\*\*\\nRock/);
+  assert.match(response.embeds[0].description, /\*\*AVERO\*\*\\n(Rock|Paper|Scissors)/);
   assert.match(response.embeds[0].footer.text, /no coins involved/i);
 });
 
@@ -44,6 +44,6 @@ test("rock paper scissors validates the choice", async () => {
   await rpsCommand.execute(interaction);
   assert.deepEqual(getResponse(), {
     content: "Choose rock, paper, or scissors.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
