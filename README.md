@@ -70,7 +70,7 @@ The starter shop is the foundation for a more expressive Avero profile system. P
 - **Profile cards:** a `/profile` command that renders a shareable card with avatar, level, XP progress, coins, selected stats, badges, title, and bio.
 - **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
-- **Rendering:** evaluate a canvas-based image renderer when profile-card implementation starts. Validate image URLs and animation/file size limits, and keep the first version focused on reliable static cards before adding GIF backgrounds.
+- **Rendering:** games and currency panels now use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
 - **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
 
 These are roadmap items, not implemented features yet. The current shop badges are starter collectibles and do not alter a Discord profile or unlock profile-card controls until that system is built.
