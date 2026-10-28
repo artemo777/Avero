@@ -155,6 +155,6 @@ test("guess command rejects out-of-range input before touching the database", as
 
   assert.deepEqual(response, {
     content: "Choose a whole number from 1 to 5.",
-    ephemeral: true
+    flags: MessageFlags.Ephemeral
   });
 });
