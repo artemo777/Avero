@@ -1,4 +1,5 @@
 import { randomInt } from "node:crypto";
+import { MessageFlags } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../../../averoui/index.js";
 
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
@@ -28,13 +29,13 @@ export const rpsCommand = Object.freeze({
 
   async execute(interaction) {
     if (!interaction.guildId) {
-      await interaction.reply({ content: "Games can only be played inside a server.", ephemeral: true });
+      await interaction.reply({ content: "Games can only be played inside a server.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     const playerChoice = interaction.options.getString("choice", true);
     if (!CHOICES.includes(playerChoice)) {
-      await interaction.reply({ content: "Choose rock, paper, or scissors.", ephemeral: true });
+      await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -47,13 +48,12 @@ export const rpsCommand = Object.freeze({
 
     await interaction.reply({
       embeds: [createEmbed({
-        title: ICONS.game + "  Rock, Paper, Scissors",
-        description: "**You:** " + LABELS[playerChoice] + "\n**Avero:** " + LABELS[botChoice] + "\n\n" + outcome,
+        title: "✦  AVERO // DUEL DECK",
+        description: "**YOU**\n" + LABELS[playerChoice] + "\n\n**AVERO**\n" + LABELS[botChoice] + "\n\n" + outcome,
         color: playerChoice === botChoice ? THEME.colors.primary :
           BEATS[playerChoice] === botChoice ? THEME.colors.success : THEME.colors.warning,
-        footer: "Avero • Just for fun, no coins involved"
-      })],
-      ephemeral: true
+        footer: "AVERO • FREE TO PLAY, NO COINS INVOLVED"
+      })]
     });
   }
 });
