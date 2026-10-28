@@ -1,10 +1,8 @@
-import { AttachmentBuilder, MessageFlags } from "discord.js";
+import { MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
-import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
-import { getCollectibleAssetId } from "../../../averoui/assets.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -37,22 +35,28 @@ export const profileCommand = Object.freeze({
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
     const equippedItem = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
-    const artworkFilename = equippedItem ? "avero-equipped-badge.png" : "avero-brand.png";
-    const profileArtwork = await renderRegisteredAsset(equippedItem ? getCollectibleAssetId(equippedItem.id) : "brand-mark-svg", 256);
+    const badgeGlyphs = {
+      neon_badge: "🌟",
+      vault_badge: "🔐",
+      starlight_badge: "✨",
+      moonlit_token: "🌙",
+      prism_crown: "👑",
+      avero_relic: "💠"
+    };
+    const equippedGlyph = equippedItem ? " " + (badgeGlyphs[equippedItem.id] ?? "🏅") : "";
     await interaction.reply({
-      files: [new AttachmentBuilder(profileArtwork, { name: artworkFilename })],
+      allowedMentions: { parse: [] },
       embeds: [createEmbed({
-        title: "✦ " + target.username,
-        description: "Avero profile · " + interaction.guild.name,
+        title: target.username + equippedGlyph,
+        description: "AVERO  /  " + interaction.guild.name + "\\nLevel **" + level + "** · " +
+          (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
-        thumbnail: "attachment://" + artworkFilename,
         fields: [
           { name: "🪙 Wallet", value: (account?.balance ?? 0).toLocaleString("en-US") + " coins", inline: true },
-          { name: "🏅 Level", value: String(level), inline: true },
+          { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
-          { name: "🏅 Equipped badge", value: equippedItem ? equippedItem.name : "No badge equipped", inline: true },
-          { name: "XP progress", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " XP to level " + (level + 1) },
-          { name: "Member", value: "<@" + target.id + ">", inline: true }
+          { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
+          { name: "Equipped", value: equippedItem ? equippedItem.name : "None", inline: true }
         ],
         footer: "AVERO • SERVER PROFILE"
       })]
