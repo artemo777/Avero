@@ -194,6 +194,12 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   ];
   const earnedMilestones = milestones.filter((milestone) => items.length >= milestone.count);
   const nextMilestone = milestones.find((milestone) => items.length < milestone.count);
+  const milestoneSummary = earnedMilestones.length
+    ? earnedMilestones.map((milestone) => "✓ " + milestone.name).join(" · ")
+    : "No milestones yet";
+  const milestoneProgress = nextMilestone
+    ? " · Next: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
+    : " · All collection milestones complete";
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   const pageButtons = [];
   if (pageCount > 1) {
