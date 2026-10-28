@@ -106,6 +106,7 @@ export async function renderInventory(prisma, guildId, userId) {
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   return gamePayload(createGamePanel({
     title: "Your collection",
+    eyebrow: "COLLECTION",
     description: "### 🎒 " + items.length + " / " + SHOP_ITEMS.length + " starter collectibles\n" +
       "▰".repeat(items.length) + "▱".repeat(SHOP_ITEMS.length - items.length) + "  " + progress + "% complete\n\n" + collection + "\n\n" +
       (items.length === SHOP_ITEMS.length ? "✧ **Collection complete!**" : "Collect every item to complete the set."),
@@ -169,7 +170,7 @@ export function renderBuy(result, item, userId) {
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
-    title, description, color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
+    title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
     buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
