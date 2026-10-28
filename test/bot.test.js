@@ -4,6 +4,9 @@ import { MessageFlags } from "discord.js";
 import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
+import { helpCommand } from "../src/bot/commands/help.js";
+import { profileCommand } from "../src/bot/commands/profile.js";
+import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
 import { renderGames } from "../src/bot/game-ui.js";
 
@@ -50,7 +53,6 @@ test("leveling settings are configurable and validated", () => {
   assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_MIN_MESSAGE_XP: "30", LEVEL_MAX_MESSAGE_XP: "10" }), /greater than or equal/);
   assert.throws(() => loadBotConfig({ DISCORD_TOKEN: "token", LEVEL_XP_COOLDOWN_MS: "0" }), /positive safe integer/);
 });
-
 
 test("command registration requires the application ID for global registration", () => {
   assert.throws(() => requireApplicationId({}), /DISCORD_CLIENT_ID is required/);
@@ -131,7 +133,6 @@ test("RPS rejects direct messages and invalid choices", async () => {
   });
 });
 
-
 test("daily and guess commands reject direct messages privately", async () => {
   const { dailyCommand } = await import("../src/bot/commands/daily.js");
   const { guessCommand } = await import("../src/bot/commands/guess.js");
@@ -181,14 +182,17 @@ test("guild duplicate cleanup only removes commands that are registered globally
   ]);
 });
 
-test("global command list includes games and has no duplicate names", () => {
+test("global command list includes new economy features and has no duplicate names", () => {
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
+  assert.ok(names.includes("profile"));
+  assert.ok(names.includes("leaderboard"));
+  assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
-  assert.equal(names.length, 10);
+  assert.equal(names.length, 13);
 });
 
-test("games hub uses a wide Components V2 panel with compact copy and all game controls", () => {
+test("games hub uses a wide Components V2 panel with a canvas and all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.equal(response.files.length, 1);
@@ -203,4 +207,62 @@ test("games hub uses a wide Components V2 panel with compact copy and all game c
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 2);
   assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 8);
+});
+
+test("help command groups the real commands into compact embeds", async () => {
+  let response;
+  await helpCommand.execute({ reply: async (payload) => { response = payload; } });
+  assert.equal(response.embeds.length, 1);
+  assert.equal(response.embeds[0].title, "Avero commands");
+  assert.equal(response.embeds[0].fields.length, 4);
+  assert.match(response.embeds[0].fields[0].value, /\/balance/);
+  assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
+});
+
+test("profile command combines wallet, XP, and collection data", async () => {
+  let response;
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
+    memberProfile: { findUnique: async () => ({ xp: 500 }) }
+  };
+  await profileCommand.execute({
+    guildId: "guild-1",
+    guild: { name: "Test Server" },
+    user: { id: "user-1", username: "Ada" },
+    options: { getUser: () => null },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+
+  assert.equal(response.embeds[0].title, "✦ Ada");
+  assert.match(response.embeds[0].description, /Test Server/);
+  assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
+  assert.equal(response.embeds[0].fields[1].value, "2");
+  assert.equal(response.embeds[0].fields[2].value, "1 / 3");
+});
+
+test("leaderboard sorts server members by the requested category", async () => {
+  let response;
+  const prisma = {
+    currencyAccount: {
+      findMany: async (query) => {
+        assert.equal(query.where.guildId, "guild-1");
+        assert.deepEqual(query.orderBy, { balance: "desc" });
+        return [
+          { userId: "user-1", balance: 900 },
+          { userId: "user-2", balance: 450 }
+        ];
+      }
+    },
+    memberProfile: { findMany: async () => { throw new Error("XP query should not run"); } }
+  };
+  await leaderboardCommand.execute({
+    guildId: "guild-1",
+    options: { getString: () => "coins" },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+
+  assert.equal(response.embeds[0].title, "🪙 Coin leaderboard");
+  assert.match(response.embeds[0].description, /<@user-1> — \*\*900 coins\*\*/);
+  assert.match(response.embeds[0].description, /<@user-2> — \*\*450 coins\*\*/);
 });
