@@ -139,3 +139,40 @@ test("RPS rejects direct messages and invalid choices", async () => {
     ephemeral: true
   });
 });
+
+
+test("daily and guess commands reject direct messages privately", async () => {
+  const { dailyCommand } = await import("../src/bot/commands/daily.js");
+  const { guessCommand } = await import("../src/bot/commands/guess.js");
+  const replies = [];
+  const interaction = {
+    guildId: null,
+    user: { id: "user-1" },
+    options: { getInteger: () => 3 },
+    reply: async (payload) => { replies.push(payload); }
+  };
+
+  await dailyCommand.execute(interaction, { prisma: {} });
+  await guessCommand.execute(interaction, { prisma: {} });
+
+  assert.deepEqual(replies, [
+    { content: "Currency can only be used inside a server.", ephemeral: true },
+    { content: "Guess can only be played inside a server.", ephemeral: true }
+  ]);
+});
+
+test("guess command rejects out-of-range input before touching the database", async () => {
+  const { guessCommand } = await import("../src/bot/commands/guess.js");
+  let response;
+  await guessCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: { getInteger: () => 6 },
+    reply: async (payload) => { response = payload; }
+  }, { prisma: {} });
+
+  assert.deepEqual(response, {
+    content: "Choose a whole number from 1 to 5.",
+    ephemeral: true
+  });
+});
