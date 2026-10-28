@@ -112,3 +112,71 @@ export async function awardGameReward(
     return { awarded: true, amount, account };
   });
 }
+
+
+export async function getCurrencyPurchases(prisma, guildId, userId) {
+  const key = currencyKey(guildId, userId);
+  return prisma.currencyPurchase.findMany({
+    where: key,
+    orderBy: { purchasedAt: "asc" }
+  });
+}
+
+export async function purchaseCurrencyItem(
+  prisma,
+  guildId,
+  userId,
+  itemId,
+  price,
+  { now = new Date() } = {}
+) {
+  const key = currencyKey(guildId, userId);
+  if (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId)) {
+    throw new TypeError("Shop item ID must be a simple lowercase identifier.");
+  }
+  requirePositiveInteger(price, "Shop item price");
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.currencyAccount.upsert({
+      where: { guildId_userId: key },
+      create: key,
+      update: {}
+    });
+
+    const existing = await tx.currencyPurchase.findUnique({
+      where: { guildId_userId_itemId: { ...key, itemId } }
+    });
+    const accountBefore = await tx.currencyAccount.findUnique({
+      where: { guildId_userId: key }
+    });
+    if (existing) return { purchased: false, reason: "owned", account: accountBefore };
+    if (accountBefore.balance < price) {
+      return { purchased: false, reason: "insufficient_funds", account: accountBefore };
+    }
+
+    const updated = await tx.currencyAccount.updateMany({
+      where: { ...key, balance: { gte: price } },
+      data: { balance: { decrement: price } }
+    });
+    if (updated.count !== 1) {
+      const account = await tx.currencyAccount.findUnique({
+        where: { guildId_userId: key }
+      });
+      return { purchased: false, reason: "insufficient_funds", account };
+    }
+
+    await tx.currencyPurchase.create({
+      data: { ...key, itemId, purchasedAt: now }
+    });
+    await tx.currencyTransaction.create({
+      data: { ...key, amount: -price, type: "shop_purchase", createdAt: now }
+    });
+    const account = await tx.currencyAccount.findUnique({
+      where: { guildId_userId: key }
+    });
+    return { purchased: true, itemId, price, account };
+  });
+}
