@@ -71,3 +71,18 @@ test("shop exposes item detail controls and item details return to the shop", as
   const detail = panel(await renderItemDetails(fakePrisma([]), "guild-1", "user-1", "vault_badge", 0, "shop"));
   assert.ok(buttons(detail).some((entry) => entry.custom_id === "avero|user-1|shop"));
 });
+
+test("collection shows earned and next milestones", async () => {
+  const one = panel(await renderInventory(fakePrisma(["neon_badge"]), "guild-1", "user-1"));
+  assert.match(allText(one), /First Find/);
+  assert.match(allText(one), /Next: Curator — 1\/3 items/);
+
+  const three = panel(await renderInventory(fakePrisma(["neon_badge", "vault_badge", "starlight_badge"]), "guild-1", "user-1"));
+  assert.match(allText(three), /Curator/);
+  assert.match(allText(three), /Next: Full Set — 3\/6 items/);
+
+  const full = panel(await renderInventory(fakePrisma([
+    "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
+  ]), "guild-1", "user-1"));
+  assert.match(allText(full), /All collection milestones complete/);
+});
