@@ -1,7 +1,7 @@
 import { MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 
-const CATEGORIES = Object.freeze(["coins", "xp", "games"]);
+const CATEGORIES = Object.freeze(["coins", "xp", "games", "guess", "rps"]);
 
 export const leaderboardCommand = Object.freeze({
   data: Object.freeze({
@@ -15,7 +15,9 @@ export const leaderboardCommand = Object.freeze({
       choices: [
         { name: "Coins", value: "coins" },
         { name: "XP", value: "xp" },
-        { name: "Games", value: "games" }
+        { name: "Games", value: "games" },
+        { name: "Guess", value: "guess" },
+        { name: "Rock, Paper, Scissors", value: "rps" }
       ]
     }]
   }),
@@ -28,7 +30,7 @@ export const leaderboardCommand = Object.freeze({
 
     const category = interaction.options.getString("category") ?? "coins";
     if (!CATEGORIES.includes(category)) {
-      await interaction.reply({ content: "Choose coins, XP, or games.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Choose coins, XP, games, guess, or RPS.", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -38,9 +40,14 @@ export const leaderboardCommand = Object.freeze({
     } else if (category === "xp") {
       rows = await prisma.memberProfile.findMany({ where: { guildId: interaction.guildId }, orderBy: { xp: "desc" }, take: 10 });
     } else {
+      const gameTypes = category === "guess"
+        ? ["guess_win_play", "guess_win", "guess_loss"]
+        : category === "rps"
+          ? ["rps_win", "rps_loss", "rps_tie"]
+          : ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie"];
       const grouped = await prisma.currencyTransaction.groupBy({
         by: ["userId", "type"],
-        where: { guildId: interaction.guildId, type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie"] } },
+        where: { guildId: interaction.guildId, type: { in: gameTypes } },
         _count: { _all: true }
       });
       const scores = new Map();
@@ -70,7 +77,7 @@ export const leaderboardCommand = Object.freeze({
           let score;
           if (category === "coins") score = row.balance.toLocaleString("en-US") + " coins";
           else if (category === "xp") score = row.xp.toLocaleString("en-US") + " XP";
-          else score = row.wins + "W / " + row.losses + "L / " + row.ties + "T · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate";
+          else { const record = row.wins + "W / " + row.losses + "L" + (category === "guess" ? "" : " / " + row.ties + "T"); score = record + " · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate"; }
           const medal = ["🥇", "🥈", "🥉"][index] ?? "`#" + (index + 1) + "`";
           return medal + "  <@" + row.userId + "> — **" + score + "**";
         }).join("\n")
@@ -78,7 +85,7 @@ export const leaderboardCommand = Object.freeze({
 
     await interaction.reply({
       embeds: [createEmbed({
-        title: category === "coins" ? "🪙 Coin leaderboard" : category === "xp" ? "🏅 XP leaderboard" : "🎮 Games leaderboard",
+        title: category === "coins" ? "🪙 Coin leaderboard" : category === "xp" ? "🏅 XP leaderboard" : category === "guess" ? "🎯 Guess leaderboard" : category === "rps" ? "✊ Rock-paper-scissors leaderboard" : "🎮 Games leaderboard",
         description,
         color: THEME.colors.primary,
       })]
