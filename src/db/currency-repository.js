@@ -355,21 +355,25 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   });
   const byType = new Map(rows.map((row) => [row.type, row]));
   const count = (type) => byType.get(type)?._count?._all ?? 0;
-  const amount = (type) => byType.get(type)?._sum?.amount ?? 0;
   const lifetimeEarned = rows.reduce((total, row) => total + Math.max(0, row._sum?.amount ?? 0), 0);
   const lifetimeSpent = rows.reduce((total, row) => total + Math.max(0, -(row._sum?.amount ?? 0)), 0);
+  const guessWins = Math.max(count("guess_win_play"), count("guess_win"));
+  const guessLosses = count("guess_loss");
+  const rpsWins = count("rps_win");
+  const rpsLosses = count("rps_loss");
+  const rpsTies = count("rps_tie");
   return {
     lifetimeEarned,
     lifetimeSpent,
-    gameWins: count("guess_win_play") + count("rps_win"),
-    guessWins: count("guess_win_play"),
-    guessLosses: count("guess_loss"),
-    rpsWins: count("rps_win"),
-    rpsLosses: count("rps_loss"),
-    rpsTies: count("rps_tie"),
-    gameLosses: count("guess_loss") + count("rps_loss"),
-    gameTies: count("rps_tie"),
-    gamesPlayed: count("guess_win_play") + count("guess_loss") + count("rps_win") + count("rps_loss") + count("rps_tie"),
+    gameWins: guessWins + rpsWins,
+    guessWins,
+    guessLosses,
+    rpsWins,
+    rpsLosses,
+    rpsTies,
+    gameLosses: guessLosses + rpsLosses,
+    gameTies: rpsTies,
+    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies,
     dailyClaims: count("daily"),
     workShifts: count("work"),
     scavenges: count("scavenge"),
