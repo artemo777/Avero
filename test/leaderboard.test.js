@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 
-test("games leaderboard includes legacy guess wins without double-counting new results", async () => {
+test("games leaderboard adds legacy guess wins and all new wins exactly once", async () => {
   let query;
   let response;
   const prisma = {
@@ -33,8 +33,8 @@ test("games leaderboard includes legacy guess wins without double-counting new r
     guildId: "guild-1",
     type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie"] }
   });
-  assert.match(response.embeds[0].description, /<@user-1> — \*\*9W \/ 5L \/ 1T · 60% win rate\*\*/);
-  assert.match(response.embeds[0].description, /<@user-2> — \*\*2W \/ 3L \/ 0T · 40% win rate\*\*/);
+  assert.match(response.embeds[0].description, /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
+  assert.match(response.embeds[0].description, /<@user-2> — \*\*4W \/ 3L \/ 0T · 57% win rate\*\*/);
   assert.ok(response.embeds[0].description.indexOf("<@user-1>") < response.embeds[0].description.indexOf("<@user-2>"));
 });
 
@@ -71,6 +71,6 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
 
   assert.deepEqual(queries[0].where.type.in, ["guess_win_play", "guess_win", "guess_loss"]);
   assert.deepEqual(queries[1].where.type.in, ["rps_win", "rps_loss", "rps_tie"]);
-  assert.match(replies[0].embeds[0].description, /5W \/ 2L · 71% win rate/);
+  assert.match(replies[0].embeds[0].description, /8W \/ 2L · 80% win rate/);
   assert.match(replies[1].embeds[0].description, /2W \/ 1L \/ 1T · 50% win rate/);
 });
