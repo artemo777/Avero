@@ -167,7 +167,7 @@ export async function renderShop(prisma, guildId, userId) {
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
       button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
-      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)
+      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))
     ]
   }));
 }
@@ -249,7 +249,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     ]
   }), artwork.files);
 }
-export function renderScavenge(result, userId, spot, item) {
+export function renderScavenge(result, userId, spot, item, guildId) {
   if (!result.claimed) {
     const next = new Date(result.account.lastScavengeAt.getTime() + SCAVENGE_COOLDOWN_MS);
     return gamePayload(createGamePanel({
@@ -258,7 +258,7 @@ export function renderScavenge(result, userId, spot, item) {
       eyebrow: "SCAVENGE",
       color: THEME.colors.warning,
       footer: "SCAVENGE • ONE SEARCH EVERY 10 MINUTES",
-      buttons: navButtons(userId, true)
+      buttons: navButtons(userId, true, guildId)
     }));
   }
   const dropText = result.itemId && item
@@ -273,7 +273,7 @@ export function renderScavenge(result, userId, spot, item) {
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "SCAVENGE • COINS AND COLLECTIBLES SAVED",
-    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge), ...navButtons(userId, true).slice(0, 4)]
+    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge), ...navButtons(userId, true, guildId).slice(0, 4)]
   }));
 }
 export async function runScavenge(prisma, guildId, userId) {
@@ -294,9 +294,9 @@ export async function runScavenge(prisma, guildId, userId) {
     cooldownMs: SCAVENGE_COOLDOWN_MS,
     itemId
   });
-  return renderScavenge(result, userId, spot, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null);
+  return renderScavenge(result, userId, spot, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null, guildId);
 }
-export function renderWork(result, userId, task) {
+export function renderWork(result, userId, task, guildId) {
   if (!result.claimed) {
     const nextWork = new Date(result.account.lastWorkAt.getTime() + WORK_COOLDOWN_MS);
     return gamePayload(createGamePanel({
@@ -305,7 +305,7 @@ export function renderWork(result, userId, task) {
       eyebrow: "WORKSHOP",
       color: THEME.colors.warning,
       footer: "WORK • ONE SHIFT EVERY 30 MINUTES",
-      buttons: navButtons(userId, true)
+      buttons: navButtons(userId, true, guildId)
     }));
   }
   return gamePayload(createGamePanel({
@@ -314,7 +314,7 @@ export function renderWork(result, userId, task) {
     eyebrow: "WORKSHOP",
     color: THEME.colors.success,
     footer: "WORK • REWARD SAVED TO YOUR SERVER WALLET",
-    buttons: navButtons(userId, true)
+    buttons: navButtons(userId, true, guildId)
   }));
 }
 export async function runWork(prisma, guildId, userId) {
@@ -324,23 +324,23 @@ export async function runWork(prisma, guildId, userId) {
     amount,
     cooldownMs: WORK_COOLDOWN_MS
   });
-  return renderWork(result, userId, task);
+  return renderWork(result, userId, task, guildId);
 }
-export function renderDaily(result, userId) {
+export function renderDaily(result, userId, guildId) {
   if (!result.claimed) {
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
       description: "You already claimed **+100 coins**.\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
       eyebrow: "DAILY DROP",
-      color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
+      color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId, false, guildId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
     description: "## ✨ +100 coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**\n\nNext drop in 24 hours.",
     eyebrow: "DAILY DROP",
-    color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
+    color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId, false, guildId)
   }));
 }
 export function renderGuess(guess, answer, result, userId) {
@@ -373,7 +373,7 @@ export function renderRps(playerChoice, botChoice, userId) {
       .concat(navButtons(userId).slice(0, 1))
   }));
 }
-export function renderBuy(result, item, userId) {
+export function renderBuy(result, item, userId, guildId) {
   const success = result.purchased;
   const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
   const description = success
@@ -431,7 +431,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
     case "daily":
-      payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
+      payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id, interaction.guildId);
       break;
     case "equip_badge": {
       const item = SHOP_ITEMS.find((candidate) => candidate.id === parsed.arg);
@@ -458,7 +458,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
         await interaction.reply({ content: "That collectible is no longer available.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price), item, interaction.user.id);
+      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price), item, interaction.user.id, interaction.guildId);
       break;
     }
     case "guess": {
