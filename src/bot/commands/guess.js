@@ -35,7 +35,7 @@ export const guessCommand = Object.freeze({
     const won = guess === answer;
     await recordGuessResult(prisma, interaction.guildId, interaction.user.id, won);
     const result = won
-      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, WIN_REWARD, { type: "guess_win", cooldownMs: 60_000 })
+      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, WIN_REWARD, { type: "guess_reward", cooldownMs: 60_000 })
       : null;
     await interaction.reply(renderGuess(guess, answer, result, interaction.user.id));
   }
