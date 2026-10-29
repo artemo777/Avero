@@ -25,7 +25,7 @@ function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
 
 test("rock paper scissors returns a public game result without touching currency", async () => {
   const { interaction, getResponse } = makeInteraction();
-  await rpsCommand.execute(interaction);
+  await rpsCommand.execute(interaction, { prisma: { currencyTransaction: { create: async ({ data }) => data } } });
   const response = getResponse();
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
