@@ -354,7 +354,7 @@ export function renderGuess(guess, answer, result, userId) {
     eyebrow: "GUESS",
     color: won ? THEME.colors.success : THEME.colors.primary,
     footer: "NUMBER GAME • NO WAGERS, NO ENTRY FEE",
-    buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary))
+    buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI.guess))
       .concat(navButtons(userId).slice(0, 2))
   }));
 }
@@ -370,7 +370,7 @@ export function renderRps(playerChoice, botChoice, userId) {
     eyebrow: "DUEL DECK",
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
     footer: "DUEL DECK • NO COINS INVOLVED",
-    buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary))
+    buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI[choice]))
       .concat(navButtons(userId).slice(0, 1))
   }));
 }
