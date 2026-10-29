@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
-import { DISCORD_EMOJI, getCollectibleEmoji } from "../../averoui/discord-emojis.js";
+import { DISCORD_EMOJI, getCollectibleEmoji, getDiscordEmoji } from "../../averoui/discord-emojis.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
@@ -102,11 +102,11 @@ async function collectibleArtwork(items) {
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
 }
-function navButtons(userId, includeDaily = false) {
+function navButtons(userId, includeDaily = false, guildId) {
   const buttons = [
     button(userId, "shop", "Shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop),
     button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
-    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)
+    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))
   ];
   buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, DISCORD_EMOJI.work));
   buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge));
@@ -137,7 +137,7 @@ export async function renderBalance(prisma, guildId, userId) {
     description: "### " + getAssetSymbol("coin", guildId) + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
-    buttons: navButtons(userId, true)
+    buttons: navButtons(userId, true, guildId)
   }));
 }
 export async function renderShop(prisma, guildId, userId) {
