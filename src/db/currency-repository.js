@@ -321,3 +321,28 @@ export async function purchaseCurrencyItem(
     return { purchased: false, reason: "owned", account };
   }
 }
+
+
+export async function getCurrencyStats(prisma, guildId, userId) {
+  const key = currencyKey(guildId, userId);
+  const rows = await prisma.currencyTransaction.groupBy({
+    by: ["type"],
+    where: key,
+    _count: { _all: true },
+    _sum: { amount: true }
+  });
+  const byType = new Map(rows.map((row) => [row.type, row]));
+  const count = (type) => byType.get(type)?._count?._all ?? 0;
+  const amount = (type) => byType.get(type)?._sum?.amount ?? 0;
+  const lifetimeEarned = rows.reduce((total, row) => total + Math.max(0, row._sum?.amount ?? 0), 0);
+  const lifetimeSpent = rows.reduce((total, row) => total + Math.max(0, -(row._sum?.amount ?? 0)), 0);
+  return {
+    lifetimeEarned,
+    lifetimeSpent,
+    gameWins: count("guess_win"),
+    dailyClaims: count("daily"),
+    workShifts: count("work"),
+    scavenges: count("scavenge"),
+    itemsPurchased: count("shop_purchase")
+  };
+}
