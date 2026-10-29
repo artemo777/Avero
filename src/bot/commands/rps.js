@@ -18,7 +18,6 @@ export const rpsCommand = Object.freeze({
     }]
   }),
   async execute(interaction, { prisma } = {}) {
-    if (!prisma) throw new Error("Rock-paper-scissors requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Games can only be played inside a server.", flags: MessageFlags.Ephemeral });
       return;
@@ -28,6 +27,7 @@ export const rpsCommand = Object.freeze({
       await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
       return;
     }
+    if (!prisma) throw new Error("Rock-paper-scissors requires a database client.");
     const botChoice = CHOICES[randomInt(CHOICES.length)];
     const outcome = playerChoice === botChoice ? "tie" : ({ rock: "scissors", paper: "rock", scissors: "paper" })[playerChoice] === botChoice ? "win" : "loss";
     await recordGameResult(prisma, interaction.guildId, interaction.user.id, "rps", outcome);
