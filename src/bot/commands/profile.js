@@ -1,7 +1,7 @@
 import { AttachmentBuilder, MessageFlags } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from "../../../averoui/index.js";
-import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
+import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 
@@ -24,10 +24,11 @@ export const profileCommand = Object.freeze({
     }
 
     const target = interaction.options.getUser("member") ?? interaction.user;
-    const [account, purchases, profile] = await Promise.all([
+    const [account, purchases, profile, stats] = await Promise.all([
       getCurrencyAccount(prisma, interaction.guildId, target.id),
       getCurrencyPurchases(prisma, interaction.guildId, target.id),
-      getMemberProfile(prisma, interaction.guildId, target.id)
+      getMemberProfile(prisma, interaction.guildId, target.id),
+      getCurrencyStats(prisma, interaction.guildId, target.id)
     ]);
     const xp = profile?.xp ?? 0;
     const level = levelForExperience(xp);
@@ -58,6 +59,13 @@ export const profileCommand = Object.freeze({
           { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
+          { name: "🎮 Game wins", value: String(stats.gameWins), inline: true },
+          { name: "🪙 Coins earned", value: stats.lifetimeEarned.toLocaleString("en-US"), inline: true },
+          { name: "🛍️ Items bought", value: String(stats.itemsPurchased), inline: true },
+          { name: "📆 Daily claims", value: String(stats.dailyClaims), inline: true },
+          { name: "🧰 Work shifts", value: String(stats.workShifts), inline: true },
+          { name: "🔎 Scavenges", value: String(stats.scavenges), inline: true },
+          { name: "Coins spent", value: stats.lifetimeSpent.toLocaleString("en-US"), inline: true },
           { name: "Badges", value: badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None", inline: false }
         ]
       });
