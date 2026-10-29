@@ -8,7 +8,7 @@ This project uses a Discord application and bot token. A server owner or member 
 2. Under **Bot**, confirm the bot exists. Reset/regenerate the token only if needed; never paste it into chat, commit it, or put it in a public issue.
 3. Under **Installation** or **OAuth2 → URL Generator** (the portal wording may vary), choose the **Guild Install** context.
 4. Select these scopes: `bot` and `applications.commands`.
-5. Use the minimum bot permissions needed: View Channels, Send Messages, Embed Links, Attach Files. Add **Manage Expressions** when you want the bot to upload custom emoji. Do not leave Administrator enabled just for convenience. Only add Manage Roles if you configure level-up role rewards.
+5. Use the minimum bot permissions needed: View Channels, Send Messages, Embed Links, Attach Files. Add **Create Expressions** when you want the bot to upload custom emoji. Creating emoji is a separate permission from editing or deleting existing expressions. Do not leave Administrator enabled just for convenience. Only add Manage Roles if you configure level-up role rewards.
 6. Open the generated install URL while signed into Discord, choose **Avero Test Server**, review the requested permissions, and authorize.
 7. In **Server Settings → Integrations**, verify Avero appears and check its command access.
 
@@ -30,7 +30,7 @@ npm run discord:upload-emojis
 
 The script uploads or reuses 15 named Avero emoji and prints `AVERO_EMOJI_*_ID` variables. Copy those printed ID lines into the same private `.env`/host environment used to run the bot. The shared `averoui/discord-emojis.js` catalogue uses those custom emoji in wallet, reward, milestone, and collectible UI, while preserving Unicode fallbacks if an ID is absent.
 
-Never send the token to ChatGPT or commit the `.env` file. If upload fails, check that the bot is installed in the target server, `DISCORD_GUILD_ID` is correct, the bot has Manage Expressions, and the server has available emoji slots.
+Never send the token to ChatGPT or commit the `.env` file. If upload fails, check that the bot is installed in the target server, `DISCORD_GUILD_ID` is correct, the bot has Create Expressions, and the server has available emoji slots.
 
 ## 3. Configure and start the bot
 
