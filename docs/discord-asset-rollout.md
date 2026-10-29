@@ -14,7 +14,7 @@ This pack contains original Avero SVG artwork in `assets/icons/` and the shared 
 The repository includes an idempotent uploader. It converts the registered SVG assets to 128px PNG images, uploads custom emoji to the configured Discord server, reuses emoji already present by name, and automatically writes the resulting IDs to the local `.env` file with owner-only file permissions. It never writes the bot token itself.
 
 1. Set `DISCORD_TOKEN` and `DISCORD_GUILD_ID` in your private local `.env` or hosting environment.
-2. Ensure the bot has **Manage Expressions** (Administrator also includes this, but is broader than necessary).
+2. Ensure the bot has **Create Expressions** to upload emoji. This is distinct from Manage Expressions, which covers editing and deleting existing expressions.
 3. From the repository root, run:
 
    ```sh
@@ -23,9 +23,9 @@ The repository includes an idempotent uploader. It converts the registered SVG a
    ```
 
 4. The uploader saves `AVERO_EMOJI_*_ID` entries to `.env` automatically. If your bot runs on a separate host, set `AVERO_EMOJI_ENV_PATH` to the private env file used by that host, or use the printed IDs to update the host's secret/environment settings.
-5. Restart Avero. Wallet, rewards, milestones, and the six collectible UI emoji will use server custom emoji; Unicode fallbacks remain for any unset IDs.
+5. Restart Avero. Guild-aware UI paths can use custom emoji in the configured source guild; other guilds and unset IDs receive portable Unicode fallbacks. Custom emoji IDs must not be sent to guilds that lack access.
 
-Never paste the bot token into chat or commit a `.env` file. If an upload fails, check that the bot is installed in the target server, the guild ID is correct, it has Manage Expressions, and the server has available emoji slots.
+Never paste the bot token into chat or commit a `.env` file. If an upload fails, check that the bot is installed in the target server, the guild ID is correct, it has Create Expressions, and the server has available emoji slots.
 
 ## Server identity assets
 
