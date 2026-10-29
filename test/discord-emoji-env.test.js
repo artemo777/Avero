@@ -55,3 +55,19 @@ test("emoji env persistence keeps existing secrets and restricts file permission
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+
+test("emoji env sync rejects unsafe keys and values", () => {
+  assert.throws(
+    () => mergeEnvAssignments("", { DISCORD_TOKEN: "123456789012345678" }),
+    /Only AVERO_EMOJI/
+  );
+  assert.throws(
+    () => mergeEnvAssignments("", { AVERO_EMOJI_COIN_ID: "123456789012345678\nDISCORD_TOKEN=injected" }),
+    /snowflake IDs/
+  );
+  assert.throws(
+    () => mergeEnvAssignments("", { AVERO_EMOJI_COIN_ID: 123456789012345678 }),
+    /snowflake IDs/
+  );
+});
