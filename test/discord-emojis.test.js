@@ -1,11 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DISCORD_EMOJI, getCollectibleEmoji } from "../averoui/discord-emojis.js";
+import { getAssetSymbol } from "../averoui/assets.js";
 
 test("Avero Discord emoji pack exposes consistent game and currency symbols", () => {
-  for (const key of ["brand", "games", "guess", "rock", "paper", "scissors", "shop", "inventory", "wallet", "work", "scavenge", "daily", "buy", "owned", "reward", "milestone"]) {
+  for (const key of ["brand", "games", "guess", "rock", "paper", "scissors", "shop", "inventory", "wallet", "work", "scavenge", "daily", "buy", "owned", "reward", "milestone", "loader", "gemCommon", "gemRare", "gemEpic", "gemLegendary"]) {
     assert.equal(typeof DISCORD_EMOJI[key], "string", key + " should be defined");
     assert.ok(DISCORD_EMOJI[key].length > 0, key + " should not be empty");
+  }
+});
+
+test("registered rarity and brand assets resolve through the shared emoji catalogue", () => {
+  for (const id of ["coin", "gem-common", "gem-rare", "gem-epic", "gem-legendary", "badge", "reward-sparkle", "loader", "brand-mark-svg"]) {
+    assert.equal(typeof getAssetSymbol(id), "string", id + " should resolve to a display symbol");
+    assert.ok(getAssetSymbol(id).length > 0, id + " should not resolve to an empty symbol");
   }
 });
 
