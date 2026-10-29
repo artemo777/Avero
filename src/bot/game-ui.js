@@ -390,8 +390,8 @@ async function runGuess(prisma, guildId, userId, guess) {
   const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win" }) : null;
   return renderGuess(guess, answer, result, userId, guildId);
 }
-async function runRps(playerChoice, userId) {
-  return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId);
+async function runRps(playerChoice, userId, guildId) {
+  return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId, guildId);
 }
 export async function handleGameComponent(interaction, { prisma } = {}) {
   const parsed = readComponentId(interaction.customId);
