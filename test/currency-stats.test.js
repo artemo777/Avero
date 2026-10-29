@@ -5,7 +5,7 @@ import { getCurrencyStats } from "../src/db/currency-repository.js";
 test("currency statistics summarize wins, earnings, spending, and activity by server and member", async () => {
   let query;
   const rows = [
-    { type: "guess_win", _count: { _all: 3 }, _sum: { amount: 75 } },
+    { type: "guess_win", _count: { _all: 5 }, _sum: { amount: 125 } },
     { type: "guess_win_play", _count: { _all: 3 }, _sum: { amount: 0 } },
     { type: "guess_loss", _count: { _all: 2 }, _sum: { amount: 0 } },
     { type: "rps_win", _count: { _all: 4 }, _sum: { amount: 0 } },
@@ -26,17 +26,17 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
   };
 
   assert.deepEqual(await getCurrencyStats(prisma, "guild-1", "user-1"), {
-    lifetimeEarned: 650,
+    lifetimeEarned: 700,
     lifetimeSpent: 450,
-    gameWins: 7,
-    guessWins: 3,
+    gameWins: 9,
+    guessWins: 5,
     guessLosses: 2,
     rpsWins: 4,
     rpsLosses: 3,
     rpsTies: 1,
     gameLosses: 5,
     gameTies: 1,
-    gamesPlayed: 13,
+    gamesPlayed: 15,
     dailyClaims: 2,
     workShifts: 4,
     scavenges: 1,
