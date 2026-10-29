@@ -53,8 +53,8 @@ test("concurrent game wins award coins only once inside the reward cooldown", as
   const prisma = createPrisma();
   const now = new Date("2026-10-29T12:00:00.000Z");
   const results = await Promise.all([
-    awardGameReward(prisma, "guild-1", "user-1", 25, { type: "guess_win", cooldownMs: 60_000, now }),
-    awardGameReward(prisma, "guild-1", "user-1", 25, { type: "guess_win", cooldownMs: 60_000, now })
+    awardGameReward(prisma, "guild-1", "user-1", 25, { type: "guess_reward", cooldownMs: 60_000, now }),
+    awardGameReward(prisma, "guild-1", "user-1", 25, { type: "guess_reward", cooldownMs: 60_000, now })
   ]);
 
   assert.equal(results.filter((result) => result.awarded).length, 1);
@@ -70,13 +70,13 @@ test("game reward cooldown expires at the exact cooldown boundary", async () => 
   const prisma = createPrisma();
   const firstAt = new Date("2026-10-29T12:00:00.000Z");
   const first = await awardGameReward(prisma, "guild-1", "user-2", 25, {
-    type: "guess_win", cooldownMs: 60_000, now: firstAt
+    type: "guess_reward", cooldownMs: 60_000, now: firstAt
   });
   const early = await awardGameReward(prisma, "guild-1", "user-2", 25, {
-    type: "guess_win", cooldownMs: 60_000, now: new Date(firstAt.getTime() + 59_999)
+    type: "guess_reward", cooldownMs: 60_000, now: new Date(firstAt.getTime() + 59_999)
   });
   const ready = await awardGameReward(prisma, "guild-1", "user-2", 25, {
-    type: "guess_win", cooldownMs: 60_000, now: new Date(firstAt.getTime() + 60_000)
+    type: "guess_reward", cooldownMs: 60_000, now: new Date(firstAt.getTime() + 60_000)
   });
 
   assert.equal(first.awarded, true);
