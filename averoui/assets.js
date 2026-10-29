@@ -41,7 +41,7 @@ export function getAssetSymbol(id) {
   const mapping = ASSET_SYMBOLS[asset.id];
   if (!mapping) return asset.value ?? "·";
   const symbol = DISCORD_EMOJI[mapping[0]];
-  return typeof symbol === "string" && /^<a?:[A-Za-z0-9_]+:\\d{17,20}>$/.test(symbol)
+  return typeof symbol === "string" && /^<a?:[A-Za-z0-9_]+:\d{17,20}>$/.test(symbol)
     ? symbol
     : mapping[1];
 }
