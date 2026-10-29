@@ -38,7 +38,7 @@ test("rank command shows level, total XP, and progress to the next level", async
 
   await rankCommand.execute(interaction, { prisma });
 
-  const embed = getResponse().embeds[0].toJSON();
+  const embed = getResponse().embeds[0];
   assert.equal(embed.title, "✦ ExampleUser's rank");
   assert.match(embed.description, /\*\*Level:\*\* 1/);
   assert.match(embed.description, /\*\*Total XP:\*\* 250/);
@@ -50,7 +50,7 @@ test("rank command shows zero XP for a member without a saved profile", async ()
 
   await rankCommand.execute(interaction, { prisma });
 
-  const embed = getResponse().embeds[0].toJSON();
+  const embed = getResponse().embeds[0];
   assert.match(embed.description, /\*\*Level:\*\* 0/);
   assert.match(embed.description, /\*\*Total XP:\*\* 0/);
   assert.match(embed.description, /\*\*Progress:\*\* 0 \/ 100 XP to level 1/);
