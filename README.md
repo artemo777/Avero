@@ -60,7 +60,7 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
-- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win. Playing is free.
+- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with a one-minute reward cooldown to limit coin farming. Playing is free.
 - `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
