@@ -6,6 +6,8 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
   let query;
   const rows = [
     { type: "guess_win", _count: { _all: 3 }, _sum: { amount: 75 } },
+    { type: "guess_win_play", _count: { _all: 3 }, _sum: { amount: 0 } },
+    { type: "guess_loss", _count: { _all: 2 }, _sum: { amount: 0 } },
     { type: "daily", _count: { _all: 2 }, _sum: { amount: 200 } },
     { type: "work", _count: { _all: 4 }, _sum: { amount: 320 } },
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 55 } },
@@ -24,6 +26,9 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
     lifetimeEarned: 650,
     lifetimeSpent: 450,
     gameWins: 3,
+    guessWins: 3,
+    gameLosses: 2,
+    gamesPlayed: 5,
     dailyClaims: 2,
     workShifts: 4,
     scavenges: 1,
