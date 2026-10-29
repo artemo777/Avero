@@ -40,18 +40,19 @@ export const leaderboardCommand = Object.freeze({
     } else {
       const grouped = await prisma.currencyTransaction.groupBy({
         by: ["userId", "type"],
-        where: { guildId: interaction.guildId, type: { in: ["guess_win_play", "guess_loss"] } },
+        where: { guildId: interaction.guildId, type: { in: ["guess_win_play", "guess_loss", "rps_win", "rps_loss", "rps_tie"] } },
         _count: { _all: true }
       });
       const scores = new Map();
       for (const row of grouped) {
-        const current = scores.get(row.userId) ?? { userId: row.userId, wins: 0, losses: 0 };
-        if (row.type === "guess_loss") current.losses += row._count._all;
+        const current = scores.get(row.userId) ?? { userId: row.userId, wins: 0, losses: 0, ties: 0 };
+        if (row.type === "guess_loss" || row.type === "rps_loss") current.losses += row._count._all;
+        else if (row.type === "rps_tie") current.ties += row._count._all;
         else current.wins += row._count._all;
         scores.set(row.userId, current);
       }
       rows = [...scores.values()]
-        .map((row) => ({ ...row, gamesPlayed: row.wins + row.losses }))
+        .map((row) => ({ ...row, gamesPlayed: row.wins + row.losses + row.ties }))
         .sort((a, b) => b.wins - a.wins || b.gamesPlayed - a.gamesPlayed || a.userId.localeCompare(b.userId))
         .slice(0, 10);
     }
@@ -61,7 +62,7 @@ export const leaderboardCommand = Object.freeze({
           let score;
           if (category === "coins") score = row.balance.toLocaleString("en-US") + " coins";
           else if (category === "xp") score = row.xp.toLocaleString("en-US") + " XP";
-          else score = row.wins + "W / " + row.losses + "L · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate";
+          else score = row.wins + "W / " + row.losses + "L / " + row.ties + "T · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate";
           const medal = ["🥇", "🥈", "🥉"][index] ?? "`#" + (index + 1) + "`";
           return medal + "  <@" + row.userId + "> — **" + score + "**";
         }).join("\n")
