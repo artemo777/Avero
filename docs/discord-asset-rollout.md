@@ -1,28 +1,52 @@
 # Avero Discord asset rollout
 
-This manifest keeps the test-server setup aligned with the artwork already checked into `assets/icons/` and the shared Discord emoji catalogue in `averoui/discord-emojis.js`.
+This pack contains original Avero SVG artwork in `assets/icons/` and the shared emoji catalogue in `averoui/discord-emojis.js`.
 
-## Server identity
+## What is included
 
-| Discord slot | Recommended asset | Purpose |
+- Brand mark, coin, badge, sparkle, and loader
+- Common, rare, epic, and legendary gems
+- Six collectible icons: neon badge, vault badge, starlight badge, moonlit token, prism crown, and Avero relic
+- Shared UI emoji mappings for games, shop, inventory, wallet, work, scavenge, daily rewards, and navigation
+
+## Upload the original art as server emoji
+
+The repository now includes an idempotent uploader. It converts the registered SVG assets to 128px PNG images, uploads the custom emoji to your configured Discord server, reuses emoji already present by name, and prints the IDs for bot configuration.
+
+1. Set `DISCORD_TOKEN` and `DISCORD_GUILD_ID` in your private local `.env` or hosting environment.
+2. Ensure the bot has **Manage Expressions** (Administrator also includes this, but is broader than necessary).
+3. From the repository root, run:
+
+   ```sh
+   npm install
+   npm run discord:upload-emojis
+   ```
+
+4. Copy the printed `AVERO_EMOJI_*_ID` lines into the same private environment as the running bot.
+5. Restart Avero. The wallet, rewards, milestones, and six collectible UI emoji will use server custom emoji; Unicode fallbacks remain for any unset IDs.
+
+Never paste the bot token into chat or commit a `.env` file. If an upload fails, check that the bot is installed in the target server, the guild ID is correct, it has Manage Expressions, and the server has available emoji slots.
+
+## Server identity assets
+
+| Discord slot | Recommended asset | Notes |
 | --- | --- | --- |
-| Server icon | `assets/icons/brand-mark.svg` exported to PNG | Recognizable Avero mark at small sizes |
-| Role icon: staff / trusted | `assets/icons/badge.svg` exported to PNG | Shared role-icon visual language |
-| Role icon: economy / events | `assets/icons/coin.svg` exported to PNG | Currency and event identity |
-| Bot message artwork | `assets/icons/brand-mark.svg`, `reward-sparkle.svg` | Brand accents and reward moments |
+| Server icon | `assets/icons/brand-mark.svg` exported to PNG | Upload manually in Server Settings |
+| Role icon: staff / trusted | `assets/icons/badge.svg` exported to PNG | Requires server role-icon support and appropriate role permissions |
+| Role icon: economy / events | `assets/icons/coin.svg` exported to PNG | Upload manually in role settings |
+| Bot message artwork | `assets/icons/brand-mark.svg`, `reward-sparkle.svg` | Used as source artwork for panels |
 
-Discord's upload UI may require raster files for specific slots. Export SVG artwork to transparent PNG at a high resolution before uploading; preserve the original SVGs in the repository as source assets.
+Server icon and role icon changes remain manual in Discord settings; the uploader handles custom emoji only.
 
-## Custom emoji naming plan
+## Custom emoji manifest
 
-Use these names if the artwork is uploaded as custom server emoji later. Unicode emoji remain the fallback, so the bot still works when custom emoji are unavailable.
-
-| Suggested name | Source artwork |
+| Emoji name | Source asset |
 | --- | --- |
 | `avero_brand` | `brand-mark.svg` |
 | `avero_coin` | `coin.svg` |
 | `avero_badge` | `badge.svg` |
 | `avero_sparkle` | `reward-sparkle.svg` |
+| `avero_loader` | `loader.svg` |
 | `avero_gem_common` | `gem-common.svg` |
 | `avero_gem_rare` | `gem-rare.svg` |
 | `avero_gem_epic` | `gem-epic.svg` |
@@ -33,14 +57,3 @@ Use these names if the artwork is uploaded as custom server emoji later. Unicode
 | `avero_moonlit_token` | `collectible-moonlit-token.svg` |
 | `avero_prism_crown` | `collectible-prism-crown.svg` |
 | `avero_relic` | `collectible-avero-relic.svg` |
-
-## Rollout checklist
-
-- [ ] Export the server icon and role icons to transparent PNG where required.
-- [ ] Upload custom emoji in the Avero test server and record their emoji IDs.
-- [ ] Grant the bot only the permissions it needs; add emoji-management permissions only if the bot will upload/manage emoji itself.
-- [ ] If custom emoji are used in bot messages, configure IDs in one shared module instead of hardcoding them across commands.
-- [ ] Check every icon in both light and dark Discord themes and at small display sizes.
-- [ ] Verify the games, wallet, shop, inventory, and profile panels after the bot is restarted.
-
-**Status:** this is a prepared mapping, not a claim that assets have already been uploaded to Discord. Direct server changes still require an authorized Discord session or a configured bot with the necessary permissions.
