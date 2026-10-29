@@ -7,7 +7,7 @@ import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
-import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem } from "../db/currency-repository.js";
+import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
@@ -401,7 +401,9 @@ export function renderBuy(result, item, userId) {
 }
 async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
-  const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
+  const won = guess === answer;
+  await recordGuessResult(prisma, guildId, userId, won);
+  const result = won ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
 async function runRps(playerChoice, userId) {
