@@ -13,7 +13,7 @@ function createFakePrisma() {
     currencyAccount: {
       async upsert({ where, create }) {
         const key = keyOf(where.guildId_userId);
-        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, lastDailyAt: null });
+        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, lastDailyAt: null, lastGameRewardAt: null });
         return accounts.get(key);
       },
       async findUnique({ where }) {
@@ -25,15 +25,18 @@ function createFakePrisma() {
         if (!account) return { count: 0 };
         if (where.balance?.gte !== undefined && account.balance < where.balance.gte) return { count: 0 };
         if (where.OR) {
+          const timestampField = Object.keys(where.OR[0]).find((field) => field.startsWith("last"));
+          const current = account[timestampField];
           const eligible = where.OR.some((condition) => {
-            if (condition.lastDailyAt === null) return account.lastDailyAt === null;
-            return account.lastDailyAt instanceof Date &&
-              account.lastDailyAt <= condition.lastDailyAt.lte;
+            if (condition[timestampField] === null) return current === null;
+            return current instanceof Date && current <= condition[timestampField].lte;
           });
           if (!eligible) return { count: 0 };
         }
         if (data.balance?.increment !== undefined) account.balance += data.balance.increment;
-        if (data.lastDailyAt !== undefined) account.lastDailyAt = data.lastDailyAt;
+        for (const [field, value] of Object.entries(data)) {
+          if (field.startsWith("last") && value !== undefined) account[field] = value;
+        }
         return { count: 1 };
       }
     },
