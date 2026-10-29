@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
+import { DISCORD_EMOJI, getCollectibleEmoji, getDiscordEmoji } from "../../averoui/discord-emojis.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
@@ -22,13 +23,8 @@ const WIN_REWARD = 25;
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
-const COIN_ICON = getAssetSymbol("coin");
-function collectibleButtonEmoji(itemId) {
-  const emojis = { neon_badge: "🌟", vault_badge: "🔐", starlight_badge: "✨", moonlit_token: "🌙", prism_crown: "👑", avero_relic: "💠" };
-  return emojis[itemId] ?? "🏅";
-}
-function collectibleIcon(item) {
-  return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
+function collectibleIcon(item, guildId) {
+  return getAssetSymbol(getRarityAssetId(item?.rarity), guildId) + " " + (item?.icon ?? "");
 }
 
 export function componentId(userId, action, arg = "") {
@@ -106,23 +102,23 @@ async function collectibleArtwork(items) {
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
 }
-function navButtons(userId, includeDaily = false) {
+function navButtons(userId, includeDaily = false, guildId) {
   const buttons = [
-    button(userId, "shop", "Shop", "", ButtonStyle.Primary, "🛍️"),
-    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, "🎒"),
-    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+    button(userId, "shop", "Shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop),
+    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
+    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))
   ];
-  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, "🧰"));
-  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, "🔎"));
-  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
+  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, DISCORD_EMOJI.work));
+  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge));
+  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, DISCORD_EMOJI.daily));
   return buttons;
 }
 export function renderGames(userId) {
   const gameButtons = [
     ...[1, 2, 3, 4, 5].map((number) =>
-      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, "🎯")),
+      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, DISCORD_EMOJI.guess)),
     ...CHOICES.map((choice) =>
-      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️"))
+      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, DISCORD_EMOJI[choice]))
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
@@ -138,10 +134,10 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
+    description: "### " + getAssetSymbol("coin", guildId) + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🎯 /guess · +25 on a win\n✊ /rps · Free to play",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
-    buttons: navButtons(userId, true)
+    buttons: navButtons(userId, true, guildId)
   }));
 }
 export async function renderShop(prisma, guildId, userId) {
@@ -152,26 +148,26 @@ export async function renderShop(prisma, guildId, userId) {
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
   const sections = SHOP_ITEMS.map((item) => {
     const status = owned.has(item.id) ? "✓ OWNED" : "⟡ " + item.price.toLocaleString("en-US") + " coins";
-    return collectibleIcon(item) + " **" + item.name + "**  ·  " + item.rarity + "\n" +
+    return collectibleIcon(item, guildId) + " **" + item.name + "**  ·  " + item.rarity + "\n" +
       status + "  ·  " + item.description;
   });
   const sectionButtons = SHOP_ITEMS.map((item) => {
-    const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id));
+    const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, getCollectibleEmoji(item.id, guildId));
     const purchase = button(userId, "buy", owned.has(item.id) ? "Owned" : "Buy · " + item.price.toLocaleString("en-US"), item.id,
-      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? "☑️" : "🛒");
+      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? DISCORD_EMOJI.owned : DISCORD_EMOJI.buy);
     if (owned.has(item.id)) purchase.disabled = true;
     return [detail, purchase];
   });
   return gamePayload(createGamePanel({
     title: "Collectible shop",
-    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nBrowse the drop. Each item has its own details and purchase controls below.",
+    description: "### " + getAssetSymbol("coin", guildId) + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nBrowse the drop. Each item has its own details and purchase controls below.",
     sections,
     sectionButtons,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
-      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
-      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
+      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))
     ]
   }));
 }
@@ -184,7 +180,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const collection = pageItems.length
-    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
+    ? pageItems.map((item) => collectibleIcon(item, guildId) + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   const milestones = [
@@ -200,7 +196,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const milestoneProgress = nextMilestone
     ? " · Next: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
     : " · All collection milestones complete";
-  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, getCollectibleEmoji(item.id, guildId)));
   const pageButtons = [];
   if (pageCount > 1) {
     const previous = button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary);
@@ -217,7 +213,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
       "\n🏆 " + milestoneSummary + milestoneProgress +
       (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))]
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
@@ -237,7 +233,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
   const equipped = profile?.equippedBadgeItemId === item.id;
   const artwork = await collectibleArtwork([item]);
   return gamePayload(createGamePanel({
-    title: collectibleIcon(item) + " " + item.name,
+    title: collectibleIcon(item, guildId) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
       (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped on your profile**" : "") +
@@ -247,13 +243,13 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     artwork: artwork.filenames,
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
-      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
-      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, "🏅")] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
-      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
+      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? DISCORD_EMOJI.shop : DISCORD_EMOJI.inventory),
+      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, getCollectibleEmoji(item.id, guildId))] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, DISCORD_EMOJI.buy)]),
+      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, DISCORD_EMOJI.shop)])
     ]
   }), artwork.files);
 }
-export function renderScavenge(result, userId, spot, item) {
+export function renderScavenge(result, userId, spot, item, guildId) {
   if (!result.claimed) {
     const next = new Date(result.account.lastScavengeAt.getTime() + SCAVENGE_COOLDOWN_MS);
     return gamePayload(createGamePanel({
@@ -262,13 +258,13 @@ export function renderScavenge(result, userId, spot, item) {
       eyebrow: "SCAVENGE",
       color: THEME.colors.warning,
       footer: "SCAVENGE • ONE SEARCH EVERY 10 MINUTES",
-      buttons: navButtons(userId, true)
+      buttons: navButtons(userId, true, guildId)
     }));
   }
   const dropText = result.itemId && item
-    ? "\n\n🎁 **Collectible found!**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
+    ? "\n\n🎁 **Collectible found!**\n" + getCollectibleEmoji(item.id, guildId) + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
     : result.duplicateItemId && item
-      ? "\n\n🔁 You found another " + item.icon + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
+      ? "\n\n🔁 You found another " + getCollectibleEmoji(item.id, guildId) + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
       : "";
   return gamePayload(createGamePanel({
     title: result.itemId ? "Something rare!" : "Search complete",
@@ -277,7 +273,7 @@ export function renderScavenge(result, userId, spot, item) {
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "SCAVENGE • COINS AND COLLECTIBLES SAVED",
-    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, "🔎"), ...navButtons(userId, true).slice(0, 4)]
+    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge), ...navButtons(userId, true, guildId).slice(0, 4)]
   }));
 }
 export async function runScavenge(prisma, guildId, userId) {
@@ -298,9 +294,9 @@ export async function runScavenge(prisma, guildId, userId) {
     cooldownMs: SCAVENGE_COOLDOWN_MS,
     itemId
   });
-  return renderScavenge(result, userId, spot, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null);
+  return renderScavenge(result, userId, spot, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null, guildId);
 }
-export function renderWork(result, userId, task) {
+export function renderWork(result, userId, task, guildId) {
   if (!result.claimed) {
     const nextWork = new Date(result.account.lastWorkAt.getTime() + WORK_COOLDOWN_MS);
     return gamePayload(createGamePanel({
@@ -309,7 +305,7 @@ export function renderWork(result, userId, task) {
       eyebrow: "WORKSHOP",
       color: THEME.colors.warning,
       footer: "WORK • ONE SHIFT EVERY 30 MINUTES",
-      buttons: navButtons(userId, true)
+      buttons: navButtons(userId, true, guildId)
     }));
   }
   return gamePayload(createGamePanel({
@@ -318,7 +314,7 @@ export function renderWork(result, userId, task) {
     eyebrow: "WORKSHOP",
     color: THEME.colors.success,
     footer: "WORK • REWARD SAVED TO YOUR SERVER WALLET",
-    buttons: navButtons(userId, true)
+    buttons: navButtons(userId, true, guildId)
   }));
 }
 export async function runWork(prisma, guildId, userId) {
@@ -328,26 +324,26 @@ export async function runWork(prisma, guildId, userId) {
     amount,
     cooldownMs: WORK_COOLDOWN_MS
   });
-  return renderWork(result, userId, task);
+  return renderWork(result, userId, task, guildId);
 }
-export function renderDaily(result, userId) {
+export function renderDaily(result, userId, guildId) {
   if (!result.claimed) {
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
       description: "You already claimed **+100 coins**.\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
       eyebrow: "DAILY DROP",
-      color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
+      color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId, false, guildId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
     description: "## ✨ +100 coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**\n\nNext drop in 24 hours.",
     eyebrow: "DAILY DROP",
-    color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
+    color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId, false, guildId)
   }));
 }
-export function renderGuess(guess, answer, result, userId) {
+export function renderGuess(guess, answer, result, userId, guildId) {
   const won = guess === answer;
   return gamePayload(createGamePanel({
     title: won ? "Perfect guess!" : "Not this time",
@@ -357,15 +353,15 @@ export function renderGuess(guess, answer, result, userId) {
     eyebrow: "GUESS",
     color: won ? THEME.colors.success : THEME.colors.primary,
     footer: "NUMBER GAME • NO WAGERS, NO ENTRY FEE",
-    buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary))
-      .concat(navButtons(userId).slice(0, 2))
+    buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI.guess))
+      .concat(navButtons(userId, false, guildId).slice(0, 2))
   }));
 }
-export function renderRps(playerChoice, botChoice, userId) {
+export function renderRps(playerChoice, botChoice, userId, guildId) {
   const tie = playerChoice === botChoice;
   const won = !tie && BEATS[playerChoice] === botChoice;
   const outcome = tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**";
-  const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
+  const symbols = DISCORD_EMOJI;
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
     description: "### " + symbols[playerChoice] + " You: " + LABELS[playerChoice] + "\n### " + symbols[botChoice] + " Avero: " + LABELS[botChoice] +
@@ -373,29 +369,29 @@ export function renderRps(playerChoice, botChoice, userId) {
     eyebrow: "DUEL DECK",
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
     footer: "DUEL DECK • NO COINS INVOLVED",
-    buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary))
-      .concat(navButtons(userId).slice(0, 1))
+    buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI[choice]))
+      .concat(navButtons(userId, false, guildId).slice(0, 1))
   }));
 }
-export function renderBuy(result, item, userId) {
+export function renderBuy(result, item, userId, guildId) {
   const success = result.purchased;
   const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
   const description = success
-    ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
+    ? "### " + getCollectibleEmoji(item.id, guildId) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
-    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))]
   }));
 }
 async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
   const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win" }) : null;
-  return renderGuess(guess, answer, result, userId);
+  return renderGuess(guess, answer, result, userId, guildId);
 }
-async function runRps(playerChoice, userId) {
-  return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId);
+async function runRps(playerChoice, userId, guildId) {
+  return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId, guildId);
 }
 export async function handleGameComponent(interaction, { prisma } = {}) {
   const parsed = readComponentId(interaction.customId);
@@ -435,7 +431,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id); break;
     case "daily":
-      payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
+      payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id, interaction.guildId);
       break;
     case "equip_badge": {
       const item = SHOP_ITEMS.find((candidate) => candidate.id === parsed.arg);
@@ -462,7 +458,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
         await interaction.reply({ content: "That collectible is no longer available.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price), item, interaction.user.id);
+      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price), item, interaction.user.id, interaction.guildId);
       break;
     }
     case "guess": {
@@ -479,7 +475,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
         await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runRps(parsed.arg, interaction.user.id);
+      payload = await runRps(parsed.arg, interaction.user.id, interaction.guildId);
       break;
     default: return false;
   }

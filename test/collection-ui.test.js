@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { renderBalance, renderBuy, renderInventory, renderItemDetails, renderScavenge, renderShop } from "../src/bot/game-ui.js";
+import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
   return {
@@ -105,4 +106,64 @@ test("collection shows earned and next milestones", async () => {
     "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
   ]), "guild-1", "user-1"));
   assert.match(allText(full), /All collection milestones complete/);
+});
+
+
+test("economy panels resolve custom emoji only in the configured source guild", async () => {
+  const previousGuild = process.env.DISCORD_GUILD_ID;
+  const previousCoin = process.env.AVERO_EMOJI_COIN_ID;
+  const previousNeon = process.env.AVERO_EMOJI_NEON_BADGE_ID;
+  try {
+    process.env.DISCORD_GUILD_ID = "12345678901234567";
+    process.env.AVERO_EMOJI_COIN_ID = "23456789012345678";
+    process.env.AVERO_EMOJI_NEON_BADGE_ID = "34567890123456789";
+    const item = SHOP_ITEMS.find((candidate) => candidate.id === "neon_badge");
+
+    const sourceBalance = panel(await renderBalance(fakePrisma(), "12345678901234567", "user-1"));
+    const sourceBalanceWallet = buttons(sourceBalance).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(sourceBalanceWallet.emoji.id, "23456789012345678");
+    assert.equal(sourceBalanceWallet.emoji.name, "avero_coin");
+
+    const externalBalance = panel(await renderBalance(fakePrisma(), "98765432109876543", "user-1"));
+    const externalBalanceWallet = buttons(externalBalance).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(externalBalanceWallet.emoji.id, undefined);
+    assert.equal(externalBalanceWallet.emoji.name, "◉");
+
+    const sourceShop = panel(await renderShop(fakePrisma(), "12345678901234567", "user-1"));
+    const sourceWallet = buttons(sourceShop).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(sourceWallet.emoji.id, "23456789012345678");
+    assert.equal(sourceWallet.emoji.name, "avero_coin");
+
+    const externalShop = panel(await renderShop(fakePrisma(), "98765432109876543", "user-1"));
+    const externalWallet = buttons(externalShop).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(externalWallet.emoji.id, undefined);
+    assert.equal(externalWallet.emoji.name, "◉");
+
+    const bought = panel(renderBuy({ purchased: true, account: { balance: 500 } }, item, "user-1", "12345678901234567"));
+    assert.match(allText(bought), /<:avero_neon_badge:34567890123456789>/);
+
+    const found = panel(renderScavenge({
+      claimed: true,
+      itemId: "neon_badge",
+      amount: 30,
+      account: { balance: 530 }
+    }, "user-1", "the workshop", item, "12345678901234567"));
+    assert.match(allText(found), /<:avero_neon_badge:34567890123456789>/);
+
+    const externalFound = panel(renderScavenge({
+      claimed: true,
+      itemId: "neon_badge",
+      amount: 30,
+      account: { balance: 530 }
+    }, "user-1", "the workshop", item, "98765432109876543"));
+    assert.match(allText(externalFound), /🌟/);
+    assert.doesNotMatch(allText(externalFound), /<:avero_neon_badge:/);
+  } finally {
+    if (previousGuild === undefined) delete process.env.DISCORD_GUILD_ID;
+    else process.env.DISCORD_GUILD_ID = previousGuild;
+    if (previousCoin === undefined) delete process.env.AVERO_EMOJI_COIN_ID;
+    else process.env.AVERO_EMOJI_COIN_ID = previousCoin;
+    if (previousNeon === undefined) delete process.env.AVERO_EMOJI_NEON_BADGE_ID;
+    else process.env.AVERO_EMOJI_NEON_BADGE_ID = previousNeon;
+  }
 });

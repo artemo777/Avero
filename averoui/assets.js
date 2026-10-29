@@ -1,43 +1,49 @@
 import { ICONS } from "./icons.js";
+import { getDiscordEmoji } from "./discord-emojis.js";
 
-/**
- * Shared asset catalogue for UI glyphs and local artwork.
- *
- * Put binary artwork in the repository-level assets/ directory and register
- * its relative path here. Keep source and licence details for third-party art.
- * Prefer original Avero artwork or assets with a licence that allows reuse.
- */
 export const ASSETS = Object.freeze({
   brandMark: Object.freeze({ id: "brand-mark", kind: "glyph", value: ICONS.brand, description: "Text-safe Avero brand mark", uses: Object.freeze(["headers", "loaders", "profile"]) }),
   loading: Object.freeze({ id: "loading", kind: "glyph", value: ICONS.loading, description: "Text-safe loading indicator", uses: Object.freeze(["loading-states", "deferred-panels"]) }),
   sparkle: Object.freeze({ id: "sparkle", kind: "glyph", value: ICONS.sparkle, description: "Accent sparkle", uses: Object.freeze(["rewards", "rarity", "milestones"]) }),
-  coin: Object.freeze({ id: "coin", kind: "svg", path: "icons/coin.svg", description: "Original coin icon", uses: Object.freeze(["wallet","rewards","shop"]) }),
-  gemCommon: Object.freeze({ id: "gem-common", kind: "svg", path: "icons/gem-common.svg", description: "Common rarity gem", uses: Object.freeze(["inventory","item-details"]) }),
-  gemRare: Object.freeze({ id: "gem-rare", kind: "svg", path: "icons/gem-rare.svg", description: "Rare rarity gem", uses: Object.freeze(["inventory","item-details"]) }),
-  gemEpic: Object.freeze({ id: "gem-epic", kind: "svg", path: "icons/gem-epic.svg", description: "Epic rarity gem", uses: Object.freeze(["inventory","item-details"]) }),
-  gemLegendary: Object.freeze({ id: "gem-legendary", kind: "svg", path: "icons/gem-legendary.svg", description: "Legendary rarity gem", uses: Object.freeze(["inventory","item-details"]) }),
-  badge: Object.freeze({ id: "badge", kind: "svg", path: "icons/badge.svg", description: "Avero collectible badge", uses: Object.freeze(["profiles","milestones","collection"]) }),
-  rewardSparkle: Object.freeze({ id: "reward-sparkle", kind: "svg", path: "icons/reward-sparkle.svg", description: "Reward and milestone accent", uses: Object.freeze(["rewards","milestones"]) }),
-  loader: Object.freeze({ id: "loader", kind: "svg", path: "icons/loader.svg", description: "Static loading spinner artwork", uses: Object.freeze(["loading-states","deferred-panels"]) }),
-  brandMarkSvg: Object.freeze({ id: "brand-mark-svg", kind: "svg", path: "icons/brand-mark.svg", description: "Avero geometric brand mark", uses: Object.freeze(["headers","profile","canvas"]) }),
-  collectibleNeonBadge: Object.freeze({ id: "collectible-neon-badge", kind: "svg", path: "icons/collectible-neon-badge.svg", description: "Original neon badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
-  collectibleVaultBadge: Object.freeze({ id: "collectible-vault-badge", kind: "svg", path: "icons/collectible-vault-badge.svg", description: "Original vault badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
-  collectibleStarlightBadge: Object.freeze({ id: "collectible-starlight-badge", kind: "svg", path: "icons/collectible-starlight-badge.svg", description: "Original starlight badge collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
-  collectibleMoonlitToken: Object.freeze({ id: "collectible-moonlit-token", kind: "svg", path: "icons/collectible-moonlit-token.svg", description: "Original moonlit token collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
-  collectiblePrismCrown: Object.freeze({ id: "collectible-prism-crown", kind: "svg", path: "icons/collectible-prism-crown.svg", description: "Original prism crown collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
-  collectibleAveroRelic: Object.freeze({ id: "collectible-avero-relic", kind: "svg", path: "icons/collectible-avero-relic.svg", description: "Original Avero relic collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  coin: Object.freeze({ id: "coin", kind: "svg", path: "icons/coin.svg", description: "Original coin icon", uses: Object.freeze(["wallet", "rewards", "shop"]) }),
+  gemCommon: Object.freeze({ id: "gem-common", kind: "svg", path: "icons/gem-common.svg", description: "Common rarity gem", uses: Object.freeze(["inventory", "item-details"]) }),
+  gemRare: Object.freeze({ id: "gem-rare", kind: "svg", path: "icons/gem-rare.svg", description: "Rare rarity gem", uses: Object.freeze(["inventory", "item-details"]) }),
+  gemEpic: Object.freeze({ id: "gem-epic", kind: "svg", path: "icons/gem-epic.svg", description: "Epic rarity gem", uses: Object.freeze(["inventory", "item-details"]) }),
+  gemLegendary: Object.freeze({ id: "gem-legendary", kind: "svg", path: "icons/gem-legendary.svg", description: "Legendary rarity gem", uses: Object.freeze(["inventory", "item-details"]) }),
+  badge: Object.freeze({ id: "badge", kind: "svg", path: "icons/badge.svg", description: "Avero collectible badge", uses: Object.freeze(["profiles", "milestones", "collection"]) }),
+  rewardSparkle: Object.freeze({ id: "reward-sparkle", kind: "svg", path: "icons/reward-sparkle.svg", description: "Reward and milestone accent", uses: Object.freeze(["rewards", "milestones"]) }),
+  loader: Object.freeze({ id: "loader", kind: "svg", path: "icons/loader.svg", description: "Static loading spinner artwork", uses: Object.freeze(["loading-states", "deferred-panels"]) }),
+  brandMarkSvg: Object.freeze({ id: "brand-mark-svg", kind: "svg", path: "icons/brand-mark.svg", description: "Avero geometric brand mark", uses: Object.freeze(["headers", "profile", "canvas"]) }),
+  collectibleNeonBadge: Object.freeze({ id: "collectible-neon-badge", kind: "svg", path: "icons/collectible-neon-badge.svg", description: "Original neon badge collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
+  collectibleVaultBadge: Object.freeze({ id: "collectible-vault-badge", kind: "svg", path: "icons/collectible-vault-badge.svg", description: "Original vault badge collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
+  collectibleStarlightBadge: Object.freeze({ id: "collectible-starlight-badge", kind: "svg", path: "icons/collectible-starlight-badge.svg", description: "Original starlight badge collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
+  collectibleMoonlitToken: Object.freeze({ id: "collectible-moonlit-token", kind: "svg", path: "icons/collectible-moonlit-token.svg", description: "Original moonlit token collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
+  collectiblePrismCrown: Object.freeze({ id: "collectible-prism-crown", kind: "svg", path: "icons/collectible-prism-crown.svg", description: "Original prism crown collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
+  collectibleAveroRelic: Object.freeze({ id: "collectible-avero-relic", kind: "svg", path: "icons/collectible-avero-relic.svg", description: "Original Avero relic collectible artwork", uses: Object.freeze(["shop", "inventory", "item-details"]) }),
   gamesHero: Object.freeze({ id: "games-hero", kind: "canvas", renderer: "renderAveroCanvas", description: "Generated Avero games and coins hero artwork", uses: Object.freeze(["games"]) })
 });
 
 const ASSET_SYMBOLS = Object.freeze({
-  coin: "◉", "gem-common": "◇", "gem-rare": "⬡", "gem-epic": "✧",
-  "gem-legendary": "✦", badge: "⬢", "reward-sparkle": "✧", loader: "◌", "brand-mark-svg": "◈"
+  coin: ["wallet", "◉"],
+  "gem-common": ["gemCommon", "◇"],
+  "gem-rare": ["gemRare", "⬡"],
+  "gem-epic": ["gemEpic", "✧"],
+  "gem-legendary": ["gemLegendary", "✦"],
+  badge: ["milestone", "⬢"],
+  "reward-sparkle": ["daily", "✧"],
+  loader: ["loader", "◌"],
+  "brand-mark-svg": ["brand", "◈"]
 });
 
-export function getAssetSymbol(id) {
+export function getAssetSymbol(id, guildId) {
   const asset = getAsset(id);
   if (!asset) return "·";
-  return ASSET_SYMBOLS[asset.id] ?? asset.value ?? "·";
+  const mapping = ASSET_SYMBOLS[asset.id];
+  if (!mapping) return asset.value ?? "·";
+  const symbol = getDiscordEmoji(mapping[0], guildId);
+  return typeof symbol === "string" && /^<a?:[A-Za-z0-9_]+:\d{17,20}>$/.test(symbol)
+    ? symbol
+    : mapping[1];
 }
 
 export function getRarityAssetId(rarity) {

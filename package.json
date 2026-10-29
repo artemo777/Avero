@@ -12,6 +12,7 @@
     "dev": "node --watch src/server.js",
     "bot": "node --import=dotenv/config src/bot.js",
     "register:commands": "node --import=dotenv/config src/register-commands.js",
+    "discord:upload-emojis": "node --import=dotenv/config scripts/upload-discord-emojis.js",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "test": "node --test"

@@ -1,5 +1,6 @@
 export { THEME } from "./theme.js";
 export { ICONS } from "./icons.js";
+export { DISCORD_EMOJI, getCollectibleEmoji, getDiscordEmoji } from "./discord-emojis.js";
 export { discordTimestamp } from "./timestamps.js";
 export { escapeMarkdown, truncateText } from "./text.js";
 export { userMention, roleMention, channelMention } from "./mentions.js";
