@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
+import { DISCORD_EMOJI, getCollectibleEmoji } from "../../averoui/discord-emojis.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
@@ -23,10 +24,6 @@ const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
 const COIN_ICON = getAssetSymbol("coin");
-function collectibleButtonEmoji(itemId) {
-  const emojis = { neon_badge: "🌟", vault_badge: "🔐", starlight_badge: "✨", moonlit_token: "🌙", prism_crown: "👑", avero_relic: "💠" };
-  return emojis[itemId] ?? "🏅";
-}
 function collectibleIcon(item) {
   return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
 }
@@ -108,21 +105,21 @@ function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, 
 }
 function navButtons(userId, includeDaily = false) {
   const buttons = [
-    button(userId, "shop", "Shop", "", ButtonStyle.Primary, "🛍️"),
-    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, "🎒"),
-    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+    button(userId, "shop", "Shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop),
+    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
+    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)
   ];
-  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, "🧰"));
-  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, "🔎"));
-  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
+  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, DISCORD_EMOJI.work));
+  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge));
+  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, DISCORD_EMOJI.daily));
   return buttons;
 }
 export function renderGames(userId) {
   const gameButtons = [
     ...[1, 2, 3, 4, 5].map((number) =>
-      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, "🎯")),
+      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, DISCORD_EMOJI.guess)),
     ...CHOICES.map((choice) =>
-      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️"))
+      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, DISCORD_EMOJI[choice]))
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
@@ -156,9 +153,9 @@ export async function renderShop(prisma, guildId, userId) {
       status + "  ·  " + item.description;
   });
   const sectionButtons = SHOP_ITEMS.map((item) => {
-    const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, collectibleButtonEmoji(item.id));
+    const detail = button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, getCollectibleEmoji(item.id));
     const purchase = button(userId, "buy", owned.has(item.id) ? "Owned" : "Buy · " + item.price.toLocaleString("en-US"), item.id,
-      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? "☑️" : "🛒");
+      owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success, owned.has(item.id) ? DISCORD_EMOJI.owned : DISCORD_EMOJI.buy);
     if (owned.has(item.id)) purchase.disabled = true;
     return [detail, purchase];
   });
@@ -170,8 +167,8 @@ export async function renderShop(prisma, guildId, userId) {
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
-      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
-      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory),
+      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)
     ]
   }));
 }
@@ -217,7 +214,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
       "\n🏆 " + milestoneSummary + milestoneProgress +
       (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)]
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
@@ -247,9 +244,9 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     artwork: artwork.filenames,
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
-      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
-      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, "🏅")] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
-      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
+      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? DISCORD_EMOJI.shop : DISCORD_EMOJI.inventory),
+      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, DISCORD_EMOJI.collectible)] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, DISCORD_EMOJI.buy)]),
+      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, DISCORD_EMOJI.shop)])
     ]
   }), artwork.files);
 }
@@ -277,7 +274,7 @@ export function renderScavenge(result, userId, spot, item) {
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "SCAVENGE • COINS AND COLLECTIBLES SAVED",
-    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, "🔎"), ...navButtons(userId, true).slice(0, 4)]
+    buttons: [button(userId, "scavenge", "Search again", "", ButtonStyle.Primary, DISCORD_EMOJI.scavenge), ...navButtons(userId, true).slice(0, 4)]
   }));
 }
 export async function runScavenge(prisma, guildId, userId) {
@@ -365,7 +362,7 @@ export function renderRps(playerChoice, botChoice, userId) {
   const tie = playerChoice === botChoice;
   const won = !tie && BEATS[playerChoice] === botChoice;
   const outcome = tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**";
-  const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
+  const symbols = DISCORD_EMOJI;
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
     description: "### " + symbols[playerChoice] + " You: " + LABELS[playerChoice] + "\n### " + symbols[botChoice] + " Avero: " + LABELS[botChoice] +
@@ -386,7 +383,7 @@ export function renderBuy(result, item, userId) {
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
-    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)]
   }));
 }
 async function runGuess(prisma, guildId, userId, guess) {
