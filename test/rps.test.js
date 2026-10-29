@@ -23,9 +23,10 @@ function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
   };
 }
 
-test("rock paper scissors returns a public game result without touching currency", async () => {
+test("rock paper scissors records a non-monetary game result", async () => {
   const { interaction, getResponse } = makeInteraction();
-  await rpsCommand.execute(interaction, { prisma: { currencyTransaction: { create: async ({ data }) => data } } });
+  const records = [];
+  await rpsCommand.execute(interaction, { prisma: { currencyTransaction: { create: async ({ data }) => { records.push(data); return data; } } } });
   const response = getResponse();
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
@@ -34,6 +35,11 @@ test("rock paper scissors returns a public game result without touching currency
   assert.match(text, /Avero: (Rock|Paper|Scissors)/);
   assert.match(text, /no coins involved/i);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
+  assert.equal(records.length, 1);
+  assert.equal(records[0].guildId, "guild-1");
+  assert.equal(records[0].userId, "user-1");
+  assert.equal(records[0].amount, 0);
+  assert.match(records[0].type, /^rps_(win|loss|tie)$/);
 });
 
 test("rock paper scissors rejects direct messages", async () => {
