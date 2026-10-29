@@ -254,10 +254,10 @@ export async function purchaseCurrencyItem(
 
   try {
     return await prisma.$transaction(async (tx) => {
-    await tx.currencyAccount.upsert({
-      where: { guildId_userId: key },
-      create: key,
-      update: {}
+      await tx.currencyAccount.upsert({
+        where: { guildId_userId: key },
+        create: key,
+        update: {}
     });
 
     const existing = await tx.currencyPurchase.findUnique({
