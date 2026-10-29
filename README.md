@@ -62,7 +62,6 @@ The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_I
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with a one-minute reward cooldown to limit coin farming. Playing is free.
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked on profiles and the Games leaderboard; the game does not change coin balances.
-- `/rps choice` — play rock, paper, scissors against Avero, with no coins involved.
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
