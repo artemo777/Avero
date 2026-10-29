@@ -7,6 +7,7 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
   const rows = [
     { type: "guess_win", _count: { _all: 5 }, _sum: { amount: 125 } },
     { type: "guess_win_play", _count: { _all: 3 }, _sum: { amount: 0 } },
+    { type: "guess_reward", _count: { _all: 1 }, _sum: { amount: 25 } },
     { type: "guess_loss", _count: { _all: 2 }, _sum: { amount: 0 } },
     { type: "rps_win", _count: { _all: 4 }, _sum: { amount: 0 } },
     { type: "rps_loss", _count: { _all: 3 }, _sum: { amount: 0 } },
@@ -26,7 +27,7 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
   };
 
   assert.deepEqual(await getCurrencyStats(prisma, "guild-1", "user-1"), {
-    lifetimeEarned: 700,
+    lifetimeEarned: 725,
     lifetimeSpent: 450,
     gameWins: 12,
     guessWins: 8,
