@@ -334,8 +334,9 @@ export async function recordGameResult(prisma, guildId, userId, game, outcome, {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError("now must be a valid Date.");
   }
+  const type = game === "guess" && outcome === "win" ? "guess_win_play" : game + "_" + outcome;
   return prisma.currencyTransaction.create({
-    data: { ...key, amount: 0, type: game + "_" + outcome, createdAt: now }
+    data: { ...key, amount: 0, type, createdAt: now }
   });
 }
 
