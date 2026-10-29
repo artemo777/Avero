@@ -1,53 +1,57 @@
 # Discord authorization and test-server setup
 
-This project uses a Discord application and bot token. Avero cannot be authorized from GitHub alone; a server owner or member with the appropriate permissions must approve installation in Discord.
+This project uses a Discord application and bot token. A server owner or member with appropriate permissions must approve installation in Discord; repository changes alone cannot authorize a Discord account.
 
 ## 1. Authorize the bot in the test server
 
 1. Open the [Discord Developer Portal](https://discord.com/developers/applications) and select the Avero application.
-2. Under **Bot**, confirm the bot exists. Reset/regenerate the token only if needed; never paste the token into chat, commit it, or put it in a public issue.
+2. Under **Bot**, confirm the bot exists. Reset/regenerate the token only if needed; never paste it into chat, commit it, or put it in a public issue.
 3. Under **Installation** or **OAuth2 → URL Generator** (the portal wording may vary), choose the **Guild Install** context.
-4. Select only these scopes for the current bot: `bot` and `applications.commands`.
-5. Choose the minimum bot permissions required by the features you want to test:
-   - View Channels
-   - Send Messages
-   - Embed Links
-   - Attach Files (Avero panels can attach rendered PNG artwork)
-   - Read Message History (only if needed for the intended channel workflow)
-   - Use External Emojis only if the bot must display emoji from other servers
-   - Manage Expressions only if the bot itself will upload/manage custom server emoji; otherwise upload emoji manually as a server administrator and do not grant this permission
-6. Open the generated install URL while signed into Discord, choose **Avero Test Server**, review the requested permissions, and authorize. Only install into a server you own or are authorized to administer.
-7. In **Server Settings → Integrations**, verify Avero appears and check its command access. Make sure its highest role is below any roles it may be expected to manage.
+4. Select these scopes: `bot` and `applications.commands`.
+5. Use the minimum bot permissions needed: View Channels, Send Messages, Embed Links, Attach Files. Add **Manage Expressions** when you want the bot to upload custom emoji. Do not leave Administrator enabled just for convenience. Only add Manage Roles if you configure level-up role rewards.
+6. Open the generated install URL while signed into Discord, choose **Avero Test Server**, review the requested permissions, and authorize.
+7. In **Server Settings → Integrations**, verify Avero appears and check its command access.
 
-Do not grant Administrator just to make setup easier. Level-up role rewards, if enabled, separately require Manage Roles and reward roles below Avero's highest role; do not enable that permission unless you're configuring those features.
+## 2. Upload the Avero custom emoji pack
 
-## 2. Configure the bot runtime
+The repository includes an uploader that converts the original SVG artwork into PNG emoji, uploads the pack to your configured server, and prints the IDs for the bot to use.
 
-On the machine or hosting service where Avero runs, set the following environment variables using the private deployment settings:
+On the machine where you have the repository checked out, set these values in a private local `.env` or your host's secret manager:
 
 - `DISCORD_TOKEN`: bot token from the Developer Portal
-- `DISCORD_CLIENT_ID`: application ID
-- `DISCORD_GUILD_ID`: Avero Test Server ID, if using the optional server-specific command cleanup
-- `DATABASE_URL`: PostgreSQL connection string
+- `DISCORD_GUILD_ID`: Avero Test Server ID
 
-Keep secrets in the host's secret/environment-variable manager or a local untracked `.env`. Never send a bot token in chat or add it to GitHub.
+Then run from the repository root:
+
+```sh
+npm install
+npm run discord:upload-emojis
+```
+
+The script uploads or reuses 15 named Avero emoji and prints `AVERO_EMOJI_*_ID` variables. Copy those printed ID lines into the same private `.env`/host environment used to run the bot. The shared `averoui/discord-emojis.js` catalogue uses those custom emoji in wallet, reward, milestone, and collectible UI, while preserving Unicode fallbacks if an ID is absent.
+
+Never send the token to ChatGPT or commit the `.env` file. If upload fails, check that the bot is installed in the target server, `DISCORD_GUILD_ID` is correct, the bot has Manage Expressions, and the server has available emoji slots.
+
+## 3. Configure and start the bot
+
+The project also requires a PostgreSQL database. Set these in the private runtime environment:
+
+- `DISCORD_TOKEN`
+- `DISCORD_CLIENT_ID`: application ID
+- `DISCORD_GUILD_ID`: Avero Test Server ID
+- `DATABASE_URL`: PostgreSQL connection string
 
 Then run:
 
 ```sh
-npm install
 npm run db:generate
 npm run db:migrate:deploy
 npm run register:commands
 npm run bot
 ```
 
-The database migration must be applied to the intended database. Confirm the process is online and run `/ping` in the test server before testing economy commands.
+Confirm the bot is online and run `/ping` in the test server before testing economy commands.
 
-## 3. Upload the Avero visual assets
+## 4. Server icon and role icons
 
-The repository contains the original SVG assets. Upload the selected icons from Discord's server settings, converting SVGs to transparent PNG where Discord requires raster images. For custom emoji, use the names in `docs/discord-asset-rollout.md`. This is a manual server-owner action unless a separately configured bot is granted the relevant permission and implemented to upload the files.
-
-## Current limitation
-
-No Discord authorization has been completed by this repository change. An authorized Discord session and access to the Developer Portal are required for the approval step; a bot token is required only on the private runtime host. Do not share either credential in this chat.
+Custom emoji uploads are automated. The server icon and role icons are separate Discord settings and still need to be uploaded manually from PNG exports of `assets/icons/brand-mark.svg`, `assets/icons/badge.svg`, and `assets/icons/coin.svg`. Keep the original SVGs in the repository as source artwork.
