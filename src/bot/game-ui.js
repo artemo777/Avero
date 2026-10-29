@@ -15,6 +15,7 @@ const DAILY_REWARD = 100;
 const DAILY_COOLDOWN_MS = 86_400_000;
 const WORK_COOLDOWN_MS = 1_800_000;
 const SCAVENGE_COOLDOWN_MS = 600_000;
+const GUESS_REWARD_COOLDOWN_MS = 60_000;
 const SCAVENGE_SPOTS = Object.freeze(["the old server archive", "the neon-lit plaza", "the quiet train platform", "the workshop storage room", "the moonlit garden", "the forgotten message board"]);
 const SCAVENGE_ITEMS = Object.freeze([{ id: "neon_badge", weight: 55 }, { id: "vault_badge", weight: 25 }, { id: "starlight_badge", weight: 13 }, { id: "moonlit_token", weight: 6 }, { id: "prism_crown", weight: 1 }]);
 const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a tiny server banner", "Helped organize the event board", "Delivered a stack of digital mail", "Tidied the Avero workshop"]);
@@ -349,14 +350,23 @@ export function renderDaily(result, userId) {
 }
 export function renderGuess(guess, answer, result, userId) {
   const won = guess === answer;
+  const rewarded = won && result?.awarded === true;
+  const nextReward = result?.account?.lastGameRewardAt
+    ? new Date(result.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
+    : null;
+  const outcome = rewarded
+    ? "✦ **+" + WIN_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
+    : won
+      ? "Correct guess! Your coin reward is still cooling down." +
+        (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
+      : "No coins lost. Try again.";
   return gamePayload(createGamePanel({
-    title: won ? "Perfect guess!" : "Not this time",
+    title: rewarded ? "Perfect guess!" : won ? "Correct guess!" : "Not this time",
     description: "### 🎯 Your pick: **" + guess + "** · Answer: **" + answer + "**\n\n" +
-      (won ? "✦ **+" + WIN_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**." :
-        "No coins lost. Try again.") + "\n\n**Play again**",
+      outcome + "\n\n**Play again**",
     eyebrow: "GUESS",
-    color: won ? THEME.colors.success : THEME.colors.primary,
-    footer: "NUMBER GAME • NO WAGERS, NO ENTRY FEE",
+    color: rewarded ? THEME.colors.success : won ? THEME.colors.warning : THEME.colors.primary,
+    footer: "NUMBER GAME • NO WAGERS • ONE COIN REWARD PER MINUTE",
     buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary))
       .concat(navButtons(userId).slice(0, 2))
   }));
@@ -391,7 +401,7 @@ export function renderBuy(result, item, userId) {
 }
 async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
-  const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win" }) : null;
+  const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
 async function runRps(playerChoice, userId) {
