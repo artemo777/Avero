@@ -213,7 +213,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
       "\n🏆 " + milestoneSummary + milestoneProgress +
       (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))]
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
@@ -382,7 +382,7 @@ export function renderBuy(result, item, userId, guildId) {
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
-    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, DISCORD_EMOJI.wallet)]
+    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, DISCORD_EMOJI.shop), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, DISCORD_EMOJI.inventory), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getDiscordEmoji("wallet", guildId))]
   }));
 }
 async function runGuess(prisma, guildId, userId, guess) {
