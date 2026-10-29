@@ -101,7 +101,7 @@ test("RPS returns a public no-coins result", async () => {
     user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
-  });
+  }, { prisma: { currencyTransaction: { create: async ({ data }) => data } } });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /DUEL DECK/);
@@ -224,7 +224,8 @@ test("profile command combines wallet, XP, and collection data", async () => {
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
-    memberProfile: { findUnique: async () => ({ xp: 500 }) }
+    memberProfile: { findUnique: async () => ({ xp: 500 }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
@@ -247,7 +248,8 @@ test("profile shows multiple owned badge artworks in purchase order beside the u
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ xp: 0, equippedBadgeItemId: "prism_crown" }) }
+    memberProfile: { findUnique: async () => ({ xp: 0, equippedBadgeItemId: "prism_crown" }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
@@ -266,7 +268,8 @@ test("profile shows the actual equipped collectible artwork beside the username"
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ xp: 0, level: 0, equippedBadgeItemId: "prism_crown" }) }
+    memberProfile: { findUnique: async () => ({ xp: 0, level: 0, equippedBadgeItemId: "prism_crown" }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
