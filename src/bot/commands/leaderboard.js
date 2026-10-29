@@ -62,7 +62,7 @@ export const leaderboardCommand = Object.freeze({
           if (category === "coins") score = row.balance.toLocaleString("en-US") + " coins";
           else if (category === "xp") score = row.xp.toLocaleString("en-US") + " XP";
           else score = row.wins + "W / " + row.losses + "L · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate";
-          const medal = ["🥇", "🥈", "🥉"][index] ?? "\`#" + (index + 1) + "\`";
+          const medal = ["🥇", "🥈", "🥉"][index] ?? "`#" + (index + 1) + "`";
           return medal + "  <@" + row.userId + "> — **" + score + "**";
         }).join("\n")
       : "No scores yet. Start playing to get on the board.";
