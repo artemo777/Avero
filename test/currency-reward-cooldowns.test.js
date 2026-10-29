@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimScavengeReward, claimWorkReward, getCurrencyAccount } from "../src/db/currency-repository.js";
+import { claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount } from "../src/db/currency-repository.js";
 
 function createPrisma() {
   const accounts = new Map();
@@ -148,4 +148,17 @@ test("a scavenge claim blocked by cooldown creates no reward ledger entry", asyn
   assert.equal(blocked.account.balance, 35);
   assert.equal(prisma.transactions.length, 1);
   assert.equal(prisma.purchases.size, 1);
+});
+
+test("parallel daily claims award the daily reward only once", async () => {
+  const prisma = createPrisma();
+  const now = new Date("2026-10-29T14:00:00.000Z");
+  const results = await Promise.all([
+    claimDailyReward(prisma, "guild-1", "user-5", { amount: 100, now }),
+    claimDailyReward(prisma, "guild-1", "user-5", { amount: 100, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.claimed).length, 1);
+  assert.equal((await getCurrencyAccount(prisma, "guild-1", "user-5")).balance, 100);
+  assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 1);
 });
