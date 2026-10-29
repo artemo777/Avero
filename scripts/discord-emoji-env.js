@@ -7,20 +7,21 @@ import path from "node:path";
  */
 export function mergeEnvAssignments(source, assignments) {
   const lines = String(source ?? "").split(/\r?\n/);
-  const pending = new Map(Object.entries(assignments));
+  const requested = new Map(Object.entries(assignments));
+  const found = new Set();
   const output = lines.map((line) => {
     const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/);
-    if (!match || !pending.has(match[1])) return line;
+    if (!match || !requested.has(match[1])) return line;
     const key = match[1];
-    const value = pending.get(key);
-    pending.delete(key);
-    return key + "=" + value;
+    found.add(key);
+    return key + "=" + requested.get(key);
   });
 
   while (output.length && output.at(-1) === "") output.pop();
-  if (pending.size) {
+  const missing = [...requested].filter(([key]) => !found.has(key));
+  if (missing.length) {
     if (output.length) output.push("");
-    for (const [key, value] of pending) output.push(key + "=" + value);
+    for (const [key, value] of missing) output.push(key + "=" + value);
   }
   return output.join("\n") + "\n";
 }
