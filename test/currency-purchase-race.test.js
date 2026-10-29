@@ -65,3 +65,58 @@ test("a unique constraint error without an existing purchase is rethrown", async
     (error) => error === failure
   );
 });
+
+function createPurchasePrisma(initialBalance) {
+  const account = {
+    guildId: "guild-2",
+    userId: "user-2",
+    balance: initialBalance
+  };
+  const purchases = new Map();
+  const transactions = [];
+  const keyOf = ({ guildId, userId, itemId }) => guildId + ":" + userId + ":" + itemId;
+  const prisma = {
+    account,
+    purchases,
+    transactions,
+    $transaction: (callback) => callback(prisma),
+    currencyAccount: {
+      async upsert() { return account; },
+      async findUnique() { return { ...account }; },
+      async updateMany({ where, data }) {
+        if (where.balance?.gte !== undefined && account.balance < where.balance.gte) {
+          return { count: 0 };
+        }
+        if (data.balance?.decrement !== undefined) account.balance -= data.balance.decrement;
+        return { count: 1 };
+      }
+    },
+    currencyPurchase: {
+      async findUnique({ where }) { return purchases.get(keyOf(where.guildId_userId_itemId)) ?? null; },
+      async create({ data }) {
+        const key = keyOf(data);
+        if (purchases.has(key)) throw uniqueConstraintError();
+        purchases.set(key, data);
+        return data;
+      }
+    },
+    currencyTransaction: {
+      async create({ data }) { transactions.push(data); return data; }
+    }
+  };
+  return prisma;
+}
+
+test("parallel purchases of different items cannot overspend the same balance", async () => {
+  const prisma = createPurchasePrisma(100);
+  const results = await Promise.all([
+    purchaseCurrencyItem(prisma, "guild-2", "user-2", "neon_badge", 80),
+    purchaseCurrencyItem(prisma, "guild-2", "user-2", "vault_badge", 80)
+  ]);
+
+  assert.equal(results.filter((result) => result.purchased).length, 1);
+  assert.equal(prisma.account.balance, 20);
+  assert.ok(prisma.account.balance >= 0);
+  assert.equal(prisma.transactions.length, 1);
+  assert.equal(prisma.transactions[0].amount, -80);
+});
