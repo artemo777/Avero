@@ -40,7 +40,7 @@ export const leaderboardCommand = Object.freeze({
     } else {
       const grouped = await prisma.currencyTransaction.groupBy({
         by: ["userId", "type"],
-        where: { guildId: interaction.guildId, type: { in: ["guess_win_play", "guess_win", "guess_loss"] } },
+        where: { guildId: interaction.guildId, type: { in: ["guess_win_play", "guess_loss"] } },
         _count: { _all: true }
       });
       const scores = new Map();
