@@ -262,9 +262,9 @@ export function renderScavenge(result, userId, spot, item, guildId) {
     }));
   }
   const dropText = result.itemId && item
-    ? "\n\n🎁 **Collectible found!**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
+    ? "\n\n🎁 **Collectible found!**\n" + getCollectibleEmoji(item.id, guildId) + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
     : result.duplicateItemId && item
-      ? "\n\n🔁 You found another " + item.icon + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
+      ? "\n\n🔁 You found another " + getCollectibleEmoji(item.id, guildId) + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
       : "";
   return gamePayload(createGamePanel({
     title: result.itemId ? "Something rare!" : "Search complete",
@@ -377,7 +377,7 @@ export function renderBuy(result, item, userId, guildId) {
   const success = result.purchased;
   const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
   const description = success
-    ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
+    ? "### " + collectibleIcon(item, guildId) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
       : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily or /guess.";
   return gamePayload(createGamePanel({
