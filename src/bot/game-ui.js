@@ -403,7 +403,7 @@ async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
   const won = guess === answer;
   await recordGuessResult(prisma, guildId, userId, won);
-  const result = won ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
+  const result = won ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
 async function runRps(prisma, guildId, playerChoice, userId) {
