@@ -126,7 +126,7 @@ test("economy panels resolve custom emoji only in the configured source guild", 
 
     const externalShop = panel(await renderShop(fakePrisma(), "98765432109876543", "user-1"));
     const externalWallet = buttons(externalShop).find((entry) => entry.custom_id === "avero|user-1|balance");
-    assert.equal(externalWallet.emoji.id, null);
+    assert.equal(externalWallet.emoji.id, undefined);
     assert.equal(externalWallet.emoji.name, "◉");
 
     const bought = panel(renderBuy({ purchased: true, account: { balance: 500 } }, item, "user-1", "12345678901234567"));
