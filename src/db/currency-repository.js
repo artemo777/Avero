@@ -348,7 +348,7 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   return {
     lifetimeEarned,
     lifetimeSpent,
-    gameWins: count("guess_win"),
+    gameWins: count("guess_win_play") + count("guess_win"),
     guessWins: count("guess_win_play") + count("guess_win"),
     gameLosses: count("guess_loss"),
     gamesPlayed: count("guess_win_play") + count("guess_win") + count("guess_loss"),
