@@ -27,6 +27,6 @@ export const buyCommand = Object.freeze({
       return;
     }
     const result = await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price);
-    await interaction.reply(renderBuy(result, item, interaction.user.id));
+    await interaction.reply(renderBuy(result, item, interaction.user.id, interaction.guildId));
   }
 });
