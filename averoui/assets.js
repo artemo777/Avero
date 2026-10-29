@@ -1,5 +1,5 @@
 import { ICONS } from "./icons.js";
-import { DISCORD_EMOJI, getDiscordEmoji } from "./discord-emojis.js";
+import { getDiscordEmoji } from "./discord-emojis.js";
 
 export const ASSETS = Object.freeze({
   brandMark: Object.freeze({ id: "brand-mark", kind: "glyph", value: ICONS.brand, description: "Text-safe Avero brand mark", uses: Object.freeze(["headers", "loaders", "profile"]) }),
