@@ -323,13 +323,25 @@ export async function purchaseCurrencyItem(
 }
 
 
-export async function recordGuessResult(prisma, guildId, userId, won, { now = new Date() } = {}) {
+export async function recordGameResult(prisma, guildId, userId, game, outcome, { now = new Date() } = {}) {
   const key = currencyKey(guildId, userId);
-  if (typeof won !== "boolean") throw new TypeError("won must be a boolean.");
-  if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
+  if (typeof game !== "string" || !/^[a-z][a-z0-9_]{0,19}$/.test(game)) {
+    throw new TypeError("game must be a simple lowercase identifier.");
+  }
+  if (!["win", "loss", "tie"].includes(outcome)) {
+    throw new TypeError("outcome must be win, loss, or tie.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
   return prisma.currencyTransaction.create({
-    data: { ...key, amount: 0, type: won ? "guess_win_play" : "guess_loss", createdAt: now }
+    data: { ...key, amount: 0, type: game + "_" + outcome, createdAt: now }
   });
+}
+
+export async function recordGuessResult(prisma, guildId, userId, won, options = {}) {
+  if (typeof won !== "boolean") throw new TypeError("won must be a boolean.");
+  return recordGameResult(prisma, guildId, userId, "guess", won ? "win" : "loss", options);
 }
 
 export async function getCurrencyStats(prisma, guildId, userId) {
@@ -348,10 +360,15 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   return {
     lifetimeEarned,
     lifetimeSpent,
-    gameWins: count("guess_win_play"),
+    gameWins: count("guess_win_play") + count("rps_win"),
     guessWins: count("guess_win_play"),
-    gameLosses: count("guess_loss"),
-    gamesPlayed: count("guess_win_play") + count("guess_loss"),
+    guessLosses: count("guess_loss"),
+    rpsWins: count("rps_win"),
+    rpsLosses: count("rps_loss"),
+    rpsTies: count("rps_tie"),
+    gameLosses: count("guess_loss") + count("rps_loss"),
+    gameTies: count("rps_tie"),
+    gamesPlayed: count("guess_win_play") + count("guess_loss") + count("rps_win") + count("rps_loss") + count("rps_tie"),
     dailyClaims: count("daily"),
     workShifts: count("work"),
     scavenges: count("scavenge"),
