@@ -1,4 +1,5 @@
 import { Client, GatewayIntentBits } from "discord.js";
+import { writeEmojiEnvironment } from "./discord-emoji-env.js";
 import { renderRegisteredAsset } from "../averoui/render-asset.js";
 
 const token = process.env.DISCORD_TOKEN;
@@ -52,9 +53,20 @@ try {
     envLines.push(envName + "=" + emoji.id);
   }
 
-  console.log("\nAdd these IDs to the private .env used to run Avero:\n");
-  console.log(envLines.join("\n"));
-  console.log("\nEmoji upload complete. Restart Avero after adding the IDs.");
+  const assignments = Object.fromEntries(envLines.map((line) => {
+    const separator = line.indexOf("=");
+    return [line.slice(0, separator), line.slice(separator + 1)];
+  }));
+  try {
+    const envPath = await writeEmojiEnvironment(assignments);
+    console.log("\nSaved the emoji IDs to " + envPath + " (permissions restricted to the file owner).");
+    console.log("No bot token was written to that file by this uploader.");
+  } catch (error) {
+    console.warn("\nCould not update the local .env automatically: " + error.message);
+    console.warn("Use the ID lines below as a fallback in your hosting environment.");
+  }
+  console.log("\nEmoji IDs:\n" + envLines.join("\n"));
+  console.log("\nEmoji upload complete. Restart Avero to load the custom emoji IDs.");
 } catch (error) {
   console.error("Avero emoji upload failed:", error.message);
   process.exitCode = 1;
