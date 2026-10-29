@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { recordGuessResult } from "../src/db/currency-repository.js";
+import { recordGameResult, recordGuessResult } from "../src/db/currency-repository.js";
 
 test("records each guess win and loss without changing the coin balance", async () => {
   const records = [];
@@ -23,4 +23,22 @@ test("records each guess win and loss without changing the coin balance", async 
 
 test("guess result recorder rejects non-boolean outcomes", async () => {
   await assert.rejects(recordGuessResult({}, "guild-1", "user-1", "win"), /won must be a boolean/);
+});
+
+test("records rock-paper-scissors wins, losses, and ties as non-monetary outcomes", async () => {
+  const records = [];
+  const prisma = { currencyTransaction: { async create({ data }) { records.push(data); return data; } } };
+  await recordGameResult(prisma, "guild-2", "user-2", "rps", "win");
+  await recordGameResult(prisma, "guild-2", "user-2", "rps", "loss");
+  await recordGameResult(prisma, "guild-2", "user-2", "rps", "tie");
+  assert.deepEqual(records.map(({ type, amount }) => ({ type, amount })), [
+    { type: "rps_win", amount: 0 },
+    { type: "rps_loss", amount: 0 },
+    { type: "rps_tie", amount: 0 }
+  ]);
+});
+
+test("game result recorder validates game and outcome", async () => {
+  await assert.rejects(recordGameResult({}, "guild-1", "user-1", "RPS!", "win"), /game must be/);
+  await assert.rejects(recordGameResult({}, "guild-1", "user-1", "rps", "draw"), /outcome must be/);
 });
