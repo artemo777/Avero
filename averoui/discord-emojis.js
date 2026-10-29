@@ -36,7 +36,7 @@ function fallbackEmoji([, , fallback]) {
 function resolveCustomEmoji([envKey, name, fallback], guildId) {
   const sourceGuildId = process.env.DISCORD_GUILD_ID;
   const id = process.env[envKey];
-  if (!guildId || !sourceGuildId || guildId !== sourceGuildId || !/^\\d{17,20}$/.test(id ?? "")) {
+  if (!guildId || !sourceGuildId || guildId !== sourceGuildId || !/^\d{17,20}$/.test(id ?? "")) {
     return fallback;
   }
   return "<:" + name + ":" + id + ">";
