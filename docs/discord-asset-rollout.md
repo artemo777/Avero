@@ -11,7 +11,7 @@ This pack contains original Avero SVG artwork in `assets/icons/` and the shared 
 
 ## Upload the original art as server emoji
 
-The repository now includes an idempotent uploader. It converts the registered SVG assets to 128px PNG images, uploads the custom emoji to your configured Discord server, reuses emoji already present by name, and prints the IDs for bot configuration.
+The repository includes an idempotent uploader. It converts the registered SVG assets to 128px PNG images, uploads custom emoji to the configured Discord server, reuses emoji already present by name, and automatically writes the resulting IDs to the local `.env` file with owner-only file permissions. It never writes the bot token itself.
 
 1. Set `DISCORD_TOKEN` and `DISCORD_GUILD_ID` in your private local `.env` or hosting environment.
 2. Ensure the bot has **Manage Expressions** (Administrator also includes this, but is broader than necessary).
@@ -22,8 +22,8 @@ The repository now includes an idempotent uploader. It converts the registered S
    npm run discord:upload-emojis
    ```
 
-4. Copy the printed `AVERO_EMOJI_*_ID` lines into the same private environment as the running bot.
-5. Restart Avero. The wallet, rewards, milestones, and six collectible UI emoji will use server custom emoji; Unicode fallbacks remain for any unset IDs.
+4. The uploader saves `AVERO_EMOJI_*_ID` entries to `.env` automatically. If your bot runs on a separate host, set `AVERO_EMOJI_ENV_PATH` to the private env file used by that host, or use the printed IDs to update the host's secret/environment settings.
+5. Restart Avero. Wallet, rewards, milestones, and the six collectible UI emoji will use server custom emoji; Unicode fallbacks remain for any unset IDs.
 
 Never paste the bot token into chat or commit a `.env` file. If an upload fails, check that the bot is installed in the target server, the guild ID is correct, it has Manage Expressions, and the server has available emoji slots.
 
