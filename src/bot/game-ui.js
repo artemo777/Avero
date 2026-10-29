@@ -197,7 +197,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const milestoneProgress = nextMilestone
     ? " · Next: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
     : " · All collection milestones complete";
-  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
+  const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, getCollectibleEmoji(item.id)));
   const pageButtons = [];
   if (pageCount > 1) {
     const previous = button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary);
