@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import { MessageFlags } from "discord.js";
-import { awardGameReward } from "../../db/currency-repository.js";
+import { awardGameReward, recordGuessResult } from "../../db/currency-repository.js";
 import { renderGuess } from "../game-ui.js";
 
 const MIN_GUESS = 1;
@@ -32,7 +32,9 @@ export const guessCommand = Object.freeze({
       return;
     }
     const answer = randomInt(MIN_GUESS, MAX_GUESS + 1);
-    const result = guess === answer
+    const won = guess === answer;
+    await recordGuessResult(prisma, interaction.guildId, interaction.user.id, won);
+    const result = won
       ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, WIN_REWARD, { type: "guess_win", cooldownMs: 60_000 })
       : null;
     await interaction.reply(renderGuess(guess, answer, result, interaction.user.id));
