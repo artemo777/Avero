@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderBuy, renderInventory, renderItemDetails, renderScavenge, renderShop } from "../src/bot/game-ui.js";
+import { renderBalance, renderBuy, renderInventory, renderItemDetails, renderScavenge, renderShop } from "../src/bot/game-ui.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
@@ -118,6 +118,16 @@ test("economy panels resolve custom emoji only in the configured source guild", 
     process.env.AVERO_EMOJI_COIN_ID = "23456789012345678";
     process.env.AVERO_EMOJI_NEON_BADGE_ID = "34567890123456789";
     const item = SHOP_ITEMS.find((candidate) => candidate.id === "neon_badge");
+
+    const sourceBalance = panel(await renderBalance(fakePrisma(), "12345678901234567", "user-1"));
+    const sourceBalanceWallet = buttons(sourceBalance).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(sourceBalanceWallet.emoji.id, "23456789012345678");
+    assert.equal(sourceBalanceWallet.emoji.name, "avero_coin");
+
+    const externalBalance = panel(await renderBalance(fakePrisma(), "98765432109876543", "user-1"));
+    const externalBalanceWallet = buttons(externalBalance).find((entry) => entry.custom_id === "avero|user-1|balance");
+    assert.equal(externalBalanceWallet.emoji.id, undefined);
+    assert.equal(externalBalanceWallet.emoji.name, "◉");
 
     const sourceShop = panel(await renderShop(fakePrisma(), "12345678901234567", "user-1"));
     const sourceWallet = buttons(sourceShop).find((entry) => entry.custom_id === "avero|user-1|balance");
