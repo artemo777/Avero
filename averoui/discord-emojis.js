@@ -29,6 +29,11 @@ export const DISCORD_EMOJI = Object.freeze({
   milestone: customEmoji("AVERO_EMOJI_BADGE_ID", "avero_badge", "🏆"),
   previous: "⬅️",
   next: "➡️",
+  loader: customEmoji("AVERO_EMOJI_LOADER_ID", "avero_loader", "◌"),
+  gemCommon: customEmoji("AVERO_EMOJI_GEM_COMMON_ID", "avero_gem_common", "◇"),
+  gemRare: customEmoji("AVERO_EMOJI_GEM_RARE_ID", "avero_gem_rare", "⬡"),
+  gemEpic: customEmoji("AVERO_EMOJI_GEM_EPIC_ID", "avero_gem_epic", "✧"),
+  gemLegendary: customEmoji("AVERO_EMOJI_GEM_LEGENDARY_ID", "avero_gem_legendary", "✦"),
   collectible: customEmoji("AVERO_EMOJI_BADGE_ID", "avero_badge", "🏅"),
   collectibles: Object.freeze({
     neon_badge: customEmoji("AVERO_EMOJI_NEON_BADGE_ID", "avero_neon_badge", "🌟"),
