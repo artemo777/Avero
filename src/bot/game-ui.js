@@ -343,7 +343,7 @@ export function renderDaily(result, userId, guildId) {
     color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId, false, guildId)
   }));
 }
-export function renderGuess(guess, answer, result, userId) {
+export function renderGuess(guess, answer, result, userId, guildId) {
   const won = guess === answer;
   return gamePayload(createGamePanel({
     title: won ? "Perfect guess!" : "Not this time",
@@ -354,10 +354,10 @@ export function renderGuess(guess, answer, result, userId) {
     color: won ? THEME.colors.success : THEME.colors.primary,
     footer: "NUMBER GAME • NO WAGERS, NO ENTRY FEE",
     buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI.guess))
-      .concat(navButtons(userId).slice(0, 2))
+      .concat(navButtons(userId, false, guildId).slice(0, 2))
   }));
 }
-export function renderRps(playerChoice, botChoice, userId) {
+export function renderRps(playerChoice, botChoice, userId, guildId) {
   const tie = playerChoice === botChoice;
   const won = !tie && BEATS[playerChoice] === botChoice;
   const outcome = tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**";
@@ -370,7 +370,7 @@ export function renderRps(playerChoice, botChoice, userId) {
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
     footer: "DUEL DECK • NO COINS INVOLVED",
     buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary, DISCORD_EMOJI[choice]))
-      .concat(navButtons(userId).slice(0, 1))
+      .concat(navButtons(userId, false, guildId).slice(0, 1))
   }));
 }
 export function renderBuy(result, item, userId, guildId) {
@@ -388,7 +388,7 @@ export function renderBuy(result, item, userId, guildId) {
 async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
   const result = guess === answer ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win" }) : null;
-  return renderGuess(guess, answer, result, userId);
+  return renderGuess(guess, answer, result, userId, guildId);
 }
 async function runRps(playerChoice, userId) {
   return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId);
@@ -475,7 +475,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
         await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runRps(parsed.arg, interaction.user.id);
+      payload = await runRps(parsed.arg, interaction.user.id, interaction.guildId);
       break;
     default: return false;
   }
