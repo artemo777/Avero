@@ -258,40 +258,40 @@ export async function purchaseCurrencyItem(
         where: { guildId_userId: key },
         create: key,
         update: {}
-    });
+      });
 
-    const existing = await tx.currencyPurchase.findUnique({
-      where: { guildId_userId_itemId: { ...key, itemId } }
-    });
-    const accountBefore = await tx.currencyAccount.findUnique({
-      where: { guildId_userId: key }
-    });
-    if (existing) return { purchased: false, reason: "owned", account: accountBefore };
-    if (accountBefore.balance < price) {
-      return { purchased: false, reason: "insufficient_funds", account: accountBefore };
-    }
+      const existing = await tx.currencyPurchase.findUnique({
+        where: { guildId_userId_itemId: { ...key, itemId } }
+      });
+      const accountBefore = await tx.currencyAccount.findUnique({
+        where: { guildId_userId: key }
+      });
+      if (existing) return { purchased: false, reason: "owned", account: accountBefore };
+      if (accountBefore.balance < price) {
+        return { purchased: false, reason: "insufficient_funds", account: accountBefore };
+      }
 
-    const updated = await tx.currencyAccount.updateMany({
-      where: { ...key, balance: { gte: price } },
-      data: { balance: { decrement: price } }
-    });
-    if (updated.count !== 1) {
+      const updated = await tx.currencyAccount.updateMany({
+        where: { ...key, balance: { gte: price } },
+        data: { balance: { decrement: price } }
+      });
+      if (updated.count !== 1) {
+        const account = await tx.currencyAccount.findUnique({
+          where: { guildId_userId: key }
+        });
+        return { purchased: false, reason: "insufficient_funds", account };
+      }
+
+      await tx.currencyPurchase.create({
+        data: { ...key, itemId, purchasedAt: now }
+      });
+      await tx.currencyTransaction.create({
+        data: { ...key, amount: -price, type: "shop_purchase", createdAt: now }
+      });
       const account = await tx.currencyAccount.findUnique({
         where: { guildId_userId: key }
       });
-      return { purchased: false, reason: "insufficient_funds", account };
-    }
-
-    await tx.currencyPurchase.create({
-      data: { ...key, itemId, purchasedAt: now }
-    });
-    await tx.currencyTransaction.create({
-      data: { ...key, amount: -price, type: "shop_purchase", createdAt: now }
-    });
-    const account = await tx.currencyAccount.findUnique({
-      where: { guildId_userId: key }
-    });
-    return { purchased: true, itemId, price, account };
+      return { purchased: true, itemId, price, account };
     });
   } catch (error) {
     // A concurrent purchase of the same unique item can win after our initial
