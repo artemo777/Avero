@@ -39,7 +39,6 @@ export const rankCommand = Object.freeze({
             "**Progress:** " + (xp - currentLevelXp) + " / " + (nextLevelXp - currentLevelXp) + " XP to level " + (level + 1)
           ].join("\n"),
           color: THEME.colors.primary,
-          footer: "Avero • Leveling"
         })
       ]
     });

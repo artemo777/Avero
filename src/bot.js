@@ -1,10 +1,11 @@
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
 import { grantLevelRoleRewards, randomMessageExperience } from "./bot/leveling.js";
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
+import { handleGameComponent } from "./bot/game-ui.js";
 import { recordMessageExperience } from "./db/member-repository.js";
 
 let config;
@@ -16,6 +17,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
+const gameCommandNames = new Set(["balance", "daily", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work", "scavenge"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -69,13 +71,32 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton()) {
+    if (!interaction.customId.startsWith("avero|")) return;
+    try {
+      const action = interaction.customId.split("|")[2];
+      await handleGameComponent(interaction, { prisma: action === "rps" ? undefined : getPrismaClient() });
+    } catch (error) {
+      console.error("Game component failed:", error);
+      const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
   if (!interaction.isChatInputCommand()) return;
 
   const command = commandMap.get(interaction.commandName);
   if (!command) return;
 
+  if (!interaction.guildId) {
+    await interaction.reply({ content: "Avero commands can only be used inside a server.", flags: MessageFlags.Ephemeral });
+    return;
+  }
+
   try {
-    const prisma = interaction.commandName === "rank" ? getPrismaClient() : undefined;
+    const needsDatabase = interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName);
+    const prisma = needsDatabase ? getPrismaClient() : undefined;
     await command.execute(interaction, { prisma });
   } catch (error) {
     console.error("Command execution failed (" + interaction.commandName + "):", error);
@@ -88,7 +109,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
           footer: "AveroUI • Shared response style"
         })
       ],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     };
 
     if (interaction.replied || interaction.deferred) {

@@ -14,9 +14,49 @@ model MemberProfile {
   xp               Int      @default(0)
   level            Int      @default(0)
   lastMessageXpAt  DateTime?
+  equippedBadgeItemId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   @@unique([guildId, userId])
   @@index([guildId, xp])
+}
+
+model CurrencyAccount {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  balance      Int      @default(0)
+  lastDailyAt  DateTime?
+  lastWorkAt   DateTime?
+  lastScavengeAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, balance])
+}
+
+model CurrencyTransaction {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  amount    Int
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([guildId, userId, createdAt])
+  @@index([guildId, type, createdAt])
+}
+
+
+model CurrencyPurchase {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  itemId      String
+  purchasedAt DateTime @default(now())
+
+  @@unique([guildId, userId, itemId])
+  @@index([guildId, userId])
 }

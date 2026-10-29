@@ -11,6 +11,13 @@ const LIMITS = Object.freeze({
   totalText: 6000
 });
 
+function safeAttachmentUrl(value, name) {
+  if (typeof value !== "string" || !/^attachment:\/\/[a-zA-Z0-9._-]+$/.test(value)) {
+    throw new TypeError(name + " must be a local attachment:// filename.");
+  }
+  return value;
+}
+
 function optionalString(value, name, maxLength) {
   if (value === undefined) return undefined;
   if (typeof value !== "string" || value.length === 0 || value.length > maxLength) {
@@ -27,6 +34,8 @@ export function createEmbed(options = {}) {
     url,
     footer,
     timestamp,
+    thumbnail,
+    image,
     fields = []
   } = options;
 
@@ -46,6 +55,8 @@ export function createEmbed(options = {}) {
   if (safeDescription !== undefined) embed.description = safeDescription;
   if (url !== undefined) embed.url = safeHttpsUrl(url);
   if (safeFooter !== undefined) embed.footer = { text: safeFooter };
+  if (thumbnail !== undefined) embed.thumbnail = { url: safeAttachmentUrl(thumbnail, "thumbnail") };
+  if (image !== undefined) embed.image = { url: safeAttachmentUrl(image, "image") };
 
   if (timestamp !== undefined) {
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
