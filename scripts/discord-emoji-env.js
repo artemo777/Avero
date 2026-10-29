@@ -12,7 +12,7 @@ export function mergeEnvAssignments(source, assignments) {
     if (!/^AVERO_EMOJI_[A-Z0-9_]+_ID$/.test(key)) {
       throw new TypeError("Only AVERO_EMOJI_*_ID assignments can be written.");
     }
-    if (typeof value !== "string" || !/^\\d{17,20}$/.test(value)) {
+    if (typeof value !== "string" || !/^\d{17,20}$/.test(value)) {
       throw new TypeError("Emoji IDs must be valid Discord snowflake IDs.");
     }
   }
