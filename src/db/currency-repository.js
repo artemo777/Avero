@@ -252,7 +252,8 @@ export async function purchaseCurrencyItem(
     throw new TypeError("now must be a valid Date.");
   }
 
-  return prisma.$transaction(async (tx) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
     await tx.currencyAccount.upsert({
       where: { guildId_userId: key },
       create: key,
@@ -291,5 +292,19 @@ export async function purchaseCurrencyItem(
       where: { guildId_userId: key }
     });
     return { purchased: true, itemId, price, account };
-  });
+    });
+  } catch (error) {
+    // A concurrent purchase of the same unique item can win after our initial
+    // ownership check. Prisma rolls the losing transaction back; report the
+    // normal "already owned" outcome instead of surfacing an internal error.
+    if (error?.code !== "P2002") throw error;
+    const [existing, account] = await Promise.all([
+      prisma.currencyPurchase.findUnique({
+        where: { guildId_userId_itemId: { ...key, itemId } }
+      }),
+      prisma.currencyAccount.findUnique({ where: { guildId_userId: key } })
+    ]);
+    if (!existing) throw error;
+    return { purchased: false, reason: "owned", account };
+  }
 }
