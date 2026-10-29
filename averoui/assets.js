@@ -1,5 +1,5 @@
 import { ICONS } from "./icons.js";
-import { DISCORD_EMOJI } from "./discord-emojis.js";
+import { DISCORD_EMOJI, getDiscordEmoji } from "./discord-emojis.js";
 
 export const ASSETS = Object.freeze({
   brandMark: Object.freeze({ id: "brand-mark", kind: "glyph", value: ICONS.brand, description: "Text-safe Avero brand mark", uses: Object.freeze(["headers", "loaders", "profile"]) }),
@@ -35,12 +35,12 @@ const ASSET_SYMBOLS = Object.freeze({
   "brand-mark-svg": ["brand", "◈"]
 });
 
-export function getAssetSymbol(id) {
+export function getAssetSymbol(id, guildId) {
   const asset = getAsset(id);
   if (!asset) return "·";
   const mapping = ASSET_SYMBOLS[asset.id];
   if (!mapping) return asset.value ?? "·";
-  const symbol = DISCORD_EMOJI[mapping[0]];
+  const symbol = getDiscordEmoji(mapping[0], guildId);
   return typeof symbol === "string" && /^<a?:[A-Za-z0-9_]+:\d{17,20}>$/.test(symbol)
     ? symbol
     : mapping[1];
