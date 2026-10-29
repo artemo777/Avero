@@ -7,7 +7,7 @@ import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
-import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult } from "../db/currency-repository.js";
+import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 
@@ -406,8 +406,11 @@ async function runGuess(prisma, guildId, userId, guess) {
   const result = won ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_win", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
-async function runRps(playerChoice, userId) {
-  return renderRps(playerChoice, CHOICES[randomInt(CHOICES.length)], userId);
+async function runRps(prisma, guildId, playerChoice, userId) {
+  const botChoice = CHOICES[randomInt(CHOICES.length)];
+  const outcome = playerChoice === botChoice ? "tie" : BEATS[playerChoice] === botChoice ? "win" : "loss";
+  await recordGameResult(prisma, guildId, userId, "rps", outcome);
+  return renderRps(playerChoice, botChoice, userId);
 }
 export async function handleGameComponent(interaction, { prisma } = {}) {
   const parsed = readComponentId(interaction.customId);
@@ -420,7 +423,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
     await interaction.reply({ content: "Avero games and currency are available inside a server.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  if (!prisma && parsed.action !== "rps") throw new Error("Game component requires a database client.");
+  if (!prisma) throw new Error("Game component requires a database client.");
   let payload;
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
@@ -491,7 +494,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
         await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runRps(parsed.arg, interaction.user.id);
+      payload = await runRps(prisma, interaction.guildId, parsed.arg, interaction.user.id);
       break;
     default: return false;
   }
