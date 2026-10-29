@@ -323,6 +323,15 @@ export async function purchaseCurrencyItem(
 }
 
 
+export async function recordGuessResult(prisma, guildId, userId, won, { now = new Date() } = {}) {
+  const key = currencyKey(guildId, userId);
+  if (typeof won !== "boolean") throw new TypeError("won must be a boolean.");
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
+  return prisma.currencyTransaction.create({
+    data: { ...key, amount: 0, type: won ? "guess_win_play" : "guess_loss", createdAt: now }
+  });
+}
+
 export async function getCurrencyStats(prisma, guildId, userId) {
   const key = currencyKey(guildId, userId);
   const rows = await prisma.currencyTransaction.groupBy({
@@ -340,6 +349,9 @@ export async function getCurrencyStats(prisma, guildId, userId) {
     lifetimeEarned,
     lifetimeSpent,
     gameWins: count("guess_win"),
+    guessWins: count("guess_win_play") + count("guess_win"),
+    gameLosses: count("guess_loss"),
+    gamesPlayed: count("guess_win_play") + count("guess_win") + count("guess_loss"),
     dailyClaims: count("daily"),
     workShifts: count("work"),
     scavenges: count("scavenge"),
