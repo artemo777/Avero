@@ -13,9 +13,10 @@ export function mergeEnvAssignments(source, assignments) {
     const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/);
     if (!match || !requested.has(match[1])) return line;
     const key = match[1];
+    if (found.has(key)) return null;
     found.add(key);
     return key + "=" + requested.get(key);
-  });
+  }).filter((line) => line !== null);
 
   while (output.length && output.at(-1) === "") output.pop();
   const missing = [...requested].filter(([key]) => !found.has(key));
