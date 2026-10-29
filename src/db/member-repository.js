@@ -41,3 +41,94 @@ export async function addExperience(prisma, guildId, userId, amount) {
     update: { xp: { increment: amount } }
   });
 }
+
+export function levelForExperience(xp) {
+  if (!Number.isSafeInteger(xp) || xp < 0) {
+    throw new TypeError("Experience must be a non-negative safe integer.");
+  }
+  return Math.floor(Math.sqrt(xp / 100));
+}
+
+export function experienceForLevel(level) {
+  if (!Number.isSafeInteger(level) || level < 0) {
+    throw new TypeError("Level must be a non-negative safe integer.");
+  }
+  return 100 * level * level;
+}
+
+export async function recordMessageExperience(
+  prisma,
+  guildId,
+  userId,
+  { amount, cooldownMs = 60_000, now = new Date() } = {}
+) {
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    throw new TypeError("Experience amount must be a positive safe integer.");
+  }
+  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 0) {
+    throw new TypeError("Cooldown must be a non-negative safe integer.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  const key = memberWhere(guildId, userId).guildId_userId;
+  await prisma.memberProfile.upsert({
+    where: { guildId_userId: key },
+    create: key,
+    update: {}
+  });
+
+  const previous = await prisma.memberProfile.findUnique({
+    where: { guildId_userId: key }
+  });
+  const previousLevel = previous.level;
+  const result = await prisma.memberProfile.updateMany({
+    where: {
+      ...key,
+      OR: [
+        { lastMessageXpAt: null },
+        { lastMessageXpAt: { lte: new Date(now.getTime() - cooldownMs) } }
+      ]
+    },
+    data: {
+      xp: { increment: amount },
+      lastMessageXpAt: now
+    }
+  });
+
+  if (result.count === 0) {
+    return { awarded: false, previousLevel, profile: previous };
+  }
+
+  const profile = await prisma.memberProfile.findUnique({
+    where: { guildId_userId: key }
+  });
+  const level = levelForExperience(profile.xp);
+  let leveledUp = false;
+  let levelBeforeUpdate = profile.level;
+
+  if (level > profile.level) {
+    // The conditional update makes the stored level monotonic under concurrent messages.
+    // Only the event that successfully advances the level should announce the level-up.
+    const levelUpdate = await prisma.memberProfile.updateMany({
+      where: {
+        ...key,
+        level: { lt: level }
+      },
+      data: { level }
+    });
+    leveledUp = levelUpdate.count > 0;
+  }
+
+  const updatedProfile = await prisma.memberProfile.findUnique({
+    where: { guildId_userId: key }
+  });
+
+  return {
+    awarded: true,
+    previousLevel: leveledUp ? levelBeforeUpdate : updatedProfile.level,
+    leveledUp,
+    profile: updatedProfile
+  };
+}

@@ -5,3 +5,4 @@ export { escapeMarkdown, truncateText } from "./text.js";
 export { userMention, roleMention, channelMention } from "./mentions.js";
 export { safeHttpsUrl, formatHyperlink } from "./links.js";
 export { createEmbed } from "./embeds.js";
+export { createPanel } from "./components.js";

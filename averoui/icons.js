@@ -1,13 +1,21 @@
+// Plain Unicode glyphs only — no platform emoji glyphs.
 export const ICONS = Object.freeze({
-  success: "✅",
-  warning: "⚠️",
-  error: "❌",
-  info: "ℹ️",
-  loading: "⏳",
-  level: "✨",
-  trophy: "🏆",
-  game: "🎮",
-  boost: "🚀",
-  donation: "💜",
-  vote: "🗳️"
+  brand: "◈",
+  success: "✓",
+  warning: "△",
+  error: "×",
+  info: "ⓘ",
+  loading: "⋯",
+  level: "✦",
+  trophy: "♜",
+  game: "⌘",
+  boost: "↗",
+  donation: "◆",
+  vote: "▣",
+  online: "●",
+  offline: "○",
+  arrow: "↗",
+  divider: "┄",
+  sparkle: "✧",
+  dot: "·"
 });
