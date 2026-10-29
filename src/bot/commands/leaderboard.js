@@ -64,7 +64,7 @@ export const leaderboardCommand = Object.freeze({
       }
       rows = [...scores.values()]
         .map((row) => {
-          const guessWins = Math.max(row.guessWins, row.legacyGuessWins);
+          const guessWins = row.guessWins + row.legacyGuessWins;
           const wins = guessWins + row.rpsWins;
           return { ...row, wins, gamesPlayed: wins + row.losses + row.ties };
         })
