@@ -28,11 +28,17 @@ test("every shop collectible has a dedicated emoji with a safe fallback", () => 
 test("custom emojis are only resolved for their configured source guild", () => {
   const previousGuild = process.env.DISCORD_GUILD_ID;
   const previousCoin = process.env.AVERO_EMOJI_COIN_ID;
+  const previousNeon = process.env.AVERO_EMOJI_NEON_BADGE_ID;
   try {
     process.env.DISCORD_GUILD_ID = "12345678901234567";
     process.env.AVERO_EMOJI_COIN_ID = "23456789012345678";
+    process.env.AVERO_EMOJI_NEON_BADGE_ID = "34567890123456789";
     assert.equal(getDiscordEmoji("wallet", "12345678901234567"), "<:avero_coin:23456789012345678>");
+    assert.equal(getAssetSymbol("coin", "12345678901234567"), "<:avero_coin:23456789012345678>");
+    assert.equal(getCollectibleEmoji("neon_badge", "12345678901234567"), "<:avero_neon_badge:34567890123456789>");
     assert.equal(getDiscordEmoji("wallet", "34567890123456789"), "◉");
+    assert.equal(getAssetSymbol("coin", "34567890123456789"), "◉");
+    assert.equal(getCollectibleEmoji("neon_badge", "34567890123456789"), "🌟");
     assert.equal(getDiscordEmoji("wallet"), "◉");
     assert.equal(getDiscordEmoji("wallet", "12345678901234567"), "<:avero_coin:23456789012345678>");
   } finally {
@@ -40,6 +46,8 @@ test("custom emojis are only resolved for their configured source guild", () => 
     else process.env.DISCORD_GUILD_ID = previousGuild;
     if (previousCoin === undefined) delete process.env.AVERO_EMOJI_COIN_ID;
     else process.env.AVERO_EMOJI_COIN_ID = previousCoin;
+    if (previousNeon === undefined) delete process.env.AVERO_EMOJI_NEON_BADGE_ID;
+    else process.env.AVERO_EMOJI_NEON_BADGE_ID = previousNeon;
   }
 });
 
