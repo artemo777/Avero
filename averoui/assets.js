@@ -40,7 +40,10 @@ export function getAssetSymbol(id) {
   if (!asset) return "·";
   const mapping = ASSET_SYMBOLS[asset.id];
   if (!mapping) return asset.value ?? "·";
-  return DISCORD_EMOJI[mapping[0]] ?? mapping[1];
+  const symbol = DISCORD_EMOJI[mapping[0]];
+  return typeof symbol === "string" && /^<a?:[A-Za-z0-9_]+:\\d{17,20}>$/.test(symbol)
+    ? symbol
+    : mapping[1];
 }
 
 export function getRarityAssetId(rarity) {
