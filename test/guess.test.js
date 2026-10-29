@@ -66,7 +66,7 @@ test("guess command responds and never requires a wager", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const account = prisma.accounts.get("guild-1:user-1");
   assert.equal(account?.balance ?? 0, panelText(response).includes("+25 coins") ? 25 : 0);
-  assert.equal(prisma.transactions.length, account?.balance ? 1 : 0);
+  assert.equal(prisma.transactions.length, 1 + (account?.balance ? 1 : 0));
 });
 
 test("guess command rejects direct messages", async () => {
