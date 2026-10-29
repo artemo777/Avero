@@ -357,7 +357,7 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const count = (type) => byType.get(type)?._count?._all ?? 0;
   const lifetimeEarned = rows.reduce((total, row) => total + Math.max(0, row._sum?.amount ?? 0), 0);
   const lifetimeSpent = rows.reduce((total, row) => total + Math.max(0, -(row._sum?.amount ?? 0)), 0);
-  const guessWins = Math.max(count("guess_win_play"), count("guess_win"));
+  const guessWins = count("guess_win_play") + count("guess_win");
   const guessLosses = count("guess_loss");
   const rpsWins = count("rps_win");
   const rpsLosses = count("rps_loss");
