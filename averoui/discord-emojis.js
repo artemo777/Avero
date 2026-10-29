@@ -1,12 +1,17 @@
 /**
- * Centralized Discord-native emoji pack for Avero interactions.
+ * Avero's shared emoji catalogue.
  *
- * These Unicode emoji are safe defaults for button labels and message text.
- * Server custom emoji can be mapped here later without scattering IDs through
- * game logic. Keep text-safe UI glyphs in icons.js and SVG artwork in assets.js.
+ * Unicode symbols remain the fallback. After running
+ * `npm run discord:upload-emojis`, paste the printed IDs into the private
+ * environment used by the bot to enable the original server custom emoji.
  */
+function customEmoji(envKey, name, fallback) {
+  const id = process.env[envKey];
+  return /^\d{17,20}$/.test(id ?? "") ? "<:" + name + ":" + id + ">" : fallback;
+}
+
 export const DISCORD_EMOJI = Object.freeze({
-  brand: "◈",
+  brand: customEmoji("AVERO_EMOJI_BRAND_ID", "avero_brand", "◈"),
   games: "🎮",
   guess: "🎯",
   rock: "✊",
@@ -14,24 +19,24 @@ export const DISCORD_EMOJI = Object.freeze({
   scissors: "✌️",
   shop: "🛍️",
   inventory: "🎒",
-  wallet: "🪙",
+  wallet: customEmoji("AVERO_EMOJI_COIN_ID", "avero_coin", "🪙"),
   work: "🧰",
   scavenge: "🔎",
-  daily: "✨",
+  daily: customEmoji("AVERO_EMOJI_SPARKLE_ID", "avero_sparkle", "✨"),
   buy: "🛒",
   owned: "☑️",
-  reward: "🎉",
-  milestone: "🏆",
+  reward: customEmoji("AVERO_EMOJI_SPARKLE_ID", "avero_sparkle", "🎉"),
+  milestone: customEmoji("AVERO_EMOJI_BADGE_ID", "avero_badge", "🏆"),
   previous: "⬅️",
   next: "➡️",
-  collectible: "🏅",
+  collectible: customEmoji("AVERO_EMOJI_BADGE_ID", "avero_badge", "🏅"),
   collectibles: Object.freeze({
-    neon_badge: "🌟",
-    vault_badge: "🔐",
-    starlight_badge: "✨",
-    moonlit_token: "🌙",
-    prism_crown: "👑",
-    avero_relic: "💠"
+    neon_badge: customEmoji("AVERO_EMOJI_NEON_BADGE_ID", "avero_neon_badge", "🌟"),
+    vault_badge: customEmoji("AVERO_EMOJI_VAULT_BADGE_ID", "avero_vault_badge", "🔐"),
+    starlight_badge: customEmoji("AVERO_EMOJI_STARLIGHT_BADGE_ID", "avero_starlight_badge", "✨"),
+    moonlit_token: customEmoji("AVERO_EMOJI_MOONLIT_TOKEN_ID", "avero_moonlit_token", "🌙"),
+    prism_crown: customEmoji("AVERO_EMOJI_PRISM_CROWN_ID", "avero_prism_crown", "👑"),
+    avero_relic: customEmoji("AVERO_EMOJI_RELIC_ID", "avero_relic", "💠")
   })
 });
 
