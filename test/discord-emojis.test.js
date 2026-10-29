@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DISCORD_EMOJI, getCollectibleEmoji } from "../averoui/discord-emojis.js";
+import { DISCORD_EMOJI, getCollectibleEmoji, getDiscordEmoji } from "../averoui/discord-emojis.js";
 import { getAssetSymbol } from "../averoui/assets.js";
 
 test("Avero Discord emoji pack exposes consistent game and currency symbols", () => {
@@ -23,6 +23,29 @@ test("every shop collectible has a dedicated emoji with a safe fallback", () => 
   assert.equal(new Set(emojis).size, ids.length);
   assert.ok(emojis.every((emoji) => typeof emoji === "string" && emoji.length > 0));
   assert.equal(getCollectibleEmoji("unknown_item"), DISCORD_EMOJI.collectible);
+});
+
+test("custom emojis are only resolved for their configured source guild", () => {
+  const previousGuild = process.env.DISCORD_GUILD_ID;
+  const previousCoin = process.env.AVERO_EMOJI_COIN_ID;
+  try {
+    process.env.DISCORD_GUILD_ID = "12345678901234567";
+    process.env.AVERO_EMOJI_COIN_ID = "23456789012345678";
+    assert.equal(getDiscordEmoji("wallet", "12345678901234567"), "<:avero_coin:23456789012345678>");
+    assert.equal(getDiscordEmoji("wallet", "34567890123456789"), "◉");
+    assert.equal(getDiscordEmoji("wallet"), "◉");
+    assert.equal(getDiscordEmoji("wallet", "12345678901234567"), "<:avero_coin:23456789012345678>");
+  } finally {
+    if (previousGuild === undefined) delete process.env.DISCORD_GUILD_ID;
+    else process.env.DISCORD_GUILD_ID = previousGuild;
+    if (previousCoin === undefined) delete process.env.AVERO_EMOJI_COIN_ID;
+    else process.env.AVERO_EMOJI_COIN_ID = previousCoin;
+  }
+});
+
+test("coin fallback preserves the established asset symbol", () => {
+  assert.equal(getAssetSymbol("coin"), "◉");
+  assert.equal(DISCORD_EMOJI.wallet, "◉");
 });
 
 test("emoji catalogue is immutable to avoid accidental UI drift", () => {
