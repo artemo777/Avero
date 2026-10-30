@@ -46,7 +46,7 @@ Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specif
 
 ### 4. Achievements and titles
 
-Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, Big Spender, Archive Keeper, Circuit Breaker, and Moonlit Curator. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins.
+Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, Big Spender, Archive Keeper, Circuit Breaker, and Moonlit Curator. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins. `/profile` also shows independent Rookie, Contender, Specialist, and Champion mastery tiers for Guess, Duel Deck, Coinflip, and The Vault, calculated from recorded wins without adding a new database table or changing coin payouts.
 
 ### 5. Expand the adventure loop without command sprawl
 
