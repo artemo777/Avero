@@ -48,14 +48,7 @@ export function loadBotConfig(env = process.env) {
 
 export function requireApplicationId(config) {
   if (!config.clientId) {
-    throw new Error("DISCORD_CLIENT_ID is required to register slash commands.");
+    throw new Error("DISCORD_CLIENT_ID is required to register global slash commands.");
   }
   return config.clientId;
-}
-
-export function requireGuildId(config) {
-  if (!config.guildId) {
-    throw new Error("DISCORD_GUILD_ID is required for test-server command registration. No commands were changed.");
-  }
-  return config.guildId;
 }
