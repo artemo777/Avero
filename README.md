@@ -56,6 +56,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
 - `/profile [member]` — combines wallet, XP, and collection progress.
 - `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Guess, or Rock-paper-scissors rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/achievements [member]` — tracks nine server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC.
@@ -177,4 +178,4 @@ npm test
 └── test/
 ```
 
-RPS is the first Duel Deck game. Daily Contracts are implemented; the next increments are The Vault, achievements and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
+RPS is the first Duel Deck game. Daily Contracts and the nine-milestone achievements command are implemented; the next increments are The Vault and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
