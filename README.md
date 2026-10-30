@@ -55,7 +55,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/help` — groups the available commands by category.
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
 - `/profile [member]` — combines wallet, XP, and collection progress.
-- `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Guess, or Rock-paper-scissors rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
 - `/achievements [member]` — tracks nine server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
@@ -63,7 +63,8 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
-- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`. No entry fees or wagers.
+- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess` and `/vault`. No entry fees or wagers.
+- `/vault code` — crack the daily three-dial puzzle. Clues are deterministic for each server and UTC date; wins can earn 25 coins on the shared 10-minute game-reward cooldown. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
