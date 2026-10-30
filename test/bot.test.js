@@ -8,7 +8,7 @@ import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
-import { renderGames } from "../src/bot/game-ui.js";
+import { handleGameComponent, renderGames } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -216,7 +216,7 @@ test("games hub uses a compact Components V2 panel with all game controls", () =
   assert.match(text, /25 coins/);
   assert.match(text, /The Vault/);
   assert.match(text, /Coinflip/);
-  assert.match(text, /one code attempt and \+25 reward per UTC day/);
+  assert.match(text, /one code attempt per UTC day and \+25 on a correct solve/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
@@ -330,4 +330,20 @@ test("leaderboard sorts server members by the requested category", async () => {
   assert.equal(response.embeds[0].title, "🪙 Coin leaderboard");
   assert.match(response.embeds[0].description, /<@user-1> — \*\*900 coins\*\*/);
   assert.match(response.embeds[0].description, /<@user-2> — \*\*450 coins\*\*/);
+});
+
+
+test("daily Vault button opens the current puzzle clues from the games hub", async () => {
+  let response;
+  const handled = await handleGameComponent({
+    customId: "avero|user-1|vault",
+    user: { id: "user-1" },
+    guildId: "guild-1",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, { prisma: {} });
+  assert.equal(handled, true);
+  const text = panelText(response);
+  assert.match(text, /Today's vault is ready/);
+  assert.match(text, /Daily three-dial puzzle/);
 });
