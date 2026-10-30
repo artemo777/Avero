@@ -137,6 +137,7 @@ test("a scavenge claim blocked by cooldown creates no reward ledger entry", asyn
     itemId: "neon_badge",
     now: firstAt
   });
+  const ledgerCountAfterFirstClaim = prisma.transactions.length;
 
   const blocked = await claimScavengeReward(prisma, "guild-1", "user-4", {
     amount: 35,
@@ -146,7 +147,8 @@ test("a scavenge claim blocked by cooldown creates no reward ledger entry", asyn
 
   assert.equal(blocked.claimed, false);
   assert.equal(blocked.account.balance, 35);
-  assert.equal(prisma.transactions.length, 1);
+  assert.equal(prisma.transactions.length, ledgerCountAfterFirstClaim);
+  assert.equal(prisma.transactions.filter((entry) => entry.type === "scavenge_collectible").length, 1);
   assert.equal(prisma.purchases.size, 1);
 });
 
