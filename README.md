@@ -177,4 +177,4 @@ npm test
 └── test/
 ```
 
-RPS is the first Duel Deck game. The prioritized next increments are Daily Contracts, The Vault, achievements and cosmetic profile items; see [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
+RPS is the first Duel Deck game. Daily Contracts are implemented; the next increments are The Vault, achievements and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
