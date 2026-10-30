@@ -139,6 +139,24 @@ test("vault loss records a result but never changes the balance", async () => {
   assert.equal(account.balance, 0);
 });
 
+test("a wrong Vault submission cannot be retried to farm game rounds", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const challenge = createVaultChallenge("guild-1", now);
+  const wrong = challenge.code === "000" ? "001" : "000";
+  const { prisma, transactions, claims } = makePrisma();
+
+  const first = interactionFor(wrong);
+  await vaultCommand.execute(first.interaction, { prisma, now });
+  const retry = interactionFor(challenge.code);
+  await vaultCommand.execute(retry.interaction, { prisma, now });
+
+  assert.match(retry.response().content, /already submitted today.s Vault code/);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_loss").length, 1);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_win").length, 0);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 0);
+  assert.equal(claims.filter((claim) => claim.contractId === "vault_attempt").length, 1);
+});
+
 test("vault rejects invalid codes and direct messages without database writes", async () => {
   let invalid;
   const bad = interactionFor("12x");
