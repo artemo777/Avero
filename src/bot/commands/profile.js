@@ -5,6 +5,7 @@ import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../.
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
+import { getArcadeMastery } from "../arcade-mastery.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -40,6 +41,10 @@ export const profileCommand = Object.freeze({
     const completedCollectionSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete);
     const completedSets = completedCollectionSets.length;
     const collectionTitles = completedCollectionSets.map((set) => set.title);
+    const arcadeMastery = getArcadeMastery(stats).map((game) =>
+      game.tier + " " + game.name + " · " + game.wins + " wins" +
+      (game.progress ? " · " + game.progress.current + "/" + game.progress.required + " to " + game.nextTier : " · Max tier")
+    ).join("\n");
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
     const badgeFilename = "profile-badge.png";
