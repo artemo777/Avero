@@ -1,15 +1,14 @@
 import { REST, Routes } from "discord.js";
 import { commands } from "./bot/commands/index.js";
 import { getCommandDefinitions } from "./bot/command-registry.js";
-import { loadBotConfig, requireApplicationId } from "./bot/config.js";
+import { loadBotConfig, requireApplicationId, requireGuildId } from "./bot/config.js";
 
 let config;
+let guildId;
 try {
   config = loadBotConfig();
   requireApplicationId(config);
-  if (!config.guildId) {
-    throw new Error("DISCORD_GUILD_ID is required for test-server command registration. No commands were changed.");
-  }
+  guildId = requireGuildId(config);
 } catch (error) {
   console.error("Guild slash-command registration configuration error: " + error.message);
   process.exit(1);
@@ -19,7 +18,7 @@ const rest = new REST({ version: "10" }).setToken(config.token);
 const body = getCommandDefinitions(commands);
 
 try {
-  await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body });
+  await rest.put(Routes.applicationGuildCommands(config.clientId, guildId), { body });
   console.log(
     "Registered " + body.length + " Avero test-server slash command(s): " +
     body.map((command) => "/" + command.name).join(", ") + "."
