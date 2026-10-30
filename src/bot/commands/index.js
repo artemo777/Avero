@@ -1,3 +1,4 @@
+import { achievementsCommand } from "./achievements.js";
 import { balanceCommand } from "./balance.js";
 import { buyCommand } from "./buy.js";
 import { dailyCommand } from "./daily.js";
@@ -18,6 +19,7 @@ import { workCommand } from "./work.js";
 export const commands = Object.freeze([
   pingCommand,
   helpCommand,
+  achievementsCommand,
   rankCommand,
   profileCommand,
   leaderboardCommand,
