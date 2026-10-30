@@ -230,6 +230,7 @@ test("help command groups the real commands into compact embeds", async () => {
   assert.equal(response.embeds.length, 1);
   assert.equal(response.embeds[0].title, "Avero commands");
   assert.equal(response.embeds[0].fields.length, 4);
+  assert.match(response.embeds[0].fields[0].value, /collections/);
   assert.match(response.embeds[0].fields[0].value, /\/balance/);
   assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
   assert.match(response.embeds[0].fields[2].value, /achievements/);
