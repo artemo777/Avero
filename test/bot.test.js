@@ -199,7 +199,8 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("work"));
   assert.ok(names.includes("contracts"));
   assert.ok(names.includes("achievements"));
-  assert.equal(names.length, 17);
+  assert.ok(names.includes("vault"));
+  assert.equal(names.length, 18);
 });
 
 test("games hub uses a compact Components V2 panel with all game controls", () => {
@@ -227,6 +228,7 @@ test("help command groups the real commands into compact embeds", async () => {
   assert.match(response.embeds[0].fields[0].value, /\/balance/);
   assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
   assert.match(response.embeds[0].fields[2].value, /achievements/);
+  assert.match(response.embeds[0].fields[1].value, /vault/);
 });
 
 test("profile command combines wallet, XP, and collection data", async () => {
