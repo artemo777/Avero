@@ -48,5 +48,5 @@ test("help documents game-specific leaderboards and free game rules", async () =
 
   assert.match(games, /free, 10m reward cooldown/);
   assert.match(games, /free/);
-  assert.match(profile, /games, guess, RPS or Vault/);
+  assert.match(profile, /games, coinflip, guess, RPS or Vault/);
 });
