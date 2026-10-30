@@ -31,7 +31,7 @@ test("games leaderboard adds legacy guess wins and all new wins exactly once", a
 
   assert.deepEqual(query.where, {
     guildId: "guild-1",
-    type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss"] }
+    type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"] }
   });
   assert.match(response.embeds[0].description, /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
   assert.match(response.embeds[0].description, /<@user-2> — \*\*4W \/ 3L \/ 0T · 57% win rate\*\*/);
