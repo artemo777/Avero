@@ -10,7 +10,7 @@ test("achievements show server-scoped milestone progress and unique collection c
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 25 } },
     { type: "rps_win", _count: { _all: 5 }, _sum: { amount: 0 } },
     { type: "guess_loss", _count: { _all: 5 }, _sum: { amount: 0 } },
-    { type: "shop_purchase", _count: { _all: 3 }, _sum: { amount: -600 } },
+    { type: "shop_purchase", _count: { _all: 3 }, _sum: { amount: -1200 } },
     { type: "daily", _count: { _all: 1 }, _sum: { amount: 100 } }
   ];
   const prisma = {
@@ -21,7 +21,7 @@ test("achievements show server-scoped milestone progress and unique collection c
     currencyPurchase: { findMany: async () => [
       { itemId: "neon_badge" },
       { itemId: "vault_badge" },
-      { itemId: "neon_badge" }
+      { itemId: "starlight_badge" }
     ] }
   };
 
@@ -34,10 +34,10 @@ test("achievements show server-scoped milestone progress and unique collection c
 
   const embed = response.embeds[0];
   assert.match(embed.title, /Ada's achievements/);
-  assert.match(embed.description, /6 \/ 9 unlocked/);
+  assert.match(embed.description, /7 \/ 9 unlocked/);
   assert.equal(embed.fields.length, 9);
   assert.match(embed.fields.find((field) => field.name.includes("Curator")).value, /Unlocked/);
-  assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /2 \/ 6/);
+  assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /3 \/ 6/);
   assert.match(embed.fields.find((field) => field.name.includes("Big Spender")).value, /Unlocked/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
