@@ -81,8 +81,8 @@ test("vault win records a free game result and shares the reward cooldown", asyn
   assert.match(text, /Vault unlocked/);
   assert.match(text, /\+25 coins/);
   assert.match(text, /No entry fee or wager/);
-  assert.equal(transactions[0].type, "vault_reward");
-  assert.equal(transactions[1].type, "vault_win");
+  assert.equal(transactions[0].type, "vault_win");
+  assert.equal(transactions[1].type, "vault_reward");
   assert.deepEqual(claims.map((claim) => claim.contractId).sort(), ["vault_attempt", "vault_reward"]);
   assert.equal(account.balance, 25);
 });
