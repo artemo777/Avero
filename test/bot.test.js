@@ -221,7 +221,7 @@ test("games hub uses a compact Components V2 panel with all game controls", () =
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 11);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
 });
 
 test("help command groups the real commands into compact embeds", async () => {
