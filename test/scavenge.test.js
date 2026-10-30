@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimScavengeReward } from "../src/db/currency-repository.js";
+import { claimScavengeReward } from "../src/db/currency-repository.js";\nimport { runScavenge, SCAVENGE_ROUTES } from "../src/bot/game-ui.js";\nimport { scavengeCommand } from "../src/bot/commands/scavenge.js";\nimport { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
-function fakePrisma() {
+function panelText(response) {\n  return response.components[0].toJSON().components\n    .filter((component) => component.type === 10)\n    .map((component) => component.content)\n    .join("\\n");\n}\n\nfunction fakePrisma() {
   const accounts = new Map();
   const purchases = new Map();
   const transactions = [];
@@ -113,4 +113,45 @@ test("scavenge validates reward, cooldown, item ID, and timestamp", async () => 
   await assert.rejects(claimScavengeReward(prisma, "g", "u", { cooldownMs: 0 }), /positive safe integer/);
   await assert.rejects(claimScavengeReward(prisma, "g", "u", { itemId: "Not an item" }), /item ID/);
   await assert.rejects(claimScavengeReward(prisma, "g", "u", { now: new Date("invalid") }), /valid Date/);
+});
+
+\ntest("expedition routes are unique and only reference shop collectibles", () => {
+  assert.deepEqual(SCAVENGE_ROUTES.map((route) => route.id), ["archive", "plaza", "garden"]);
+  assert.equal(new Set(SCAVENGE_ROUTES.map((route) => route.id)).size, SCAVENGE_ROUTES.length);
+  const itemIds = new Set(SHOP_ITEMS.map((item) => item.id));
+  for (const route of SCAVENGE_ROUTES) {
+    assert.ok(route.name);
+    assert.ok(route.description);
+    assert.ok(route.items.length > 0);
+    assert.ok(route.items.every((item) => itemIds.has(item.id) && Number.isSafeInteger(item.weight) && item.weight > 0));
+  }
+});
+
+test("scavenge expedition keeps the selected route and offers a same-route replay", async () => {
+  const response = await runScavenge(fakePrisma(), "guild-1", "user-1", "garden");
+  const text = panelText(response);
+  assert.match(text, /Moonlit Garden/);
+  assert.match(text, /lantern path/);
+  const buttons = response.components[0].toJSON().components
+    .filter((component) => component.type === 1)
+    .flatMap((row) => row.components);
+  assert.ok(buttons.some((entry) => entry.custom_id === "avero|user-1|scavenge|garden"));
+});
+
+test("scavenge rejects unknown expedition routes before database work", async () => {
+  await assert.rejects(runScavenge({}, "guild-1", "user-1", "not-a-route"), /valid scavenge route/);
+});
+
+test("scavenge slash command exposes route choices and rejects invalid values", async () => {
+  const option = scavengeCommand.data.options[0];
+  assert.equal(option.name, "route");
+  assert.deepEqual(option.choices.map((choice) => choice.value), ["archive", "plaza", "garden"]);
+  let response;
+  await scavengeCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: { getString: () => "invalid" },
+    reply: async (payload) => { response = payload; }
+  }, { prisma: {} });
+  assert.equal(response.content, "Choose one of the listed expedition routes.");
 });
