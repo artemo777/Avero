@@ -23,17 +23,39 @@ function makeInteraction({ guildId = "guild-1", choice = "rock" } = {}) {
   };
 }
 
-test("rock paper scissors returns a public game result without touching currency", async () => {
+test("rock paper scissors records game results and rewards wins without wagers", async () => {
   const { interaction, getResponse } = makeInteraction();
-  await rpsCommand.execute(interaction);
+  const records = [];
+  const account = { balance: 0, lastGameRewardAt: null };
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyTransaction: { create: async ({ data }) => { records.push(data); return data; } },
+    currencyAccount: {
+      upsert: async () => account,
+      updateMany: async ({ where, data }) => {
+        if (where.OR && account.lastGameRewardAt !== null) return { count: 0 };
+        account.balance += data.balance.increment;
+        account.lastGameRewardAt = data.lastGameRewardAt;
+        return { count: 1 };
+      },
+      findUnique: async () => ({ ...account })
+    }
+  };
+  await rpsCommand.execute(interaction, { prisma });
   const response = getResponse();
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /You: Rock/);
   assert.match(text, /Avero: (Rock|Paper|Scissors)/);
-  assert.match(text, /no coins involved/i);
+  assert.match(text, /no wagers/i);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
+  assert.ok(records.length === 1 || records.length === 2);
+  assert.equal(records[0].guildId, "guild-1");
+  assert.equal(records[0].userId, "user-1");
+  assert.equal(records[0].amount, 0);
+  assert.match(records[0].type, /^rps_(win|loss|tie)$/);
+  assert.equal(records.filter((record) => record.type === "rps_reward").length, records[0].type === "rps_win" ? 1 : 0);
 });
 
 test("rock paper scissors rejects direct messages", async () => {

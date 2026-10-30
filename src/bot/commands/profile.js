@@ -1,9 +1,11 @@
 import { AttachmentBuilder, MessageFlags } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from "../../../averoui/index.js";
-import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
+import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
+import { buildCollectionSetProgress } from "../collection-sets.js";
+import { getArcadeMastery } from "../arcade-mastery.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -24,10 +26,11 @@ export const profileCommand = Object.freeze({
     }
 
     const target = interaction.options.getUser("member") ?? interaction.user;
-    const [account, purchases, profile] = await Promise.all([
+    const [account, purchases, profile, stats] = await Promise.all([
       getCurrencyAccount(prisma, interaction.guildId, target.id),
       getCurrencyPurchases(prisma, interaction.guildId, target.id),
-      getMemberProfile(prisma, interaction.guildId, target.id)
+      getMemberProfile(prisma, interaction.guildId, target.id),
+      getCurrencyStats(prisma, interaction.guildId, target.id)
     ]);
     const xp = profile?.xp ?? 0;
     const level = levelForExperience(xp);
@@ -35,21 +38,26 @@ export const profileCommand = Object.freeze({
     const nextLevelXp = experienceForLevel(level + 1);
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
+    const completedCollectionSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete);
+    const completedSets = completedCollectionSets.length;
+    const collectionTitles = completedCollectionSets.map((set) => set.title);
+    const arcadeMastery = getArcadeMastery(stats).map((game) =>
+      game.tier + " " + game.name + " · " + game.wins + " wins" +
+      (game.progress ? " · " + game.progress.current + "/" + game.progress.required + " to " + game.nextTier : " · Max tier")
+    ).join("\n");
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
-    const badgeFilename = "profile-badges.png";
+    const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
+    const badgeFilename = "profile-badge.png";
     let badgeFiles = [];
-    if (badgeItems.length) {
+    if (equippedBadge) {
+      const asset = await renderRegisteredAsset(getCollectibleAssetId(equippedBadge.id), 96);
+      const image = await loadImage(asset);
       const badgeCanvas = createCanvas(96, 96);
-      const ctx = badgeCanvas.getContext("2d");
-      for (const [index, item] of badgeItems.slice(0, 6).entries()) {
-        const asset = await renderRegisteredAsset(getCollectibleAssetId(item.id), 32);
-        const image = await loadImage(asset);
-        ctx.drawImage(image, (index % 3) * 32, Math.floor(index / 3) * 32, 32, 32);
-      }
+      badgeCanvas.getContext("2d").drawImage(image, 0, 0, 96, 96);
       badgeFiles = [new AttachmentBuilder(badgeCanvas.toBuffer("image/png"), { name: badgeFilename })];
     }
     const embed = createEmbed({
-        ...(badgeItems.length ? {} : { title: target.username }),
+        ...(equippedBadge ? {} : { title: target.username }),
         description: "Level **" + level + "** · " +
           (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
@@ -57,11 +65,23 @@ export const profileCommand = Object.freeze({
           { name: "🪙 Wallet", value: (account?.balance ?? 0).toLocaleString("en-US") + " coins", inline: true },
           { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
+          { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },
+          { name: "🏷️ Set titles", value: collectionTitles.length ? collectionTitles.join(", ") : "None unlocked", inline: false },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
+          { name: "🎮 Games record", value: stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet", inline: true },
+          { name: "🎯 Games played", value: String(stats.gamesPlayed), inline: true },
+          { name: "🏅 Arcade mastery", value: arcadeMastery, inline: false },
+          { name: "🪙 Coins earned", value: stats.lifetimeEarned.toLocaleString("en-US"), inline: true },
+          { name: "🛍️ Items bought", value: String(stats.itemsPurchased), inline: true },
+          { name: "📆 Daily claims", value: String(stats.dailyClaims), inline: true },
+          { name: "🧰 Work shifts", value: String(stats.workShifts), inline: true },
+          { name: "🔎 Scavenges", value: String(stats.scavenges), inline: true },
+          { name: "Coins spent", value: stats.lifetimeSpent.toLocaleString("en-US"), inline: true },
+          { name: "Equipped badge", value: equippedBadge?.name ?? "None", inline: true },
           { name: "Badges", value: badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None", inline: false }
         ]
       });
-    if (badgeItems.length) {
+    if (equippedBadge) {
       embed.author = { name: target.username, icon_url: "attachment://" + badgeFilename };
     }
     await interaction.reply({

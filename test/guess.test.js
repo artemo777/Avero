@@ -66,7 +66,7 @@ test("guess command responds and never requires a wager", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const account = prisma.accounts.get("guild-1:user-1");
   assert.equal(account?.balance ?? 0, panelText(response).includes("+25 coins") ? 25 : 0);
-  assert.equal(prisma.transactions.length, account?.balance ? 1 : 0);
+  assert.equal(prisma.transactions.length, 1 + (account?.balance ? 1 : 0));
 });
 
 test("guess command rejects direct messages", async () => {
@@ -79,4 +79,11 @@ test("guess command rejects direct messages", async () => {
     content: "Guess can only be played inside a server.",
     flags: MessageFlags.Ephemeral
   });
+});
+
+
+test("guess slash command explains its free-play reward limit", () => {
+  assert.match(guessCommand.data.description, /free to replay/i);
+  assert.match(guessCommand.data.description, /one reward every 10 minutes/i);
+  assert.ok(guessCommand.data.description.length <= 100);
 });

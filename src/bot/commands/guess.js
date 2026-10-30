@@ -1,16 +1,16 @@
 import { randomInt } from "node:crypto";
 import { MessageFlags } from "discord.js";
-import { awardGameReward } from "../../db/currency-repository.js";
+import { awardGameReward, recordGuessResult } from "../../db/currency-repository.js";
 import { renderGuess } from "../game-ui.js";
+import { GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS } from "../economy-rules.js";
 
 const MIN_GUESS = 1;
 const MAX_GUESS = 5;
-const WIN_REWARD = 25;
 
 export const guessCommand = Object.freeze({
   data: Object.freeze({
     name: "guess",
-    description: "Guess 1–5 to win 25 coins. Free to play, no wagers.",
+    description: "Guess 1–5 for 25 coins. Free to replay; one reward every 10 minutes.",
     options: [{
       type: 4,
       name: "number",
@@ -32,8 +32,10 @@ export const guessCommand = Object.freeze({
       return;
     }
     const answer = randomInt(MIN_GUESS, MAX_GUESS + 1);
-    const result = guess === answer
-      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, WIN_REWARD, { type: "guess_win" })
+    const won = guess === answer;
+    await recordGuessResult(prisma, interaction.guildId, interaction.user.id, won);
+    const result = won
+      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
       : null;
     await interaction.reply(renderGuess(guess, answer, result, interaction.user.id));
   }

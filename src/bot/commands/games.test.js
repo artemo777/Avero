@@ -20,9 +20,10 @@ test("games command opens the quick-play panel in a server", async () => {
   const panel = reply.components[0].toJSON();
   const actionRows = panel.components.filter((component) => component.type === 1);
   const buttons = actionRows.flatMap((row) => row.components);
-  assert.equal(buttons.length, 8);
+  assert.equal(buttons.length, 12);
   assert.ok(buttons.some((button) => button.custom_id.includes("|guess|1")));
   assert.ok(buttons.some((button) => button.custom_id.includes("|rps|rock")));
+  assert.ok(buttons.some((button) => button.custom_id.includes("|collections")));
 });
 
 test("games command rejects direct messages privately", async () => {

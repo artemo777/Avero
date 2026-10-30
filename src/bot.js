@@ -17,7 +17,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
-const gameCommandNames = new Set(["balance", "daily", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work", "scavenge"]);
+const gameCommandNames = new Set(["balance", "daily", "coinflip", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work", "scavenge", "rps", "contracts", "achievements", "vault", "collections"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -75,7 +75,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.customId.startsWith("avero|")) return;
     try {
       const action = interaction.customId.split("|")[2];
-      await handleGameComponent(interaction, { prisma: action === "rps" ? undefined : getPrismaClient() });
+      await handleGameComponent(interaction, { prisma: getPrismaClient() });
     } catch (error) {
       console.error("Game component failed:", error);
       const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
@@ -95,7 +95,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    const needsDatabase = interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName);
+    const isVaultClueRequest = interaction.commandName === "vault" && !interaction.options.getString("code");
+    const needsDatabase = !isVaultClueRequest && (interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName));
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     await command.execute(interaction, { prisma });
   } catch (error) {

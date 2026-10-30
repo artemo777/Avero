@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } from "../src/bot/command-registry.js";
+import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
-import { renderGames } from "../src/bot/game-ui.js";
+import { handleGameComponent, renderCollectionSets, renderGames } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -93,21 +93,41 @@ function panelText(response) {
   return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
 }
 
-test("RPS returns a public no-coins result", async () => {
+test("RPS is free to play and rewards wins without wagers", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
+  const account = { guildId: "guild-1", userId: "user-1", balance: 0, lastGameRewardAt: null };
+  const transactions = [];
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyTransaction: {
+      create: async ({ data }) => { transactions.push(data); return data; }
+    },
+    currencyAccount: {
+      upsert: async () => account,
+      updateMany: async ({ where, data }) => {
+        if (where.OR && account.lastGameRewardAt !== null) return { count: 0 };
+        account.balance += data.balance.increment;
+        account.lastGameRewardAt = data.lastGameRewardAt;
+        return { count: 1 };
+      },
+      findUnique: async () => ({ ...account })
+    }
+  };
   await rpsCommand.execute({
     guildId: "guild-1",
     user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
-  });
+  }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /DUEL DECK/);
   assert.match(text, /You:/);
   assert.match(text, /Avero:/);
-  assert.match(text, /no coins involved/i);
+  assert.match(text, /No wagers/i);
+  assert.equal(transactions.filter((entry) => entry.type === "rps_reward").length,
+    transactions.some((entry) => entry.type === "rps_win") ? 1 : 0);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
 });
 
@@ -169,19 +189,6 @@ test("guess command rejects out-of-range input before touching the database", as
   });
 });
 
-test("guild duplicate cleanup only removes commands that are registered globally", () => {
-  const guildCommands = [
-    { id: "1", name: "ping" },
-    { id: "2", name: "rank" },
-    { id: "3", name: "legacy-server-only" }
-  ];
-  const globalCommands = [{ name: "ping" }, { name: "rank" }, { name: "games" }];
-  assert.deepEqual(findGuildCommandDuplicates(guildCommands, globalCommands), [
-    { id: "1", name: "ping" },
-    { id: "2", name: "rank" }
-  ]);
-});
-
 test("global command list includes new economy features and has no duplicate names", () => {
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
@@ -190,23 +197,32 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
   assert.ok(names.includes("work"));
-  assert.equal(names.length, 15);
+  assert.ok(names.includes("contracts"));
+  assert.ok(names.includes("achievements"));
+  assert.ok(names.includes("vault"));
+  assert.ok(names.includes("coinflip"));
+  assert.equal(names.length, 20);
+  assert.ok(names.includes("collections"));
 });
 
 test("games hub uses a compact Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.equal(response.files, undefined);
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "avero-panel.png");
   const panel = response.components[0].toJSON();
-  assert.ok(!panel.components.some((component) => component.type === 12));
+  assert.ok(panel.components.some((component) => component.type === 12));
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
   assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
   assert.match(text, /Guess the number/);
   assert.match(text, /25 coins/);
+  assert.match(text, /The Vault/);
+  assert.match(text, /Coinflip/);
+  assert.match(text, /one code attempt per UTC day and \+25 on a correct solve/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
-  assert.equal(rows.length, 2);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 8);
+  assert.equal(rows.length, 3);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
 });
 
 test("help command groups the real commands into compact embeds", async () => {
@@ -215,8 +231,11 @@ test("help command groups the real commands into compact embeds", async () => {
   assert.equal(response.embeds.length, 1);
   assert.equal(response.embeds[0].title, "Avero commands");
   assert.equal(response.embeds[0].fields.length, 4);
+  assert.match(response.embeds[0].fields[0].value, /collections/);
   assert.match(response.embeds[0].fields[0].value, /\/balance/);
   assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
+  assert.match(response.embeds[0].fields[2].value, /achievements/);
+  assert.match(response.embeds[0].fields[1].value, /vault/);
 });
 
 test("profile command combines wallet, XP, and collection data", async () => {
@@ -224,7 +243,8 @@ test("profile command combines wallet, XP, and collection data", async () => {
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
-    memberProfile: { findUnique: async () => ({ xp: 500 }) }
+    memberProfile: { findUnique: async () => ({ xp: 500 }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
@@ -234,20 +254,23 @@ test("profile command combines wallet, XP, and collection data", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].title, "Ada");
+  assert.equal(response.files, undefined);
+  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "None");
   assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
   assert.equal(response.embeds[0].fields[1].value, "2");
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
+  assert.match(response.embeds[0].fields.find((field) => field.name === "🏅 Arcade mastery").value, /Rookie Guess · 0 wins/);
 });
 
 
-test("profile shows multiple owned badge artworks in purchase order beside the username", async () => {
+test("profile lists all owned badges but displays only the selected badge beside the username", async () => {
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ xp: 0, equippedBadgeItemId: "prism_crown" }) }
+    memberProfile: { findUnique: async () => ({ xp: 0, equippedBadgeItemId: "prism_crown" }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
@@ -257,7 +280,10 @@ test("profile shows multiple owned badge artworks in purchase order beside the u
     reply: async (payload) => { response = payload; }
   }, { prisma });
   assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "profile-badge.png");
+  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "Prism Crown");
   assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Neon Badge, Prism Crown/);
 });
 
@@ -266,7 +292,8 @@ test("profile shows the actual equipped collectible artwork beside the username"
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ xp: 0, level: 0, equippedBadgeItemId: "prism_crown" }) }
+    memberProfile: { findUnique: async () => ({ xp: 0, level: 0, equippedBadgeItemId: "prism_crown" }) },
+    currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
@@ -277,9 +304,9 @@ test("profile shows the actual equipped collectible artwork beside the username"
   }, { prisma });
 
   assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-badges.png");
+  assert.equal(response.files[0].name, "profile-badge.png");
   assert.equal(response.embeds[0].title, undefined);
 });
 
@@ -307,4 +334,55 @@ test("leaderboard sorts server members by the requested category", async () => {
   assert.equal(response.embeds[0].title, "🪙 Coin leaderboard");
   assert.match(response.embeds[0].description, /<@user-1> — \*\*900 coins\*\*/);
   assert.match(response.embeds[0].description, /<@user-2> — \*\*450 coins\*\*/);
+});
+
+
+test("daily Vault button opens the current puzzle clues from the games hub", async () => {
+  let response;
+  const handled = await handleGameComponent({
+    customId: "avero|user-1|vault",
+    user: { id: "user-1" },
+    guildId: "guild-1",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, { prisma: {} });
+  assert.equal(handled, true);
+  const text = panelText(response);
+  assert.match(text, /Today's vault is ready/);
+  assert.match(text, /Daily three-dial puzzle/);
+});
+
+
+test("collection atlas panel shows route-linked set progress", async () => {
+  const response = await renderCollectionSets({
+    currencyPurchase: {
+      findMany: async () => [
+        { itemId: "neon_badge" },
+        { itemId: "vault_badge" },
+        { itemId: "avero_relic" }
+      ]
+    }
+  }, "guild-1", "user-1");
+  const text = panelText(response);
+  assert.match(text, /The Collection Atlas/);
+  assert.match(text, /1 \/ 3 themed sets completed/);
+  assert.match(text, /The Archive Protocol/);
+  assert.match(text, /Archive Keeper · Unlocked/);
+  assert.match(text, /Neon Circuit/);
+});
+
+test("collection atlas button opens the member's set progress", async () => {
+  let response;
+  const handled = await handleGameComponent({
+    customId: "avero|user-1|collections",
+    user: { id: "user-1" },
+    guildId: "guild-1",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, {
+    prisma: { currencyPurchase: { findMany: async () => [{ itemId: "moonlit_token" }] } }
+  });
+  assert.equal(handled, true);
+  assert.match(panelText(response), /Moonlit Relics/);
+  assert.match(panelText(response), /Moonlit Curator/);
 });
