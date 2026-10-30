@@ -15,6 +15,7 @@ import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
 import { workCommand } from "./work.js";
+import { vaultCommand } from "./vault.js";
 
 export const commands = Object.freeze([
   pingCommand,
@@ -33,5 +34,6 @@ export const commands = Object.freeze([
   rpsCommand,
   shopCommand,
   workCommand,
-  scavengeCommand
+  scavengeCommand,
+  vaultCommand
 ]);
