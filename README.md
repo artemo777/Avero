@@ -54,7 +54,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/ping` — checks interaction and gateway latency.
 - `/help` — groups the available commands by category.
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
-- `/profile [member]` — combines wallet, XP, and collection progress.
+- `/profile [member]` — combines wallet, XP, per-game Arcade Mastery tiers, themed collection progress, and unlocked set titles.
 - `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
 - `/achievements [member]` — tracks twelve server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
