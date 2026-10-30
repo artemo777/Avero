@@ -61,3 +61,17 @@ model CurrencyPurchase {
   @@unique([guildId, userId, itemId])
   @@index([guildId, userId])
 }
+
+
+model DailyContractClaim {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  contractId   String
+  contractDate String
+  reward       Int
+  claimedAt    DateTime @default(now())
+
+  @@unique([guildId, userId, contractDate, contractId])
+  @@index([guildId, contractDate])
+}
