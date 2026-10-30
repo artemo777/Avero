@@ -158,6 +158,27 @@ test("a wrong Vault submission cannot be retried to farm game rounds", async () 
   assert.equal(claims.filter((claim) => claim.contractId === "vault_attempt").length, 1);
 });
 
+test("Vault submission allowance resets at the next UTC date", async () => {
+  const firstDay = new Date("2026-10-30T23:59:00.000Z");
+  const nextDay = new Date("2026-10-31T00:00:00.000Z");
+  const firstChallenge = createVaultChallenge("guild-1", firstDay);
+  const nextChallenge = createVaultChallenge("guild-1", nextDay);
+  const wrongFirst = firstChallenge.code === "000" ? "001" : "000";
+  const wrongNext = nextChallenge.code === "000" ? "001" : "000";
+  const { prisma, transactions, claims } = makePrisma();
+
+  const first = interactionFor(wrongFirst);
+  await vaultCommand.execute(first.interaction, { prisma, now: firstDay });
+  const next = interactionFor(wrongNext);
+  await vaultCommand.execute(next.interaction, { prisma, now: nextDay });
+
+  assert.equal(transactions.filter((entry) => entry.type === "vault_loss").length, 2);
+  assert.deepEqual(claims.filter((claim) => claim.contractId === "vault_attempt").map((claim) => claim.contractDate), [
+    "2026-10-30",
+    "2026-10-31"
+  ]);
+});
+
 test("vault rejects invalid codes and direct messages without database writes", async () => {
   let invalid;
   const bad = interactionFor("12x");
