@@ -103,7 +103,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, and scavenge cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, scavenge, and game-reward cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. The database migration is not applied automatically; run the migration command above against your configured database.
 
 ## Shared AveroUI assets
 
@@ -177,4 +177,4 @@ npm test
 └── test/
 ```
 
-The next game increments can add The Vault, Duel Deck, and secret achievements. These remain separate from the paused leveling migration.
+RPS is the first Duel Deck game. The prioritized next increments are Daily Contracts, The Vault, achievements and cosmetic profile items; see [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
