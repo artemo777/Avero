@@ -62,7 +62,8 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge [route]` — choose the Old Server Archive, Neon Plaza, or Moonlit Garden every 10 minutes for 25–55 coins and a route-specific collectible drop; duplicate finds grant a coin bonus. Leave the route blank for a random expedition.
-- `/coinflip call` — call heads or tails for a free round; a win can earn 25 coins under the shared 10-minute game-reward cooldown. No wagers or entry fees.\n- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
+- `/coinflip call` — call heads or tails for a free round; a win can earn 25 coins under the shared 10-minute game-reward cooldown. No wagers or entry fees.
+- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.
 - `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS/Coinflip cooldown is ready. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
