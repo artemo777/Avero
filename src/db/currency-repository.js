@@ -362,18 +362,22 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const rpsWins = count("rps_win");
   const rpsLosses = count("rps_loss");
   const rpsTies = count("rps_tie");
+  const vaultWins = count("vault_win");
+  const vaultLosses = count("vault_loss");
   return {
     lifetimeEarned,
     lifetimeSpent,
-    gameWins: guessWins + rpsWins,
+    gameWins: guessWins + rpsWins + vaultWins,
     guessWins,
     guessLosses,
     rpsWins,
     rpsLosses,
     rpsTies,
-    gameLosses: guessLosses + rpsLosses,
+    vaultWins,
+    vaultLosses,
+    gameLosses: guessLosses + rpsLosses + vaultLosses,
     gameTies: rpsTies,
-    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies,
+    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies + vaultWins + vaultLosses,
     dailyClaims: count("daily"),
     workShifts: count("work"),
     scavenges: count("scavenge"),
@@ -385,7 +389,7 @@ export async function getCurrencyStats(prisma, guildId, userId) {
 export const DAILY_CONTRACTS = Object.freeze([
   Object.freeze({ id: "work_shift", title: "Clock In", description: "Complete 2 work shifts", target: 2, reward: 80, transactionTypes: ["work"] }),
   Object.freeze({ id: "scavenge_trip", title: "Field Research", description: "Go scavenging 3 times", target: 3, reward: 90, transactionTypes: ["scavenge"] }),
-  Object.freeze({ id: "game_session", title: "Game Regular", description: "Play 3 recorded game rounds", target: 3, reward: 75, transactionTypes: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie"] }),
+  Object.freeze({ id: "game_session", title: "Game Regular", description: "Play 3 recorded game rounds", target: 3, reward: 75, transactionTypes: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss"] }),
   Object.freeze({ id: "collector", title: "New Addition", description: "Unlock 1 collectible", target: 1, reward: 100, transactionTypes: ["shop_purchase"] })
 ]);
 
