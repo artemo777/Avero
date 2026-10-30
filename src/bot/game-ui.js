@@ -390,7 +390,7 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
       ? "\n\nYour Vault reward has already been claimed for today."
       : won
         ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
-        : "\n\nNo coins lost. Try another code when ready.";
+        : "\n\nNo coins lost. Your next Vault attempt is available at 00:00 UTC.";
   return gamePayload(createGamePanel({
     title: won ? "Vault unlocked" : "Vault stays locked",
     eyebrow: "THE VAULT • " + challenge.date,
