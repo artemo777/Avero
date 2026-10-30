@@ -214,6 +214,7 @@ test("games hub uses a compact Components V2 panel with all game controls", () =
   assert.match(text, /Guess the number/);
   assert.match(text, /25 coins/);
   assert.match(text, /The Vault/);
+  assert.match(text, /one code attempt and \+25 reward per UTC day/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 2);
