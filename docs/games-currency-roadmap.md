@@ -40,9 +40,7 @@ Implemented on the feature branch as `/contracts` with four daily goals: complet
 
 ### 3. The Vault
 
-Proposed command: `/vault`
-
-A short code-breaking or logic puzzle with a clear success/failure result. It has no entry fee or wager. A fixed reward uses a persistent cooldown and a one-use challenge record so retries, stale buttons, or concurrent clicks cannot duplicate rewards.
+Implemented as `/vault code`: a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
 
 ### 4. Achievements and titles
 
