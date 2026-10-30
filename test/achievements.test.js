@@ -34,7 +34,7 @@ test("achievements show server-scoped milestone progress and unique collection c
 
   const embed = response.embeds[0];
   assert.match(embed.title, /Ada's achievements/);
-  assert.match(embed.description, /7 \/ 9 unlocked/);
+  assert.match(embed.description, /7 \/ 12 unlocked/);
   assert.equal(embed.fields.length, 12);
   assert.match(embed.fields.find((field) => field.name.includes("Curator")).value, /Unlocked/);
   assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /3 \/ 6/);
