@@ -212,7 +212,8 @@ test("games hub uses a compact Components V2 panel with all game controls", () =
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
   assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
   assert.match(text, /Guess the number/);
-  assert.match(text, /25 coins/);\n  assert.match(text, /The Vault/);
+  assert.match(text, /25 coins/);
+  assert.match(text, /The Vault/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 2);
@@ -228,7 +229,6 @@ test("help command groups the real commands into compact embeds", async () => {
   assert.match(response.embeds[0].fields[0].value, /\/balance/);
   assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
   assert.match(response.embeds[0].fields[2].value, /achievements/);
-  assert.match(response.embeds[0].fields[1].value, /vault/);
   assert.match(response.embeds[0].fields[1].value, /vault/);
 });
 
