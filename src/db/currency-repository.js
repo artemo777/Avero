@@ -387,9 +387,15 @@ export async function purchaseCurrencyItem(
         data: { balance: { decrement: price } }
       });
       if (updated.count !== 1) {
-        const account = await tx.currencyAccount.findUnique({
-          where: { guildId_userId: key }
-        });
+        const [existingAfterRace, account] = await Promise.all([
+          tx.currencyPurchase.findUnique({
+            where: { guildId_userId_itemId: { ...key, itemId } }
+          }),
+          tx.currencyAccount.findUnique({
+            where: { guildId_userId: key }
+          })
+        ]);
+        if (existingAfterRace) return { purchased: false, reason: "owned", account };
         return { purchased: false, reason: "insufficient_funds", account };
       }
 
@@ -490,7 +496,7 @@ export const DAILY_CONTRACTS = Object.freeze([
   Object.freeze({ id: "work_shift", title: "Clock In", description: "Complete 2 work shifts", target: 2, reward: 80, transactionTypes: ["work"] }),
   Object.freeze({ id: "scavenge_trip", title: "Field Research", description: "Go scavenging 3 times", target: 3, reward: 90, transactionTypes: ["scavenge"] }),
   Object.freeze({ id: "game_session", title: "Game Regular", description: "Play 3 recorded game rounds", target: 3, reward: 75, transactionTypes: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"] }),
-  Object.freeze({ id: "collector", title: "New Addition", description: "Unlock 1 collectible", target: 1, reward: 100, transactionTypes: ["shop_purchase"] })
+  Object.freeze({ id: "collector", title: "New Addition", description: "Unlock 1 collectible", target: 1, reward: 100, transactionTypes: ["shop_purchase", "scavenge_collectible"] })
 ]);
 
 function getUtcContractDay(now) {
