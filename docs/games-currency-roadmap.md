@@ -19,7 +19,7 @@ Current earning rules:
 | Work shift | 60–120 coins | 30 minutes |
 | Scavenge | 25–55 coins, with a collectible drop chance | 10 minutes |
 | Correct guess | 25 coins | One reward every 10 minutes |
-| Rock, paper, scissors | No coins; tracks wins, losses, and ties | Free replay |
+| Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess |
 
 The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
@@ -35,7 +35,7 @@ The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchas
 
 ### 2. Daily Contracts
 
-Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts, scavenge three times, play three recorded game rounds, and unlock one collectible. Progress is derived from the server/member transaction ledger for the current UTC day. Each completed contract has a fixed virtual-coin reward, stored in a unique per-member/server/day claim record and credited atomically with a ledger entry. No wagers or entry fees are involved.
+Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts (+80 coins), scavenge three times (+90), play three recorded game rounds (+75), and unlock one collectible (+100). Progress is derived from the server/member transaction ledger for the current UTC day. Each completed contract has a unique per-member/server/day claim record and is credited atomically with a ledger entry. No wagers or entry fees are involved.
 
 ### 3. The Vault
 
@@ -45,9 +45,7 @@ A short code-breaking or logic puzzle with a clear success/failure result. It ha
 
 ### 4. Achievements and titles
 
-Proposed command: `/achievements`
-
-Examples: First Shift, First Find, Collector, Full Set, Game Regular, and long-term activity milestones. Rewards should primarily be cosmetic titles or profile decorations, with modest coin rewards only where they do not destabilize the economy.
+Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, and Big Spender. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins.
 
 ### 5. Expand the adventure loop without command sprawl
 
@@ -65,7 +63,7 @@ After the branch stack is integrated and the database migrations are applied in 
 2. Claim `/daily` twice; the second attempt must not pay.
 3. Run `/work` and `/scavenge` twice; each second attempt must respect its cooldown.
 4. Play `/guess` from the slash command and the `/games` buttons; confirm the 10-minute reward limit is shared.
-5. Play `/rps`; confirm the result is recorded without changing the balance.
+5. Play `/rps`; confirm every result is recorded, wins can earn +25 only when the shared 10-minute Guess/RPS reward cooldown is ready, and no game has an entry fee or wager.
 6. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
 7. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
 8. Check coin, XP, games, guess, and RPS leaderboards.
