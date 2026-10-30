@@ -35,16 +35,7 @@ The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchas
 
 ### 2. Daily Contracts
 
-Proposed command: `/contracts`
-
-Show a small set of rotating daily goals with progress and a fixed coin reward. Candidate goals:
-
-- Complete two work shifts.
-- Scavenge three times.
-- Play three recorded game rounds.
-- Unlock one collectible.
-
-Contract progress should come from the transaction ledger, and each contract reward must be claimable only once per member, server, and day. No reward should be granted by repeatedly clicking an old panel.
+Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts, scavenge three times, play three recorded game rounds, and unlock one collectible. Progress is derived from the server/member transaction ledger for the current UTC day. Each completed contract has a fixed virtual-coin reward, stored in a unique per-member/server/day claim record and credited atomically with a ledger entry. No wagers or entry fees are involved.
 
 ### 3. The Vault
 
