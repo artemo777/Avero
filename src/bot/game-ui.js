@@ -185,7 +185,7 @@ export async function renderShop(prisma, guildId, userId) {
   });
   return gamePayload(createGamePanel({
     title: "Collectible shop",
-    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nBrowse the drop. Each item has its own details and purchase controls below.",
+    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\nBrowse six collectibles across the Archive, Neon and Moonlit sets. Use /collections to track set completion and unlock cosmetic titles.",
     sections,
     sectionButtons,
     eyebrow: "THE DROP",
