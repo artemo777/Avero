@@ -374,7 +374,7 @@ export function renderVaultChallenge(challenge, userId) {
     title: "Today's vault is ready",
     eyebrow: "THE VAULT • " + challenge.date,
     description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
-      "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One 25-coin reward per member per UTC day, subject to the shared 10-minute Guess/RPS reward cooldown. Free play · No wagers.",
+      "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. A correct solve earns 25 coins when the shared 10-minute Guess/RPS cooldown is ready. Free play · No wagers.",
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
   }));
@@ -397,7 +397,7 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
     description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
       (won ? "\nToday's code: **" + challenge.code + "**" : "") + outcome +
-      "\n\n-# No entry fee or wager. One Vault reward per UTC day; shared 10-minute cooldown with Guess and RPS.",
+      "\n\n-# One submission per member per UTC day. No entry fee or wager; rewards share the 10-minute Guess/RPS cooldown.",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.primary : THEME.colors.warning,
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
