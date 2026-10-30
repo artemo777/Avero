@@ -24,6 +24,7 @@ test("wallet explains every available coin earning route and cooldown", async ()
   assert.match(text, /contracts.*4 daily goals.*345\/day/);
   assert.match(text, /\/guess.*one reward every 10m/);
   assert.match(text, /\/rps.*\+25 on a win.*shared 10m cooldown/);
+  assert.match(text, /\/vault.*daily puzzle.*shared 10m cooldown/);
 });
 
 test("insufficient-funds purchase response points to all main earning commands", () => {
@@ -34,7 +35,7 @@ test("insufficient-funds purchase response points to all main earning commands",
     account: { balance: 20 }
   }, item, "user-1");
 
-  assert.match(panelText(response), /daily, \/work, \/scavenge, \/contracts, \/guess or \/rps/);
+  assert.match(panelText(response), /daily, \/work, \/scavenge, \/contracts, \/guess, \/rps or \/vault/);
 });
 
 test("help documents game-specific leaderboards and free game rules", async () => {
@@ -46,5 +47,5 @@ test("help documents game-specific leaderboards and free game rules", async () =
 
   assert.match(games, /free, 10m reward cooldown/);
   assert.match(games, /free/);
-  assert.match(profile, /games, guess or RPS/);
+  assert.match(profile, /games, guess, RPS or Vault/);
 });
