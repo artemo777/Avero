@@ -121,7 +121,8 @@ test("duplicate scavenge drops award a coin bonus without duplicating collection
   assert.equal(result.amount, 75);
   assert.equal(result.account.balance, 110);
   assert.equal(prisma.purchases.size, 1);
-  assert.equal(prisma.transactions.length, 3);\n  assert.equal(prisma.transactions.filter((entry) => entry.type === "scavenge_collectible").length, 1);
+  assert.equal(prisma.transactions.length, 3);
+  assert.equal(prisma.transactions.filter((entry) => entry.type === "scavenge_collectible").length, 1);
 });
 
 test("scavenge validates reward, cooldown, item ID, and timestamp", async () => {
