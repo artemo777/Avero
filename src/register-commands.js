@@ -1,6 +1,6 @@
 import { REST, Routes } from "discord.js";
 import { commands } from "./bot/commands/index.js";
-import { getCommandDefinitions } from "./bot/command-registry.js";
+import { findGuildCommandDuplicates, getCommandDefinitions } from "./bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "./bot/config.js";
 
 let config;
@@ -21,11 +21,25 @@ try {
     "Registered " + body.length + " Avero global slash command(s): " +
     body.map((command) => "/" + command.name).join(", ") + "."
   );
+  if (config.guildId) {
+    const legacyGuildCommands = await rest.get(
+      Routes.applicationGuildCommands(config.clientId, config.guildId)
+    );
+    const duplicates = findGuildCommandDuplicates(body, legacyGuildCommands);
+    for (const command of duplicates) {
+      await rest.delete(
+        Routes.applicationGuildCommand(config.clientId, config.guildId, command.id)
+      );
+    }
+    console.log("Removed " + duplicates.length + " legacy guild-scoped command duplicate(s) from DISCORD_GUILD_ID.");
+  } else {
+    console.log("No DISCORD_GUILD_ID configured; legacy guild-scoped command cleanup was skipped.");
+  }
   console.log("The global application command set was replaced. Global updates can take time to appear.");
 } catch (error) {
   const status = Number(error?.status ?? error?.httpStatus ?? 0);
   const discordCode = String(error?.code ?? error?.rawError?.code ?? "");
-  console.error("Global slash-command registration failed.");
+  console.error("Global slash-command registration or legacy guild-command cleanup failed.");
   if (status === 403 && discordCode === "50001") {
     console.error(
       "Discord returned 403 Missing Access. Verify that DISCORD_TOKEN and DISCORD_CLIENT_ID belong " +
