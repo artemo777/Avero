@@ -35,6 +35,8 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
     rpsWins: 4,
     rpsLosses: 3,
     rpsTies: 1,
+    vaultWins: 0,
+    vaultLosses: 0,
     gameLosses: 5,
     gameTies: 1,
     gamesPlayed: 18,
