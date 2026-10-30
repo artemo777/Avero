@@ -1,0 +1,103 @@
+import test, { after } from "node:test";
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
+import {
+  awardGameReward, claimDailyReward, purchaseCurrencyItem
+} from "../src/db/currency-repository.js";
+
+const enabled = Boolean(process.env.DATABASE_URL);
+const prisma = enabled ? new PrismaClient() : null;
+
+after(async () => {
+  if (prisma) await prisma.$disconnect();
+});
+
+async function createAccount(balance = 0) {
+  const guildId = "integration-" + randomUUID();
+  const userId = "user-" + randomUUID();
+  await prisma.currencyAccount.create({ data: { guildId, userId, balance } });
+  return { guildId, userId };
+}
+
+async function cleanGuild(guildId) {
+  await prisma.currencyTransaction.deleteMany({ where: { guildId } });
+  await prisma.currencyPurchase.deleteMany({ where: { guildId } });
+  await prisma.currencyAccount.deleteMany({ where: { guildId } });
+}
+
+test("PostgreSQL allows only one concurrent daily claim", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount();
+  t.after(() => cleanGuild(guildId));
+  const now = new Date("2026-10-30T12:00:00.000Z");
+
+  const results = await Promise.all([
+    claimDailyReward(prisma, guildId, userId, { amount: 100, now }),
+    claimDailyReward(prisma, guildId, userId, { amount: 100, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.claimed).length, 1);
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 100);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "daily" } }), 1);
+});
+
+test("PostgreSQL prevents concurrent different-item purchases from overspending", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount(300);
+  t.after(() => cleanGuild(guildId));
+
+  const results = await Promise.all([
+    purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
+    purchaseCurrencyItem(prisma, guildId, userId, "vault_badge", 300)
+  ]);
+  const winner = results.find((result) => result.purchased);
+
+  assert.ok(winner);
+  assert.equal(results.filter((result) => result.purchased).length, 1);
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 300 - winner.price);
+  assert.equal(await prisma.currencyPurchase.count({ where: { guildId, userId } }), 1);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "shop_purchase" } }), 1);
+});
+
+test("PostgreSQL rolls back a duplicate concurrent purchase without double charging", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount(500);
+  t.after(() => cleanGuild(guildId));
+
+  const results = await Promise.all([
+    purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
+    purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150)
+  ]);
+
+  assert.equal(results.filter((result) => result.purchased).length, 1);
+  assert.equal(results.filter((result) => result.reason === "owned").length, 1);
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 350);
+  assert.equal(await prisma.currencyPurchase.count({ where: { guildId, userId, itemId: "neon_badge" } }), 1);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "shop_purchase" } }), 1);
+});
+
+test("PostgreSQL awards a concurrent game reward only once inside its cooldown", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount();
+  t.after(() => cleanGuild(guildId));
+  const now = new Date("2026-10-30T13:00:00.000Z");
+
+  const results = await Promise.all([
+    awardGameReward(prisma, guildId, userId, 25, { type: "guess_reward", cooldownMs: 600_000, now }),
+    awardGameReward(prisma, guildId, userId, 25, { type: "guess_reward", cooldownMs: 600_000, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.awarded).length, 1);
+  assert.equal(results.filter((result) => result.reason === "cooldown").length, 1);
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 25);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "guess_reward" } }), 1);
+});
