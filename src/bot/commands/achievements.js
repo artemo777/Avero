@@ -2,8 +2,9 @@ import { MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 import { getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
+import { buildCollectionSetProgress } from "../collection-sets.js";
 
-function buildAchievements(stats, ownedCount) {
+function buildAchievements(stats, ownedCount, collectionSets) {
   return [
     { name: "First Shift", description: "Complete your first work shift.", progress: stats.workShifts, target: 1 },
     { name: "Field Finder", description: "Complete your first scavenging run.", progress: stats.scavenges, target: 1 },
@@ -13,7 +14,10 @@ function buildAchievements(stats, ownedCount) {
     { name: "Curator", description: "Collect 3 different items.", progress: ownedCount, target: 3 },
     { name: "Full Set", description: "Collect every item in the current shop.", progress: ownedCount, target: SHOP_ITEMS.length },
     { name: "Coin Maker", description: "Earn 1,000 virtual coins over time.", progress: stats.lifetimeEarned, target: 1000 },
-    { name: "Big Spender", description: "Spend 1,000 virtual coins on collectibles.", progress: stats.lifetimeSpent, target: 1000 }
+    { name: "Big Spender", description: "Spend 1,000 virtual coins on collectibles.", progress: stats.lifetimeSpent, target: 1000 },
+    { name: "Archive Keeper", description: "Complete The Archive Protocol set.", progress: Number(collectionSets.find((set) => set.id === "archive-protocol")?.complete ?? false), target: 1 },
+    { name: "Circuit Breaker", description: "Complete the Neon Circuit set.", progress: Number(collectionSets.find((set) => set.id === "neon-circuit")?.complete ?? false), target: 1 },
+    { name: "Moonlit Curator", description: "Complete the Moonlit Relics set.", progress: Number(collectionSets.find((set) => set.id === "moonlit-relics")?.complete ?? false), target: 1 }
   ];
 }
 
@@ -44,7 +48,8 @@ export const achievementsCommand = Object.freeze({
       getCurrencyPurchases(prisma, interaction.guildId, target.id)
     ]);
     const ownedCount = new Set(purchases.map((purchase) => purchase.itemId)).size;
-    const achievements = buildAchievements(stats, ownedCount);
+    const collectionSets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
+    const achievements = buildAchievements(stats, ownedCount, collectionSets);
     const unlocked = achievements.filter((achievement) => achievement.progress >= achievement.target).length;
     const fields = achievements.map((achievement) => {
       const complete = achievement.progress >= achievement.target;
