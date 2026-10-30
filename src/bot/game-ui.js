@@ -125,7 +125,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · No coins involved.",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
@@ -369,18 +369,23 @@ export function renderGuess(guess, answer, result, userId) {
       .concat(navButtons(userId).slice(0, 2))
   }));
 }
-export function renderRps(playerChoice, botChoice, userId) {
+export function renderRps(playerChoice, botChoice, userId, reward = null) {
   const tie = playerChoice === botChoice;
   const won = !tie && BEATS[playerChoice] === botChoice;
-  const outcome = tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**";
+  const rewardText = reward?.awarded
+    ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
+    : won
+      ? "\n\nYou won, but your shared game-reward cooldown is active. No coins were lost."
+      : "\n\nNo coins were lost. No wagers.";
+  const outcome = (tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**") + rewardText;
   const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
     description: "### " + symbols[playerChoice] + " You: " + LABELS[playerChoice] + "\n### " + symbols[botChoice] + " Avero: " + LABELS[botChoice] +
-      "\n\n" + outcome + "\n\n**Play another round** · Free · No coins involved",
+      "\n\n" + outcome + "\n\n**Play another round** · Free · No wagers",
     eyebrow: "DUEL DECK",
     color: tie ? THEME.colors.primary : won ? THEME.colors.success : THEME.colors.warning,
-    footer: "DUEL DECK • NO COINS INVOLVED",
+    footer: "DUEL DECK • FREE PLAY • NO WAGERS",
     buttons: CHOICES.map((choice) => button(userId, "rps", LABELS[choice], choice, choice === playerChoice ? ButtonStyle.Primary : ButtonStyle.Secondary))
       .concat(navButtons(userId).slice(0, 1))
   }));
@@ -404,11 +409,17 @@ async function runGuess(prisma, guildId, userId, guess) {
   const result = won ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
-async function runRps(prisma, guildId, playerChoice, userId) {
+export async function runRps(prisma, guildId, playerChoice, userId) {
   const botChoice = CHOICES[randomInt(CHOICES.length)];
   const outcome = playerChoice === botChoice ? "tie" : BEATS[playerChoice] === botChoice ? "win" : "loss";
   await recordGameResult(prisma, guildId, userId, "rps", outcome);
-  return renderRps(playerChoice, botChoice, userId);
+  const reward = outcome === "win"
+    ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, {
+      type: "rps_reward",
+      cooldownMs: GUESS_REWARD_COOLDOWN_MS
+    })
+    : null;
+  return renderRps(playerChoice, botChoice, userId, reward);
 }
 export async function handleGameComponent(interaction, { prisma } = {}) {
   const parsed = readComponentId(interaction.customId);
