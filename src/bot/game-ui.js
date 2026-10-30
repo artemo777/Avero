@@ -137,7 +137,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\\n🔐 /vault · Daily puzzle · +25 on a win, shared 10m cooldown",
+    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\n🔐 /vault · Daily puzzle · +25 on a win, shared 10m cooldown",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
@@ -384,7 +384,7 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
     eyebrow: "THE VAULT • " + challenge.date,
     description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
-      "\nToday's code: **" + challenge.code + "**" + outcome +
+      (won ? "\nToday's code: **" + challenge.code + "**" : "") + outcome +
       "\n\n-# No entry fee or wager. One coin reward every 10 minutes, shared with Guess and RPS.",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.primary : THEME.colors.warning,
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
