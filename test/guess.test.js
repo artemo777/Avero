@@ -80,3 +80,10 @@ test("guess command rejects direct messages", async () => {
     flags: MessageFlags.Ephemeral
   });
 });
+
+
+test("guess slash command explains its free-play reward limit", () => {
+  assert.match(guessCommand.data.description, /free to replay/i);
+  assert.match(guessCommand.data.description, /one reward every 10 minutes/i);
+  assert.ok(guessCommand.data.description.length <= 100);
+});
