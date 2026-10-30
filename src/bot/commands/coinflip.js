@@ -47,7 +47,7 @@ export const coinflipCommand = Object.freeze({
     const panel = createGamePanel({
       title: won ? "A clean call!" : "The coin landed",
       eyebrow: "COINFLIP",
-      description: "You called **" + call.toUpperCase() + "**\nAvero flipped **" + result.toUpperCase() + "**\n\n" + outcome,
+      description: "Free play · no wagers · virtual coins only\n\nYou called **" + call.toUpperCase() + "**\nAvero flipped **" + result.toUpperCase() + "**\n\n" + outcome,
       footer: "FREE PLAY • NO WAGERS • VIRTUAL COINS ONLY"
     });
     await interaction.reply(gamePayload(panel));
