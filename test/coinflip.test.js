@@ -49,7 +49,7 @@ test("coinflip is a free game that records its result and only rewards wins", as
 
   assert.match(text, /You called/);
   assert.match(text, /Avero flipped/);
-  assert.match(text, /FREE PLAY.*NO WAGERS/);
+  assert.match(text, /free play.*no wagers/i);
   assert.equal(records[0].amount, 0);
   assert.match(records[0].type, /^coinflip_(win|loss)$/);
   assert.equal(records.filter((record) => record.type === "coinflip_reward").length, won ? 1 : 0);
