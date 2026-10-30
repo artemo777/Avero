@@ -82,8 +82,7 @@ test("vault win records a free game result and shares the reward cooldown", asyn
   assert.match(text, /No entry fee or wager/);
   assert.equal(transactions[0].type, "vault_reward");
   assert.equal(transactions[1].type, "vault_win");
-  assert.equal(claims.length, 1);
-  assert.equal(claims[0].contractId, "vault_reward");
+  assert.deepEqual(claims.map((claim) => claim.contractId).sort(), ["vault_attempt", "vault_reward"]);
   assert.equal(account.balance, 25);
 });
 
@@ -97,9 +96,9 @@ test("a solved daily vault can award coins only once per UTC day", async () => {
   const second = interactionFor(challenge.code);
   await vaultCommand.execute(second.interaction, { prisma, now });
 
-  const secondText = second.response().components[0].toJSON().components[0].content;
-  assert.match(secondText, /already been claimed for today/);
-  assert.equal(claims.length, 1);
+  assert.match(second.response().content, /already submitted today.s Vault code/);
+  assert.equal(claims.filter((claim) => claim.contractId === "vault_attempt").length, 1);
+  assert.equal(claims.filter((claim) => claim.contractId === "vault_reward").length, 1);
   assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 1);
   assert.equal(transactions.filter((entry) => entry.type === "vault_win").length, 1);
   assert.equal(account.balance, 25);
@@ -119,6 +118,7 @@ test("vault wins respect the shared game reward cooldown", async () => {
   assert.match(text, /Vault unlocked/);
   assert.match(text, /cooldown is active/);
   assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 0);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_win").length, 1);
   assert.equal(account.balance, 75);
 });
 
@@ -135,6 +135,7 @@ test("vault loss records a result but never changes the balance", async () => {
   assert.doesNotMatch(response().components[0].toJSON().components[0].content, /Today/);
   assert.equal(transactions.length, 1);
   assert.equal(transactions[0].type, "vault_loss");
+  assert.equal(claims.filter((claim) => claim.contractId === "vault_attempt").length, 1);
   assert.equal(account.balance, 0);
 });
 
