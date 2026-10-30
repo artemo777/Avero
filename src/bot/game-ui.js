@@ -153,7 +153,7 @@ export function renderGames(userId) {
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY • COLLECTION ATLAS",
     buttons: gameButtons,
-    canvas: false
+    canvas: true
   }));
 }
 export async function renderBalance(prisma, guildId, userId) {
@@ -164,7 +164,8 @@ export async function renderBalance(prisma, guildId, userId) {
     description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🧭 /scavenge · choose Archive, Plaza or Garden · +25–55 every 10m + route-specific collectibles\n📜 /contracts · 4 daily goals · up to +345/day\n🪙 /coinflip · +25 on a win · shared 10m cooldown\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\n🔐 /vault · Daily puzzle · one attempt and +25 reward per UTC day",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
-    buttons: navButtons(userId, true)
+    buttons: navButtons(userId, true),
+    canvas: true
   }));
 }
 export async function renderShop(prisma, guildId, userId) {
@@ -192,6 +193,7 @@ export async function renderShop(prisma, guildId, userId) {
     sectionButtons,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
+    canvas: true,
     buttons: [
       button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
       button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"),
@@ -268,7 +270,8 @@ export async function renderCollectionSets(prisma, guildId, userId) {
       button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
       button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
     ],
-    footer: "COLLECTION ATLAS • SERVER-SCOPED PROGRESS"
+    footer: "COLLECTION ATLAS • SERVER-SCOPED PROGRESS",
+    canvas: true
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
