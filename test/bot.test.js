@@ -208,9 +208,10 @@ test("global command list includes new economy features and has no duplicate nam
 test("games hub uses a compact Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.equal(response.files, undefined);
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "avero-panel.png");
   const panel = response.components[0].toJSON();
-  assert.ok(!panel.components.some((component) => component.type === 12));
+  assert.ok(panel.components.some((component) => component.type === 12));
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
   assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
   assert.match(text, /Guess the number/);
