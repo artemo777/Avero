@@ -22,7 +22,7 @@ test("wallet explains every available coin earning route and cooldown", async ()
   assert.match(text, /\/work.*60–120 every 30m/);
   assert.match(text, /\/scavenge.*25–55 every 10m.*collectible chance/);
   assert.match(text, /contracts.*4 daily goals.*345\/day/);
-  assert.match(text, /\/guess.*one reward every 10m/);
+  assert.match(text, /\/coinflip.*shared 10m cooldown/);\n  assert.match(text, /\/guess.*one reward every 10m/);
   assert.match(text, /\/rps.*\+25 on a win.*shared 10m cooldown/);
   assert.match(text, /\/vault.*daily puzzle.*one attempt and \+25 reward per UTC day/i);
 });
