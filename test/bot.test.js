@@ -235,15 +235,16 @@ test("profile command combines wallet, XP, and collection data", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].title, "Ada");
+  assert.equal(response.files, undefined);
+  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "None");
   assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
   assert.equal(response.embeds[0].fields[1].value, "2");
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
 });
 
 
-test("profile shows multiple owned badge artworks in purchase order beside the username", async () => {
+test("profile lists all owned badges but displays only the selected badge beside the username", async () => {
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
@@ -259,7 +260,10 @@ test("profile shows multiple owned badge artworks in purchase order beside the u
     reply: async (payload) => { response = payload; }
   }, { prisma });
   assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "profile-badge.png");
+  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "Prism Crown");
   assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Neon Badge, Prism Crown/);
 });
 
@@ -280,9 +284,9 @@ test("profile shows the actual equipped collectible artwork beside the username"
   }, { prisma });
 
   assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badges.png");
+  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-badges.png");
+  assert.equal(response.files[0].name, "profile-badge.png");
   assert.equal(response.embeds[0].title, undefined);
 });
 
