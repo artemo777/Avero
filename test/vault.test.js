@@ -7,9 +7,14 @@ import { createVaultChallenge } from "../src/bot/vault-puzzle.js";
 function makePrisma() {
   const account = { balance: 0, lastGameRewardAt: null };
   const transactions = [];
+  const claims = [];
   const prisma = {
     $transaction: async (callback) => callback(prisma),
     currencyTransaction: { create: async ({ data }) => { transactions.push(data); return data; } },
+    dailyContractClaim: {
+      findUnique: async ({ where }) => claims.find((claim) => claim.guildId === where.guildId_userId_contractDate_contractId.guildId && claim.userId === where.guildId_userId_contractDate_contractId.userId && claim.contractDate === where.guildId_userId_contractDate_contractId.contractDate && claim.contractId === where.guildId_userId_contractDate_contractId.contractId) ?? null,
+      create: async ({ data }) => { claims.push(data); return data; }
+    },
     currencyAccount: {
       upsert: async () => account,
       updateMany: async ({ where, data }) => {
@@ -21,7 +26,7 @@ function makePrisma() {
       findUnique: async () => ({ ...account })
     }
   };
-  return { prisma, transactions, account };
+  return { prisma, transactions, account, claims };
 }
 
 function interactionFor(code, guildId = "guild-1") {
@@ -60,8 +65,28 @@ test("vault win records a free game result and shares the reward cooldown", asyn
   assert.match(text, /Vault unlocked/);
   assert.match(text, /\+25 coins/);
   assert.match(text, /No entry fee or wager/);
-  assert.equal(transactions[0].type, "vault_win");
-  assert.equal(transactions[1].type, "vault_reward");
+  assert.equal(transactions[0].type, "vault_reward");
+  assert.equal(transactions[1].type, "vault_win");
+  assert.equal(claims.length, 1);
+  assert.equal(claims[0].contractId, "vault_reward");
+  assert.equal(account.balance, 25);
+});
+
+test("a solved daily vault can award coins only once per UTC day", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const challenge = createVaultChallenge("guild-1", now);
+  const { prisma, transactions, account, claims } = makePrisma();
+
+  const first = interactionFor(challenge.code);
+  await vaultCommand.execute(first.interaction, { prisma, now });
+  const second = interactionFor(challenge.code);
+  await vaultCommand.execute(second.interaction, { prisma, now });
+
+  const secondText = second.response().components[0].toJSON().components[0].content;
+  assert.match(secondText, /already been claimed for today/);
+  assert.equal(claims.length, 1);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 1);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_win").length, 1);
   assert.equal(account.balance, 25);
 });
 
