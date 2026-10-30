@@ -1,7 +1,7 @@
 import { MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 
-const CATEGORIES = Object.freeze(["coins", "xp", "games", "guess", "rps"]);
+const CATEGORIES = Object.freeze(["coins", "xp", "games", "guess", "rps", "vault"]);
 
 export const leaderboardCommand = Object.freeze({
   data: Object.freeze({
@@ -17,7 +17,8 @@ export const leaderboardCommand = Object.freeze({
         { name: "XP", value: "xp" },
         { name: "Games", value: "games" },
         { name: "Guess", value: "guess" },
-        { name: "Rock, Paper, Scissors", value: "rps" }
+        { name: "Rock, Paper, Scissors", value: "rps" },
+        { name: "The Vault", value: "vault" }
       ]
     }]
   }),
@@ -44,7 +45,9 @@ export const leaderboardCommand = Object.freeze({
         ? ["guess_win_play", "guess_win", "guess_loss"]
         : category === "rps"
           ? ["rps_win", "rps_loss", "rps_tie"]
-          : ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie"];
+          : category === "vault"
+            ? ["vault_win", "vault_loss"]
+            : ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss"];
       const grouped = await prisma.currencyTransaction.groupBy({
         by: ["userId", "type"],
         where: { guildId: interaction.guildId, type: { in: gameTypes } },
@@ -53,19 +56,20 @@ export const leaderboardCommand = Object.freeze({
       const scores = new Map();
       for (const row of grouped) {
         const current = scores.get(row.userId) ?? {
-          userId: row.userId, guessWins: 0, legacyGuessWins: 0, rpsWins: 0, losses: 0, ties: 0
+          userId: row.userId, guessWins: 0, legacyGuessWins: 0, rpsWins: 0, vaultWins: 0, losses: 0, ties: 0
         };
         if (row.type === "guess_win_play") current.guessWins += row._count._all;
         else if (row.type === "guess_win") current.legacyGuessWins += row._count._all;
-        else if (row.type === "guess_loss" || row.type === "rps_loss") current.losses += row._count._all;
+        else if (row.type === "guess_loss" || row.type === "rps_loss" || row.type === "vault_loss") current.losses += row._count._all;
         else if (row.type === "rps_tie") current.ties += row._count._all;
         else if (row.type === "rps_win") current.rpsWins += row._count._all;
+        else if (row.type === "vault_win") current.vaultWins += row._count._all;
         scores.set(row.userId, current);
       }
       rows = [...scores.values()]
         .map((row) => {
           const guessWins = row.guessWins + row.legacyGuessWins;
-          const wins = guessWins + row.rpsWins;
+          const wins = category === "guess" ? guessWins : category === "rps" ? row.rpsWins : category === "vault" ? row.vaultWins : guessWins + row.rpsWins + row.vaultWins;
           return { ...row, wins, gamesPlayed: wins + row.losses + row.ties };
         })
         .sort((a, b) => b.wins - a.wins || b.gamesPlayed - a.gamesPlayed || a.userId.localeCompare(b.userId))
@@ -77,7 +81,7 @@ export const leaderboardCommand = Object.freeze({
           let score;
           if (category === "coins") score = row.balance.toLocaleString("en-US") + " coins";
           else if (category === "xp") score = row.xp.toLocaleString("en-US") + " XP";
-          else { const record = row.wins + "W / " + row.losses + "L" + (category === "guess" ? "" : " / " + row.ties + "T"); score = record + " · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate"; }
+          else { const record = row.wins + "W / " + row.losses + "L" + (category === "guess" || category === "vault" ? "" : " / " + row.ties + "T"); score = record + " · " + (row.gamesPlayed ? Math.round(row.wins / row.gamesPlayed * 100) : 0) + "% win rate"; }
           const medal = ["🥇", "🥈", "🥉"][index] ?? "`#" + (index + 1) + "`";
           return medal + "  <@" + row.userId + "> — **" + score + "**";
         }).join("\n")
@@ -85,7 +89,7 @@ export const leaderboardCommand = Object.freeze({
 
     await interaction.reply({
       embeds: [createEmbed({
-        title: category === "coins" ? "🪙 Coin leaderboard" : category === "xp" ? "🏅 XP leaderboard" : category === "guess" ? "🎯 Guess leaderboard" : category === "rps" ? "✊ Rock-paper-scissors leaderboard" : "🎮 Games leaderboard",
+        title: category === "coins" ? "🪙 Coin leaderboard" : category === "xp" ? "🏅 XP leaderboard" : category === "guess" ? "🎯 Guess leaderboard" : category === "rps" ? "✊ Rock-paper-scissors leaderboard" : category === "vault" ? "🔐 Vault leaderboard" : "🎮 Games leaderboard",
         description,
         color: THEME.colors.primary,
       })]
