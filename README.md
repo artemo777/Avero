@@ -62,7 +62,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
-- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked on profiles and the Games leaderboard; the game does not change coin balances.
+- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`. No entry fees or wagers.
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
