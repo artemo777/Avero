@@ -95,7 +95,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    const needsDatabase = interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName);
+    const isVaultClueRequest = interaction.commandName === "vault" && !interaction.options.getString("code");
+    const needsDatabase = !isVaultClueRequest && (interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName));
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     await command.execute(interaction, { prisma });
   } catch (error) {
