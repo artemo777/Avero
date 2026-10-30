@@ -10,7 +10,7 @@ Commands already in the feature branch:
 - Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`
 - Collectibles: `/shop`, `/buy`, `/inventory`
 - Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
-- Progress and discovery: `/profile`, `/achievements`, `/leaderboard`, `/help`
+- Progress and discovery: `/profile`, `/achievements`, `/collections`, `/leaderboard`, `/help`
 
 Current earning rules:
 
@@ -46,11 +46,11 @@ Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specif
 
 ### 4. Achievements and titles
 
-Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, and Big Spender. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins.
+Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, Big Spender, Archive Keeper, Circuit Breaker, and Moonlit Curator. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins.
 
 ### 5. Expand the adventure loop without command sprawl
 
-Implemented: `/scavenge` now offers three themed expedition routes (Old Server Archive, Neon Plaza, Moonlit Garden), each with a distinct collectible drop pool. Coin rewards and cooldowns stay identical across routes, so route choice adds collection strategy without creating a pay-to-win advantage or changing the economy.
+Implemented: `/scavenge` offers three themed expedition routes (Old Server Archive, Neon Plaza, Moonlit Garden), each with a distinct collectible drop pool. `/collections` adds three matching collectible sets—Archive Protocol, Neon Circuit, and Moonlit Relics—with cosmetic titles for completion. Set progress is derived from owned collectibles, requires no migration, and grants no extra coins. Coin rewards and cooldowns stay identical across routes, so route choice adds collection strategy without creating a pay-to-win advantage or changing the economy.
 
 ### 6. Add useful currency sinks
 
