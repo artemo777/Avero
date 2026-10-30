@@ -76,6 +76,32 @@ The bot must have permission to manage roles, and each reward role must be below
 
 Avero uses PostgreSQL through Prisma. The `MemberProfile` table stores one profile per guild/user pair, including XP, level, and the last message XP timestamp. The database migration is not applied automatically; run the migration command above against your configured database.
 
+
+## Import existing Engauge levels
+
+The Engauge migration tool reads member XP from the Engauge API for server `1434292419788017766` and imports it into Avero's `MemberProfile` records. It is intentionally **dry-run by default**. It preserves whichever is higher: Engauge XP or existing Avero XP, and calculates Avero levels from Avero's `100 × level²` curve. It does not issue Discord announcements or role rewards.
+
+Before running it:
+1. Make sure `DATABASE_URL` points to the intended PostgreSQL database and its migrations are applied.
+2. Add the private Codespaces secret `ENGAUGE_API_TOKEN`. Never put the token in a file, source code, terminal command, or commit.
+3. Set `ENGAUGE_SERVER_ID` only if importing a different server; the default is the server above.
+4. Restart an existing Codespace after adding/changing its secrets so the environment can receive them.
+
+Preview only (does not write profiles):
+
+```sh
+npm run db:generate
+npm run migrate:engauge
+```
+
+Review the member counts and XP total printed by the preview. Only after confirming the target server and database, apply the import:
+
+```sh
+npm run migrate:engauge -- --apply
+```
+
+The API token is broad-access and Engauge currently documents tokens as experimental. Keep it private and do not paste it into chat or logs. The importer never prints the token or API response bodies.
+
 ## HTTP health server
 
 The existing health-check server remains separate from the Discord bot:
