@@ -4,6 +4,7 @@ import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
+import { buildCollectionSetProgress } from "../collection-sets.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -35,7 +36,7 @@ export const profileCommand = Object.freeze({
     const currentLevelXp = experienceForLevel(level);
     const nextLevelXp = experienceForLevel(level + 1);
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
-    const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
+    const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;\n    const completedSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete).length;
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
     const badgeFilename = "profile-badge.png";
@@ -55,7 +56,7 @@ export const profileCommand = Object.freeze({
         fields: [
           { name: "🪙 Wallet", value: (account?.balance ?? 0).toLocaleString("en-US") + " coins", inline: true },
           { name: "✦ Level", value: String(level), inline: true },
-          { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
+          { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },\n          { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
           { name: "🎮 Games record", value: stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet", inline: true },
           { name: "🎯 Games played", value: String(stats.gamesPlayed), inline: true },
