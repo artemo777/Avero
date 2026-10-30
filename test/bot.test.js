@@ -200,7 +200,8 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("contracts"));
   assert.ok(names.includes("achievements"));
   assert.ok(names.includes("vault"));
-  assert.equal(names.length, 18);
+  assert.ok(names.includes("coinflip"));
+  assert.equal(names.length, 19);
 });
 
 test("games hub uses a compact Components V2 panel with all game controls", () => {
