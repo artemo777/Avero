@@ -3,6 +3,7 @@ import { balanceCommand } from "./balance.js";
 import { buyCommand } from "./buy.js";
 import { dailyCommand } from "./daily.js";
 import { contractsCommand } from "./contracts.js";
+import { collectionsCommand } from "./collections.js";
 import { coinflipCommand } from "./coinflip.js";
 import { guessCommand } from "./guess.js";
 import { helpCommand } from "./help.js";
@@ -29,6 +30,7 @@ export const commands = Object.freeze([
   buyCommand,
   dailyCommand,
   contractsCommand,
+  collectionsCommand,
   coinflipCommand,
   guessCommand,
   inventoryCommand,
