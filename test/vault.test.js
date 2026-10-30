@@ -74,7 +74,8 @@ test("vault loss records a result but never changes the balance", async () => {
 
   await vaultCommand.execute(interaction, { prisma, now });
 
-  assert.match(response().components[0].toJSON().components[0].content, /Vault stays locked/);\n  assert.doesNotMatch(response().components[0].toJSON().components[0].content, /Today/);
+  assert.match(response().components[0].toJSON().components[0].content, /Vault stays locked/);
+  assert.doesNotMatch(response().components[0].toJSON().components[0].content, /Today/);
   assert.equal(transactions.length, 1);
   assert.equal(transactions[0].type, "vault_loss");
   assert.equal(account.balance, 0);
