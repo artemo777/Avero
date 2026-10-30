@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { commands } from "../src/bot/commands/index.js";
-import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
+import { createCommandMap, findGuildCommandDuplicates, getCommandDefinitions } from "../src/bot/command-registry.js";
 
 test("all Avero slash commands have unique valid names and executable handlers", () => {
   const map = createCommandMap(commands);
@@ -30,4 +30,22 @@ test("command registry rejects commands without executable handlers", () => {
     () => createCommandMap([{ data: { name: "balance", description: "Show balance" } }]),
     /must have an execute function/
   );
+});
+
+
+test("legacy guild command cleanup selects only names now registered globally", () => {
+  const globalCommands = [{ name: "balance" }, { name: "games" }, { name: "profile" }];
+  const guildCommands = [
+    { id: "1", name: "balance" },
+    { id: "2", name: "old-local-tool" },
+    { id: "3", name: "games" }
+  ];
+  assert.deepEqual(findGuildCommandDuplicates(globalCommands, guildCommands), [
+    { id: "1", name: "balance" },
+    { id: "3", name: "games" }
+  ]);
+});
+
+test("legacy guild command cleanup validates its inputs", () => {
+  assert.throws(() => findGuildCommandDuplicates(null, []), /must be arrays/);
 });
