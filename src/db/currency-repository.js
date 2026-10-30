@@ -183,6 +183,11 @@ export async function claimScavengeReward(
     await tx.currencyTransaction.create({
       data: { ...key, amount: amount + bonus, type: "scavenge", createdAt: now }
     });
+    if (foundItemId) {
+      await tx.currencyTransaction.create({
+        data: { ...key, amount: 0, type: "scavenge_collectible", createdAt: now }
+      });
+    }
     return { claimed: true, amount: amount + bonus, baseAmount: amount, bonus, account: finalAccount, itemId: foundItemId, duplicateItemId: bonus ? itemId : null };
   });
 }
