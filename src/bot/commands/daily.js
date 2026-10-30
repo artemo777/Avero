@@ -1,9 +1,7 @@
 import { MessageFlags } from "discord.js";
 import { claimDailyReward } from "../../db/currency-repository.js";
 import { renderDaily } from "../game-ui.js";
-
-const DAILY_REWARD = 100;
-const DAILY_COOLDOWN_MS = 86_400_000;
+import { DAILY_REWARD, DAILY_COOLDOWN_MS } from "../economy-rules.js";
 
 export const dailyCommand = Object.freeze({
   data: Object.freeze({
