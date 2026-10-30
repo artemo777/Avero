@@ -1,6 +1,8 @@
 import { MessageFlags } from "discord.js";
 import { runRps } from "../game-ui.js";
 
+const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
+
 
 export const rpsCommand = Object.freeze({
   data: Object.freeze({
