@@ -6,10 +6,10 @@ This roadmap keeps the games and economy focused, polished, and reliable. The cu
 
 Commands already in the feature branch:
 
-- Economy: `/balance`, `/daily`, `/work`, `/scavenge`
+- Economy: `/balance`, `/daily`, `/work`, `/scavenge`, `/contracts`
 - Games: `/games`, `/guess`, `/rps`
 - Collectibles: `/shop`, `/buy`, `/inventory`
-- Progress and discovery: `/profile`, `/leaderboard`, `/help`
+- Progress and discovery: `/profile`, `/achievements`, `/leaderboard`, `/help`
 
 Current earning rules:
 
