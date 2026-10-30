@@ -144,13 +144,14 @@ export function renderGames(userId) {
       button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️")),
     button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, "🪙"),
     button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, "🪙"),
-    button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, "🔐")
+    button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, "🔐"),
+    button(userId, "collections", "Collection Atlas", "", ButtonStyle.Secondary, "🗺️")
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
     description: "## 🪙 Coinflip\nCall Heads or Tails with the buttons below. Free to play · +25 coins on a win when the shared 10m reward cooldown is ready.\n\n## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.\n\n## 🔐 The Vault\nUse the Daily Vault button or `/vault` for the clues, then submit `/vault code:123`. Free to play · one code attempt per UTC day and +25 on a correct solve when the shared game-reward cooldown is ready.",
     eyebrow: "GAMES",
-    footer: "QUICK PLAY • FREE TO PLAY",
+    footer: "QUICK PLAY • FREE TO PLAY • COLLECTION ATLAS",
     buttons: gameButtons,
     canvas: false
   }));
