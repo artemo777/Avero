@@ -37,20 +37,18 @@ export const profileCommand = Object.freeze({
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
-    const badgeFilename = "profile-badges.png";
+    const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
+    const badgeFilename = "profile-badge.png";
     let badgeFiles = [];
-    if (badgeItems.length) {
+    if (equippedBadge) {
+      const asset = await renderRegisteredAsset(getCollectibleAssetId(equippedBadge.id), 96);
+      const image = await loadImage(asset);
       const badgeCanvas = createCanvas(96, 96);
-      const ctx = badgeCanvas.getContext("2d");
-      for (const [index, item] of badgeItems.slice(0, 6).entries()) {
-        const asset = await renderRegisteredAsset(getCollectibleAssetId(item.id), 32);
-        const image = await loadImage(asset);
-        ctx.drawImage(image, (index % 3) * 32, Math.floor(index / 3) * 32, 32, 32);
-      }
+      badgeCanvas.getContext("2d").drawImage(image, 0, 0, 96, 96);
       badgeFiles = [new AttachmentBuilder(badgeCanvas.toBuffer("image/png"), { name: badgeFilename })];
     }
     const embed = createEmbed({
-        ...(badgeItems.length ? {} : { title: target.username }),
+        ...(equippedBadge ? {} : { title: target.username }),
         description: "Level **" + level + "** · " +
           (account?.balance ?? 0).toLocaleString("en-US") + " coins",
         color: THEME.colors.primary,
@@ -67,10 +65,11 @@ export const profileCommand = Object.freeze({
           { name: "🧰 Work shifts", value: String(stats.workShifts), inline: true },
           { name: "🔎 Scavenges", value: String(stats.scavenges), inline: true },
           { name: "Coins spent", value: stats.lifetimeSpent.toLocaleString("en-US"), inline: true },
+          { name: "Equipped badge", value: equippedBadge?.name ?? "None", inline: true },
           { name: "Badges", value: badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None", inline: false }
         ]
       });
-    if (badgeItems.length) {
+    if (equippedBadge) {
       embed.author = { name: target.username, icon_url: "attachment://" + badgeFilename };
     }
     await interaction.reply({
