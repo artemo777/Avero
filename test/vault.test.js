@@ -64,6 +64,7 @@ test("vault command shows daily clues before a code is submitted", async () => {
   assert.match(text, /Dial 1:/);
   assert.match(text, /\/vault code:000/);
   assert.doesNotMatch(text, /Today's code/);
+  assert.match(text, /One code submission per member per UTC day/);
   assert.equal(vaultCommand.data.options[0].required, false);
 });
 
