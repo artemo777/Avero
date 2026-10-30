@@ -134,3 +134,14 @@ test("contracts command responds privately outside servers", async () => {
     flags: MessageFlags.Ephemeral
   });
 });
+
+
+test("a collectible found during scavenge advances the daily collector contract", async () => {
+  const prisma = createPrisma({ activity: { scavenge: 1, scavenge_collectible: 1 } });
+  const snapshot = await getDailyContracts(prisma, "guild-1", "user-1", {
+    now: new Date("2026-10-30T12:00:00.000Z")
+  });
+  const collector = snapshot.contracts.find((contract) => contract.id === "collector");
+  assert.equal(collector.progress, 1);
+  assert.equal(collector.complete, true);
+});
