@@ -31,15 +31,14 @@ export const vaultCommand = Object.freeze({
 
     const challenge = createVaultChallenge(interaction.guildId, now);
     const won = guess === challenge.code;
-    if (!won) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "loss", { now });
-    else if (reward?.awarded) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "win", { now });
     const reward = won
       ? await awardDailyVaultReward(prisma, interaction.guildId, interaction.user.id, GUESS_REWARD, {
-        type: "vault_reward",
         cooldownMs: GUESS_REWARD_COOLDOWN_MS,
         now
       })
       : null;
+    if (!won) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "loss", { now });
+    else if (reward?.awarded) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "win", { now });
 
     await interaction.reply(renderVault({ guess, challenge, won, reward, userId: interaction.user.id }));
   }
