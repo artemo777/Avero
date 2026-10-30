@@ -70,6 +70,7 @@ export const profileCommand = Object.freeze({
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
           { name: "🎮 Games record", value: stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet", inline: true },
           { name: "🎯 Games played", value: String(stats.gamesPlayed), inline: true },
+          { name: "🏅 Arcade mastery", value: arcadeMastery, inline: false },
           { name: "🪙 Coins earned", value: stats.lifetimeEarned.toLocaleString("en-US"), inline: true },
           { name: "🛍️ Items bought", value: String(stats.itemsPurchased), inline: true },
           { name: "📆 Daily claims", value: String(stats.dailyClaims), inline: true },
