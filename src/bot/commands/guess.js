@@ -10,7 +10,7 @@ const MAX_GUESS = 5;
 export const guessCommand = Object.freeze({
   data: Object.freeze({
     name: "guess",
-    description: "Guess 1–5 to win 25 coins. Free to play, no wagers.",
+    description: "Guess 1–5 for 25 coins. Free to replay; one reward every 10 minutes.",
     options: [{
       type: 4,
       name: "number",
