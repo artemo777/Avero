@@ -125,7 +125,9 @@ test("scavenge validates reward, cooldown, item ID, and timestamp", async () => 
   await assert.rejects(claimScavengeReward(prisma, "g", "u", { now: new Date("invalid") }), /valid Date/);
 });
 
-\ntest("expedition routes are unique and only reference shop collectibles", () => {
+
+
+test("expedition routes are unique and only reference shop collectibles", () => {
   assert.deepEqual(SCAVENGE_ROUTES.map((route) => route.id), ["archive", "plaza", "garden"]);
   assert.equal(new Set(SCAVENGE_ROUTES.map((route) => route.id)).size, SCAVENGE_ROUTES.length);
   const itemIds = new Set(SHOP_ITEMS.map((item) => item.id));
