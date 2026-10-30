@@ -43,7 +43,7 @@ test("help documents game-specific leaderboards and free game rules", async () =
   const games = fields.find((field) => field.name.includes("Games")).value;
   const profile = fields.find((field) => field.name.includes("Profile")).value;
 
-  assert.match(games, /free, reward cooldown/);
+  assert.match(games, /free, 10m reward cooldown/);
   assert.match(games, /free/);
   assert.match(profile, /games, guess or RPS/);
 });
