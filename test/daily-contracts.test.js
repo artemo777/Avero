@@ -59,15 +59,15 @@ function createPrisma({ activity = {}, claimed = false, balance = 0 } = {}) {
 
 test("daily contracts derive progress from today's server-member transaction ledger", async () => {
   const prisma = createPrisma({
-    activity: { work: 1, scavenge: 2, rps_win: 1, guess_loss: 1, shop_purchase: 1 }
+    activity: { work: 1, scavenge: 2, rps_win: 1, guess_loss: 1, vault_win: 1, shop_purchase: 1 }
   });
   const snapshot = await getDailyContracts(prisma, "guild-1", "user-1", {
     now: new Date("2026-10-30T23:59:00.000Z")
   });
 
   assert.equal(snapshot.date, "2026-10-30");
-  assert.deepEqual(snapshot.contracts.map((contract) => contract.progress), [1, 2, 2, 1]);
-  assert.deepEqual(snapshot.contracts.map((contract) => contract.complete), [false, false, false, true]);
+  assert.deepEqual(snapshot.contracts.map((contract) => contract.progress), [1, 2, 3, 1]);
+  assert.deepEqual(snapshot.contracts.map((contract) => contract.complete), [false, false, true, true]);
 });
 
 test("daily contracts count only activity in the UTC day", async () => {
