@@ -2,7 +2,7 @@ name: Test Avero
 
 on:
   pull_request:
-    branches: [main, "feat/**", "skatesum/**"]
+    branches: [main, "feat/**", "fix/**", "skatesum/**"]
   push:
     branches: [main, "feat/**", "skatesum/**"]
 
