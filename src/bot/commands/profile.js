@@ -37,7 +37,9 @@ export const profileCommand = Object.freeze({
     const nextLevelXp = experienceForLevel(level + 1);
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
     const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
-    const completedSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete).length;
+    const completedCollectionSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete);
+    const completedSets = completedCollectionSets.length;
+    const collectionTitles = completedCollectionSets.map((set) => set.title);
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
     const badgeFilename = "profile-badge.png";
@@ -59,6 +61,7 @@ export const profileCommand = Object.freeze({
           { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
           { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },
+          { name: "🏷️ Set titles", value: collectionTitles.length ? collectionTitles.join(", ") : "None unlocked", inline: false },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
           { name: "🎮 Games record", value: stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet", inline: true },
           { name: "🎯 Games played", value: String(stats.gamesPlayed), inline: true },
