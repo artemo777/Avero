@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero can operate in any Discord server where it is installed and has the required permissions. Slash commands can be registered globally or in one test server. Game data is scoped by Discord server, so each server has its own balances, cooldowns, and future game records.
+Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Economy data remains scoped by Discord server, so each server has its own balances, cooldowns, and game records.
 
 ## Requirements
 
@@ -33,15 +33,13 @@ Avero can operate in any Discord server where it is installed and has the requir
    npm run db:migrate:deploy
    ```
 
-5. For development, set `DISCORD_GUILD_ID` to your test server ID and register commands only in that server:
+5. Register Avero's slash commands globally:
 
    ```sh
-   npm run register:commands:guild
+   npm run register:commands
    ```
 
-   This command requires `DISCORD_GUILD_ID` and updates only that server's command set. It does not publish or modify global commands. Guild commands usually become available quickly.
-
-   The separate `npm run register:commands` command publishes commands globally and can take time to propagate. Use it only when you intentionally want to update the application's global command set. If `DISCORD_GUILD_ID` is set, the global registration script also removes server-specific copies that overlap with the global commands.
+   This replaces the application's global slash-command set. Global command updates can take time to appear in Discord.
 
 6. Start the Discord bot:
 
@@ -49,7 +47,7 @@ Avero can operate in any Discord server where it is installed and has the requir
    npm run bot
    ```
 
-The bot needs `DISCORD_TOKEN`. Command registration also needs `DISCORD_CLIENT_ID`; test-server registration additionally requires `DISCORD_GUILD_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
+The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
 
 ## Included commands
 
@@ -173,8 +171,7 @@ npm test
 │   │   └── leveling.js
 │   ├── bot.js
 │   ├── register-commands.js
-│   ├── register-guild-commands.js
-│   ├── app.js
+│   │   ├── app.js
 │   └── server.js
 └── test/
 ```
