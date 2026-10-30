@@ -7,7 +7,7 @@ This roadmap keeps the games and economy focused, polished, and reliable. The cu
 Commands already in the feature branch:
 
 - Economy: `/balance`, `/daily`, `/work`, `/scavenge`, `/contracts`
-- Games: `/games`, `/guess`, `/rps`
+- Games: `/games`, `/guess`, `/rps`, `/vault`
 - Collectibles: `/shop`, `/buy`, `/inventory`
 - Progress and discovery: `/profile`, `/achievements`, `/leaderboard`, `/help`
 
@@ -19,7 +19,7 @@ Current earning rules:
 | Work shift | 60–120 coins | 30 minutes |
 | Scavenge | 25–55 coins, with a collectible drop chance | 10 minutes |
 | Correct guess | 25 coins | One reward every 10 minutes |
-| Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess |
+| Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess and Vault |\n| The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess and RPS |
 
 The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
@@ -63,7 +63,7 @@ After the branch stack is integrated and the database migrations are applied in 
 2. Claim `/daily` twice; the second attempt must not pay.
 3. Run `/work` and `/scavenge` twice; each second attempt must respect its cooldown.
 4. Play `/guess` from the slash command and the `/games` buttons; confirm the 10-minute reward limit is shared.
-5. Play `/rps`; confirm every result is recorded, wins can earn +25 only when the shared 10-minute Guess/RPS reward cooldown is ready, and no game has an entry fee or wager.
+5. Play `/rps` and `/vault`; confirm results are recorded, wins can earn +25 only when the shared 10-minute game reward cooldown is ready, and no game has an entry fee or wager.
 6. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
 7. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
 8. Check coin, XP, games, guess, and RPS leaderboards.
