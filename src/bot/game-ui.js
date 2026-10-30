@@ -369,6 +369,16 @@ export function renderGuess(guess, answer, result, userId) {
       .concat(navButtons(userId).slice(0, 2))
   }));
 }
+export function renderVaultChallenge(challenge, userId) {
+  return gamePayload(createGamePanel({
+    title: "Today's vault is ready",
+    eyebrow: "THE VAULT • " + challenge.date,
+    description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
+      "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One 25-coin reward per member per UTC day, subject to the shared 10-minute Guess/RPS reward cooldown. Free play · No wagers.",
+    footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
+    buttons: navButtons(userId, true).slice(0, 4)
+  }));
+}
 export function renderVault({ guess, challenge, won, reward, userId }) {
   const rewarded = won && reward?.awarded === true;
   const nextReward = reward?.account?.lastGameRewardAt
