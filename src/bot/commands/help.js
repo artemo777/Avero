@@ -14,7 +14,7 @@ export const helpCommand = Object.freeze({
         fields: [
           { name: "🪙 Economy", value: "/balance Wallet\n/daily Daily coins\n/contracts Daily goals and bonus rewards\n/collections Three themed sets and cosmetic titles\n/shop Browse collectibles\n/buy Unlock an item\n/inventory Your collection\n/work Earn coins every 30m\n/scavenge Choose Archive, Plaza or Garden · coins and route-specific collectibles" },
           { name: "🎮 Games", value: "/games Quick-play menu\n/coinflip Heads or tails · free, +25 coins on a win every 10m\n/guess Guess 1–5 · free, 10m reward cooldown\n/rps Rock, paper, scissors · free, +25 coins on a win every 10m\n/vault View daily clues or submit one code · free, one attempt per UTC day; +25 for a correct solve" },
-          { name: "🏅 Profile & ranks", value: "/profile Wallet, stats and equipped badge\n/achievements Earned milestones and collection progress\n/collections Archive, Neon and Moonlit set progress\n/leaderboard Coins, XP, games, coinflip, guess, RPS or Vault\n/rank Level and XP" },
+          { name: "🏅 Profile & ranks", value: "/profile Wallet, game mastery, collection sets and equipped badge\n/achievements Earned milestones and collection progress\n/collections Archive, Neon and Moonlit set progress\n/leaderboard Coins, XP, games, coinflip, guess, RPS or Vault\n/rank Level and XP" },
           { name: "🛠️ Utility", value: "/help This menu\n/ping Bot latency" }
         ],
       })]
