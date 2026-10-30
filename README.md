@@ -56,7 +56,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
 - `/profile [member]` — combines wallet, XP, and collection progress.
 - `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
-- `/achievements [member]` — tracks nine server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
+- `/achievements [member]` — tracks twelve server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.\n- `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC. A new collectible found during `/scavenge` also counts toward the collector goal.
@@ -69,7 +69,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
-- `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view.
+- `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view. Use `/collections` to track themed sets.
 
 Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, work shifts, scavenge rewards, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
 
