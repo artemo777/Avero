@@ -240,6 +240,104 @@ export async function awardGameReward(
 }
 
 
+export async function submitDailyVaultAttempt(
+  prisma,
+  guildId,
+  userId,
+  outcome,
+  amount,
+  { cooldownMs = 600_000, now = new Date() } = {}
+) {
+  const key = currencyKey(guildId, userId);
+  if (!["win", "loss"].includes(outcome)) {
+    throw new TypeError("Vault outcome must be win or loss.");
+  }
+  requirePositiveInteger(amount, "Vault reward");
+  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) {
+    throw new TypeError("Vault reward cooldown must be a positive safe integer.");
+  }
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  const contractDate = now.toISOString().slice(0, 10);
+  const attemptKey = { ...key, contractDate, contractId: "vault_attempt" };
+  const rewardKey = { ...key, contractDate, contractId: "vault_reward" };
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const existingAttempt = await tx.dailyContractClaim.findUnique({
+        where: { guildId_userId_contractDate_contractId: attemptKey }
+      });
+      if (existingAttempt) {
+        return { submitted: false, reason: "already_played" };
+      }
+
+      await tx.dailyContractClaim.create({
+        data: { ...attemptKey, reward: 0, claimedAt: now }
+      });
+      await tx.currencyTransaction.create({
+        data: { ...key, amount: 0, type: "vault_" + outcome, createdAt: now }
+      });
+
+      if (outcome !== "win") {
+        return { submitted: true, reward: null };
+      }
+
+      const existingReward = await tx.dailyContractClaim.findUnique({
+        where: { guildId_userId_contractDate_contractId: rewardKey }
+      });
+      if (existingReward) {
+        const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+        return { submitted: true, reward: { awarded: false, reason: "already_claimed", account } };
+      }
+
+      await tx.currencyAccount.upsert({
+        where: { guildId_userId: key },
+        create: key,
+        update: {}
+      });
+      const updated = await tx.currencyAccount.updateMany({
+        where: {
+          ...key,
+          OR: [
+            { lastGameRewardAt: null },
+            { lastGameRewardAt: { lte: new Date(now.getTime() - cooldownMs) } }
+          ]
+        },
+        data: {
+          balance: { increment: amount },
+          lastGameRewardAt: now
+        }
+      });
+      const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+      if (updated.count === 0) {
+        return { submitted: true, reward: { awarded: false, reason: "cooldown", account } };
+      }
+      if (updated.count !== 1) {
+        throw new Error("Could not update the currency account for the Vault reward.");
+      }
+
+      await tx.dailyContractClaim.create({
+        data: { ...rewardKey, reward: amount, claimedAt: now }
+      });
+      await tx.currencyTransaction.create({
+        data: { ...key, amount, type: "vault_reward", createdAt: now }
+      });
+      const updatedAccount = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+      return { submitted: true, reward: { awarded: true, amount, account: updatedAccount } };
+    });
+  } catch (error) {
+    if (error?.code !== "P2002") throw error;
+    const existingAttempt = await prisma.dailyContractClaim.findUnique({
+      where: { guildId_userId_contractDate_contractId: attemptKey }
+    });
+    if (!existingAttempt) throw error;
+    return { submitted: false, reason: "already_played" };
+  }
+}
+
+
 export async function awardDailyVaultReward(
   prisma,
   guildId,
