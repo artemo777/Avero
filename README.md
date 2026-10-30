@@ -39,7 +39,7 @@ Avero can operate in any Discord server where it is installed and has the requir
    npm run register:commands
    ```
 
-   This replaces the application's global slash-command set. Global command updates can take time to appear in Discord.
+   This replaces the application's global slash-command set. If the app has old server-scoped copies, set the optional `DISCORD_GUILD_ID` to one affected server before registration; the script removes only same-named legacy copies from that server. It does not register server-scoped commands. Global command updates can take time to appear in Discord.
 
 6. Start the Discord bot:
 
@@ -59,7 +59,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/achievements [member]` — tracks nine server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
-- `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC.
+- `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC. A new collectible found during `/scavenge` also counts toward the collector goal.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge [route]` — choose the Old Server Archive, Neon Plaza, or Moonlit Garden every 10 minutes for 25–55 coins and a route-specific collectible drop; duplicate finds grant a coin bonus. Leave the route blank for a random expedition.
 - `/coinflip call` — call heads or tails for a free round; a win can earn 25 coins under the shared 10-minute game-reward cooldown. No wagers or entry fees.
