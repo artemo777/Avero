@@ -125,7 +125,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.\n\n## 🔐 The Vault\nCrack the server daily three-dial puzzle with `/vault code`. Free to play · +25 coins on a win when your shared game-reward cooldown is ready.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
