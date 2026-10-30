@@ -56,7 +56,8 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
 - `/profile [member]` — combines wallet, XP, and collection progress.
 - `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
-- `/achievements [member]` — tracks twelve server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.\n- `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
+- `/achievements [member]` — tracks twelve server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
+- `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC. A new collectible found during `/scavenge` also counts toward the collector goal.
