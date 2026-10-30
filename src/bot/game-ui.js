@@ -375,17 +375,17 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
     ? new Date(reward.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
     : null;
   const outcome = rewarded
-    ? "\\n\\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
+    ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
     : won
-      ? "\\n\\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
-      : "\\n\\nNo coins lost. You can try again tomorrow.";
+      ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
+      : "\n\nNo coins lost. You can try again tomorrow.";
   return gamePayload(createGamePanel({
     title: won ? "Vault unlocked" : "Vault stays locked",
     eyebrow: "THE VAULT • " + challenge.date,
-    description: "### 🔐 Daily three-dial puzzle\\n" + challenge.clues.join("\\n") +
-      "\\n\\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
-      "\\nToday's code: **" + challenge.code + "**" + outcome +
-      "\\n\\n-# No entry fee or wager. One coin reward every 10 minutes, shared with Guess and RPS.",
+    description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
+      "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
+      "\nToday's code: **" + challenge.code + "**" + outcome +
+      "\n\n-# No entry fee or wager. One coin reward every 10 minutes, shared with Guess and RPS.",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.primary : THEME.colors.warning,
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
