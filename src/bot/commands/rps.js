@@ -1,9 +1,6 @@
-import { randomInt } from "node:crypto";
 import { MessageFlags } from "discord.js";
-import { renderRps } from "../game-ui.js";
-import { recordGameResult } from "../../db/currency-repository.js";
+import { runRps } from "../game-ui.js";
 
-const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 
 export const rpsCommand = Object.freeze({
   data: Object.freeze({
@@ -28,9 +25,6 @@ export const rpsCommand = Object.freeze({
       return;
     }
     if (!prisma) throw new Error("Rock-paper-scissors requires a database client.");
-    const botChoice = CHOICES[randomInt(CHOICES.length)];
-    const outcome = playerChoice === botChoice ? "tie" : ({ rock: "scissors", paper: "rock", scissors: "paper" })[playerChoice] === botChoice ? "win" : "loss";
-    await recordGameResult(prisma, interaction.guildId, interaction.user.id, "rps", outcome);
-    await interaction.reply(renderRps(playerChoice, botChoice, interaction.user.id));
+    await interaction.reply(await runRps(prisma, interaction.guildId, playerChoice, interaction.user.id));
   }
 });
