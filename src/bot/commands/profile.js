@@ -58,7 +58,7 @@ export const profileCommand = Object.freeze({
           { name: "🪙 Wallet", value: (account?.balance ?? 0).toLocaleString("en-US") + " coins", inline: true },
           { name: "✦ Level", value: String(level), inline: true },
           { name: "🎒 Collection", value: rarityCount + " / " + SHOP_ITEMS.length, inline: true },
-          { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },\n          { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },
+          { name: "🗺️ Collection sets", value: completedSets + " / 3 complete", inline: true },
           { name: "XP", value: (xp - currentLevelXp).toLocaleString("en-US") + " / " + (nextLevelXp - currentLevelXp).toLocaleString("en-US") + " to next level", inline: true },
           { name: "🎮 Games record", value: stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet", inline: true },
           { name: "🎯 Games played", value: String(stats.gamesPlayed), inline: true },
