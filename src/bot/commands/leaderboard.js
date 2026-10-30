@@ -31,7 +31,7 @@ export const leaderboardCommand = Object.freeze({
 
     const category = interaction.options.getString("category") ?? "coins";
     if (!CATEGORIES.includes(category)) {
-      await interaction.reply({ content: "Choose coins, XP, games, guess, or RPS.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Choose coins, XP, games, guess, RPS, or Vault.", flags: MessageFlags.Ephemeral });
       return;
     }
 
