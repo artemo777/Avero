@@ -120,3 +120,31 @@ test("parallel purchases of different items cannot overspend the same balance", 
   assert.equal(prisma.transactions.length, 1);
   assert.equal(prisma.transactions[0].amount, -80);
 });
+
+
+test("purchase rechecks ownership when a concurrent debit makes the balance update lose", async () => {
+  const account = { guildId: "guild-3", userId: "user-3", balance: 0 };
+  const purchase = { guildId: "guild-3", userId: "user-3", itemId: "neon_badge" };
+  let ownershipChecks = 0;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      currencyAccount: {
+        async upsert() {},
+        async findUnique() { return { ...account }; },
+        async updateMany() { return { count: 0 }; }
+      },
+      currencyPurchase: {
+        async findUnique() {
+          ownershipChecks += 1;
+          return ownershipChecks === 1 ? null : purchase;
+        }
+      }
+    })
+  };
+
+  const result = await purchaseCurrencyItem(prisma, "guild-3", "user-3", "neon_badge", 50);
+  assert.equal(ownershipChecks, 2);
+  assert.equal(result.purchased, false);
+  assert.equal(result.reason, "owned");
+  assert.equal(result.account.balance, 0);
+});
