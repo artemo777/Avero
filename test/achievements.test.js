@@ -35,10 +35,11 @@ test("achievements show server-scoped milestone progress and unique collection c
   const embed = response.embeds[0];
   assert.match(embed.title, /Ada's achievements/);
   assert.match(embed.description, /7 \/ 9 unlocked/);
-  assert.equal(embed.fields.length, 9);
+  assert.equal(embed.fields.length, 12);
   assert.match(embed.fields.find((field) => field.name.includes("Curator")).value, /Unlocked/);
   assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /3 \/ 6/);
   assert.match(embed.fields.find((field) => field.name.includes("Big Spender")).value, /Unlocked/);
+  assert.match(embed.fields.find((field) => field.name.includes("Archive Keeper")).value, /0 \/ 1/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
