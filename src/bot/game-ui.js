@@ -125,7 +125,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.\n\n## 🔐 The Vault\nOpen `/vault` for the daily clues, then submit `/vault code:123`. Free to play · one +25 reward per UTC day, when your shared game-reward cooldown is ready.",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · Win +25 coins when your game-reward cooldown is ready.\n\n## 🔐 The Vault\nOpen `/vault` for the daily clues, then submit `/vault code:123`. Free to play · one code attempt and +25 reward per UTC day, when your shared game-reward cooldown is ready.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
@@ -137,7 +137,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\n🔐 /vault · Daily puzzle · one +25 reward per UTC day",
+    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\n🔐 /vault · Daily puzzle · one attempt and +25 reward per UTC day",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
