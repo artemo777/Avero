@@ -237,8 +237,9 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your collection",
     eyebrow: "COLLECTION",
-    description: "🎒 **" + items.length + " / " + SHOP_ITEMS.length + " starter collectibles** · " + progress + "%\n" +
+    description: "🎒 **" + items.length + " / " + SHOP_ITEMS.length + " collectibles** · " + progress + "%\n" +
       collection +
+      "\n🗺️ **Set atlas:** " + completedSets + "/3 complete · use `/collections` to explore themed sets" +
       "\n🏆 " + milestoneSummary + milestoneProgress +
       (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
