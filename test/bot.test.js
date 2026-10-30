@@ -229,6 +229,7 @@ test("help command groups the real commands into compact embeds", async () => {
   assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
   assert.match(response.embeds[0].fields[2].value, /achievements/);
   assert.match(response.embeds[0].fields[1].value, /vault/);
+  assert.match(response.embeds[0].fields[1].value, /vault/);
 });
 
 test("profile command combines wallet, XP, and collection data", async () => {
