@@ -128,7 +128,7 @@ test("vault loss records a result but never changes the balance", async () => {
   const challenge = createVaultChallenge("guild-1", now);
   const wrong = challenge.code === "000" ? "001" : "000";
   const { interaction, response } = interactionFor(wrong);
-  const { prisma, transactions, account } = makePrisma();
+  const { prisma, transactions, account, claims } = makePrisma();
 
   await vaultCommand.execute(interaction, { prisma, now });
 
