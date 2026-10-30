@@ -65,6 +65,23 @@ test("vault win records a free game result and shares the reward cooldown", asyn
   assert.equal(account.balance, 25);
 });
 
+test("vault wins respect the shared game reward cooldown", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const challenge = createVaultChallenge("guild-1", now);
+  const { interaction, response } = interactionFor(challenge.code);
+  const { prisma, transactions, account } = makePrisma();
+  account.balance = 75;
+  account.lastGameRewardAt = new Date(now.getTime() - 5 * 60_000);
+
+  await vaultCommand.execute(interaction, { prisma, now });
+
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Vault unlocked/);
+  assert.match(text, /cooldown is active/);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 0);
+  assert.equal(account.balance, 75);
+});
+
 test("vault loss records a result but never changes the balance", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
