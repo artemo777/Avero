@@ -8,7 +8,8 @@ Commands already in the feature branch:
 
 - Economy: `/balance`, `/daily`, `/work`, `/scavenge`, `/contracts`
 - Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`
-- Collectibles: `/shop`, `/buy`, `/inventory`\n- Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
+- Collectibles: `/shop`, `/buy`, `/inventory`
+- Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
 - Progress and discovery: `/profile`, `/achievements`, `/leaderboard`, `/help`
 
 Current earning rules:
@@ -20,7 +21,8 @@ Current earning rules:
 | Scavenge | 25–55 coins, with a collectible drop chance | 10 minutes |
 | Correct guess | 25 coins | One reward every 10 minutes |
 | Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess and Vault |
-| Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |\n| The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
+| Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |
+| The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
 
 The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
