@@ -13,7 +13,7 @@ export const helpCommand = Object.freeze({
         color: THEME.colors.primary,
         fields: [
           { name: "🪙 Economy", value: "`/balance` Wallet\n`/daily` Daily coins\n`/contracts` Daily goals and bonus rewards\n`/shop` Browse collectibles\n`/buy` Unlock an item\n`/inventory` Your collection\n`/work` Earn coins every 30m\n`/scavenge` Search for coins and collectible drops" },
-          { name: "🎮 Games", value: "`/games` Quick-play menu\n`/guess` Guess 1–5 · free, 10m reward cooldown\n`/rps` Rock, paper, scissors · free" },
+          { name: "🎮 Games", value: "`/games` Quick-play menu\n`/guess` Guess 1–5 · free, 10m reward cooldown\n`/rps` Rock, paper, scissors · free, +25 coins on a win every 10m" },
           { name: "🏅 Profile & ranks", value: "`/profile` Wallet, stats and equipped badge\n`/leaderboard` Coins, XP, games, guess or RPS\n`/rank` Level and XP" },
           { name: "🛠️ Utility", value: "`/help` This menu\n`/ping` Bot latency" }
         ],
