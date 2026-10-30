@@ -58,6 +58,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Guess, or Rock-paper-scissors rankings. Game boards include wins, losses, ties where applicable, and win rate.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
+- `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
