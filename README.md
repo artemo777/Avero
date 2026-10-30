@@ -171,7 +171,7 @@ npm test
 │   │   └── leveling.js
 │   ├── bot.js
 │   ├── register-commands.js
-│   │   ├── app.js
+│   ├── app.js
 │   └── server.js
 └── test/
 ```
