@@ -123,7 +123,8 @@ test("parallel purchases of different items cannot overspend the same balance", 
 
 
 test("purchase rechecks ownership when a concurrent debit makes the balance update lose", async () => {
-  const account = { guildId: "guild-3", userId: "user-3", balance: 0 };\n  let accountReads = 0;
+  const account = { guildId: "guild-3", userId: "user-3", balance: 0 };
+  let accountReads = 0;
   const purchase = { guildId: "guild-3", userId: "user-3", itemId: "neon_badge" };
   let ownershipChecks = 0;
   const prisma = {
