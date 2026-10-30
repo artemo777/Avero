@@ -10,6 +10,7 @@ import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
+import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import {
   DAILY_REWARD, DAILY_COOLDOWN_MS, WORK_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
@@ -192,6 +193,7 @@ export async function renderShop(prisma, guildId, userId) {
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
       button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
+      button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"),
       button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
     ]
   }));
@@ -208,6 +210,8 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No items yet. Open the shop to get your first collectible.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
+  const collectionSets = buildCollectionSetProgress(items.map((item) => item.id));
+  const completedSets = collectionSets.filter((set) => set.complete).length;
   const milestones = [
     { count: 1, name: "First Find" },
     { count: 3, name: "Curator" },
@@ -238,7 +242,31 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
       "\n🏆 " + milestoneSummary + milestoneProgress +
       (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"), button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+  }));
+}
+export async function renderCollectionSets(prisma, guildId, userId) {
+  const purchases = await getCurrencyPurchases(prisma, guildId, userId);
+  const sets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
+  const completed = sets.filter((set) => set.complete).length;
+  const sections = sets.map((set) =>
+    (set.complete ? "✓ " : "◇ ") + set.icon + " **" + set.name + "** · " + set.ownedCount + "/" + set.totalCount + "\\n" +
+    set.description + "\\n**Expedition:** " + set.route + "\\n" +
+    set.items.map((item) => (item.owned ? "✓ " : "◇ ") + item.name).join(" · ") + "\\n" +
+    "**Cosmetic title:** " + set.title + (set.complete ? " · Unlocked" : " · " + set.progress + "%")
+  );
+  return gamePayload(createGamePanel({
+    title: "The Collection Atlas",
+    eyebrow: "AVERO • COLLECTION ATLAS",
+    description: "**" + completed + " / " + sets.length + " themed sets completed**\\nCollect through the shop or the matching expedition. Set titles are cosmetic milestones and never add coins.",
+    sections,
+    color: completed === sets.length ? THEME.colors.success : THEME.colors.primary,
+    buttons: [
+      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
+      button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
+      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+    ],
+    footer: "COLLECTION ATLAS • SERVER-SCOPED PROGRESS"
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
@@ -528,6 +556,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
+    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
     case "collection_page": {
       const page = Number(parsed.arg);
