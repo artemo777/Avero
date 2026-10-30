@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import {
-  awardDailyVaultReward, awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem
+  awardDailyVaultReward, awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem, submitDailyVaultAttempt
 } from "../src/db/currency-repository.js";
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -128,6 +128,39 @@ test("PostgreSQL awards the daily Vault reward once even after the shared cooldo
   assert.equal(account.balance, 25);
   assert.equal(await prisma.dailyContractClaim.count({ where: { guildId, userId, contractDate: "2026-10-30", contractId: "vault_reward" } }), 1);
   assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "vault_reward" } }), 1);
+});
+
+test("PostgreSQL records only one Vault submission per member and UTC day", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount();
+  t.after(() => cleanGuild(guildId));
+  const now = new Date("2026-10-30T18:00:00.000Z");
+
+  const results = await Promise.all([
+    submitDailyVaultAttempt(prisma, guildId, userId, "win", 25, { cooldownMs: 600_000, now }),
+    submitDailyVaultAttempt(prisma, guildId, userId, "loss", 25, { cooldownMs: 600_000, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.submitted).length, 1);
+  assert.equal(results.filter((result) => result.reason === "already_played").length, 1);
+  assert.equal(await prisma.dailyContractClaim.count({
+    where: { guildId, userId, contractDate: "2026-10-30", contractId: "vault_attempt" }
+  }), 1);
+  assert.equal(await prisma.currencyTransaction.count({
+    where: { guildId, userId, type: { in: ["vault_win", "vault_loss"] } }
+  }), 1);
+
+  const retry = await submitDailyVaultAttempt(prisma, guildId, userId, "win", 25, {
+    cooldownMs: 600_000,
+    now: new Date(now.getTime() + 11 * 60_000)
+  });
+  assert.equal(retry.submitted, false);
+  assert.equal(retry.reason, "already_played");
+
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  const won = results.find((result) => result.submitted)?.reward?.awarded === true;
+  assert.equal(account.balance, won ? 25 : 0);
 });
 
 test("PostgreSQL allows only one concurrent claim for a completed daily contract", { skip: !enabled }, async (t) => {
