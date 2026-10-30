@@ -8,6 +8,7 @@ import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../a
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
+import { claimDailyContractReward, getDailyContracts } from "../db/daily-contract-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 import {
@@ -410,6 +411,28 @@ async function runRps(prisma, guildId, playerChoice, userId) {
   await recordGameResult(prisma, guildId, userId, "rps", outcome);
   return renderRps(playerChoice, botChoice, userId);
 }
+export async function renderContracts(prisma, guildId, userId) {
+  const { date, contracts } = await getDailyContracts(prisma, guildId, userId);
+  const sections = contracts.map((contract) => {
+    const status = contract.claimed ? "Claimed" : contract.completed ? "Ready to claim" : "In progress";
+    return "### " + contract.title + "\n" + contract.description +
+      "\nProgress: **" + contract.progress + "/" + contract.target + "** · Reward: **+" +
+      contract.reward + " coins**\nStatus: **" + status + "**";
+  });
+  const claimButtons = contracts
+    .filter((contract) => contract.completed && !contract.claimed)
+    .map((contract) => button(userId, "contract_claim", "Claim " + contract.title, contract.id, ButtonStyle.Success, "🎁"));
+  return gamePayload(createGamePanel({
+    title: "Today's contracts",
+    description: "Complete free activities to earn bonus coins. No entry fees or wagers.\nContract day: **" + date + " UTC**",
+    sections,
+    buttons: [...claimButtons, ...navButtons(userId, true)],
+    eyebrow: "DAILY CONTRACTS",
+    color: THEME.colors.primary,
+    footer: "DAILY CONTRACTS • 40 COINS EACH • SERVER WALLET"
+  }));
+}
+
 export async function handleGameComponent(interaction, { prisma } = {}) {
   const parsed = readComponentId(interaction.customId);
   if (!parsed) return false;
@@ -425,6 +448,11 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
   let payload;
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
+    case "contracts": payload = await renderContracts(prisma, interaction.guildId, interaction.user.id); break;
+    case "contract_claim":
+      await claimDailyContractReward(prisma, interaction.guildId, interaction.user.id, parsed.arg);
+      payload = await renderContracts(prisma, interaction.guildId, interaction.user.id);
+      break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
     case "collection_page": {
