@@ -52,6 +52,21 @@ test("daily vault challenge is deterministic per server and UTC date", () => {
   assert.equal(first.clues.length, 3);
 });
 
+test("vault command shows daily clues before a code is submitted", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const { interaction, response } = interactionFor(null);
+
+  await vaultCommand.execute(interaction, { now });
+
+  assert.equal(response().flags, MessageFlags.IsComponentsV2);
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Today's vault is ready/);
+  assert.match(text, /Dial 1:/);
+  assert.match(text, /\/vault code:000/);
+  assert.doesNotMatch(text, /Today's code/);
+  assert.equal(vaultCommand.data.options[0].required, false);
+});
+
 test("vault win records a free game result and shares the reward cooldown", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
