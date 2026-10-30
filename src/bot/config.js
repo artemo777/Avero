@@ -47,8 +47,9 @@ export function loadBotConfig(env = process.env) {
 }
 
 export function requireApplicationId(config) {
-  if (!config.clientId) {
+  const clientId = typeof config?.clientId === "string" ? config.clientId.trim() : "";
+  if (!clientId) {
     throw new Error("DISCORD_CLIENT_ID is required to register global slash commands.");
   }
-  return config.clientId;
+  return clientId;
 }
