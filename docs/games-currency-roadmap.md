@@ -40,7 +40,7 @@ Implemented on the feature branch as `/contracts` with four daily goals: complet
 
 ### 3. The Vault
 
-Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
+Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date, with one recorded code submission per member per UTC day to prevent replay farming. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
 
 ### 4. Achievements and titles
 
@@ -62,7 +62,7 @@ After the branch stack is integrated and the database migrations are applied in 
 2. Claim `/daily` twice; the second attempt must not pay.
 3. Run `/work` and `/scavenge` twice; each second attempt must respect its cooldown.
 4. Play `/guess` from the slash command and the `/games` buttons; confirm the 10-minute reward limit is shared.
-5. Open `/vault` to view the daily clues, submit a code, and confirm a correct solution earns at most one 25-coin reward per UTC day under the shared game cooldown. Play `/rps` too; confirm no game has an entry fee or wager.
+5. Open `/vault` to view the daily clues, submit a code, and confirm each member gets one code submission per UTC day and a correct solution earns at most one 25-coin reward under the shared game cooldown. Play `/rps` too; confirm no game has an entry fee or wager.
 6. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
 7. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
 8. Check coin, XP, games, guess, and RPS leaderboards.
