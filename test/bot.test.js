@@ -258,6 +258,7 @@ test("profile command combines wallet, XP, and collection data", async () => {
   assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
   assert.equal(response.embeds[0].fields[1].value, "2");
   assert.equal(response.embeds[0].fields[2].value, "1 / 6");
+  assert.match(response.embeds[0].fields.find((field) => field.name === "🏅 Arcade mastery").value, /Rookie Guess · 0 wins/);
 });
 
 
