@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { awardDailyVaultReward, recordGameResult } from "../../db/currency-repository.js";
+import { submitDailyVaultAttempt } from "../../db/currency-repository.js";
 import { renderVault, renderVaultChallenge } from "../game-ui.js";
 import { createVaultChallenge } from "../vault-puzzle.js";
 import { GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS } from "../economy-rules.js";
@@ -35,15 +35,28 @@ export const vaultCommand = Object.freeze({
 
     const challenge = createVaultChallenge(interaction.guildId, now);
     const won = guess === challenge.code;
-    const reward = won
-      ? await awardDailyVaultReward(prisma, interaction.guildId, interaction.user.id, GUESS_REWARD, {
-        cooldownMs: GUESS_REWARD_COOLDOWN_MS,
-        now
-      })
-      : null;
-    if (!won) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "loss", { now });
-    else if (reward?.awarded) await recordGameResult(prisma, interaction.guildId, interaction.user.id, "vault", "win", { now });
+    const attempt = await submitDailyVaultAttempt(
+      prisma,
+      interaction.guildId,
+      interaction.user.id,
+      won ? "win" : "loss",
+      GUESS_REWARD,
+      { cooldownMs: GUESS_REWARD_COOLDOWN_MS, now }
+    );
+    if (!attempt.submitted) {
+      await interaction.reply({
+        content: "You have already submitted today's Vault code. The next puzzle is available at 00:00 UTC.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
 
-    await interaction.reply(renderVault({ guess, challenge, won, reward, userId: interaction.user.id }));
+    await interaction.reply(renderVault({
+      guess,
+      challenge,
+      won,
+      reward: attempt.reward,
+      userId: interaction.user.id
+    }));
   }
 });
