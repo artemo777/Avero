@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import {
-  awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem
+  awardDailyVaultReward, awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem
 } from "../src/db/currency-repository.js";
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -103,6 +103,32 @@ test("PostgreSQL awards a concurrent game reward only once inside its cooldown",
   assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "guess_reward" } }), 1);
 });
 
+
+test("PostgreSQL awards the daily Vault reward once even after the shared cooldown expires", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount();
+  t.after(() => cleanGuild(guildId));
+  const now = new Date("2026-10-30T17:00:00.000Z");
+
+  const results = await Promise.all([
+    awardDailyVaultReward(prisma, guildId, userId, 25, { cooldownMs: 600_000, now }),
+    awardDailyVaultReward(prisma, guildId, userId, 25, { cooldownMs: 600_000, now })
+  ]);
+
+  assert.equal(results.filter((result) => result.awarded).length, 1);
+  const later = await awardDailyVaultReward(prisma, guildId, userId, 25, {
+    cooldownMs: 600_000,
+    now: new Date(now.getTime() + 11 * 60_000)
+  });
+  assert.equal(later.awarded, false);
+  assert.equal(later.reason, "already_claimed");
+
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 25);
+  assert.equal(await prisma.dailyContractClaim.count({ where: { guildId, userId, contractDate: "2026-10-30", contractId: "vault_reward" } }), 1);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "vault_reward" } }), 1);
+});
 
 test("PostgreSQL allows only one concurrent claim for a completed daily contract", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(10);
