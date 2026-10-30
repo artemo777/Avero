@@ -10,16 +10,14 @@ import { renderAveroCanvas } from "../../averoui/canvas.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
-
-const DAILY_REWARD = 100;
-const DAILY_COOLDOWN_MS = 86_400_000;
-const WORK_COOLDOWN_MS = 1_800_000;
-const SCAVENGE_COOLDOWN_MS = 600_000;
-const GUESS_REWARD_COOLDOWN_MS = 60_000;
+import {
+  DAILY_REWARD, DAILY_COOLDOWN_MS, WORK_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
+  WORK_REWARD_MIN, WORK_REWARD_MAX, SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX,
+  GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS
+} from "./economy-rules.js";
 const SCAVENGE_SPOTS = Object.freeze(["the old server archive", "the neon-lit plaza", "the quiet train platform", "the workshop storage room", "the moonlit garden", "the forgotten message board"]);
 const SCAVENGE_ITEMS = Object.freeze([{ id: "neon_badge", weight: 55 }, { id: "vault_badge", weight: 25 }, { id: "starlight_badge", weight: 13 }, { id: "moonlit_token", weight: 6 }, { id: "prism_crown", weight: 1 }]);
 const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a tiny server banner", "Helped organize the event board", "Delivered a stack of digital mail", "Tidied the Avero workshop"]);
-const WIN_REWARD = 25;
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
@@ -127,7 +125,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins**. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · No coins involved.",
+    description: "## 🎯 Guess the number\nPick **1–5**. A correct guess earns **25 coins** · reward every 10m. Free to play.\n\n## ✊ Rock, paper, scissors\nFree to play · No coins involved.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY",
     buttons: gameButtons,
@@ -139,7 +137,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n🎯 /guess · +25 on a win (reward cooldown)\n✊ /rps · Free to play, no coins involved",
+    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play, no coins involved",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
@@ -283,7 +281,7 @@ export function renderScavenge(result, userId, spot, item) {
 }
 export async function runScavenge(prisma, guildId, userId) {
   const spot = SCAVENGE_SPOTS[randomInt(SCAVENGE_SPOTS.length)];
-  const amount = randomInt(25, 56);
+  const amount = randomInt(SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX + 1);
   const drop = randomInt(100) < 12;
   let itemId = null;
   if (drop) {
@@ -324,7 +322,7 @@ export function renderWork(result, userId, task) {
 }
 export async function runWork(prisma, guildId, userId) {
   const task = WORK_TASKS[randomInt(WORK_TASKS.length)];
-  const amount = randomInt(60, 121);
+  const amount = randomInt(WORK_REWARD_MIN, WORK_REWARD_MAX + 1);
   const result = await claimWorkReward(prisma, guildId, userId, {
     amount,
     cooldownMs: WORK_COOLDOWN_MS
@@ -355,7 +353,7 @@ export function renderGuess(guess, answer, result, userId) {
     ? new Date(result.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
     : null;
   const outcome = rewarded
-    ? "✦ **+" + WIN_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
+    ? "✦ **+" + GUESS_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
     : won
       ? "Correct guess! Your coin reward is still cooling down." +
         (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
@@ -366,7 +364,7 @@ export function renderGuess(guess, answer, result, userId) {
       outcome + "\n\n**Play again**",
     eyebrow: "GUESS",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.warning : THEME.colors.primary,
-    footer: "NUMBER GAME • NO WAGERS • ONE COIN REWARD PER MINUTE",
+    footer: "NUMBER GAME • NO WAGERS • ONE COIN REWARD EVERY 10 MINUTES",
     buttons: [1, 2, 3, 4, 5].map((number) => button(userId, "guess", String(number), String(number), number === guess ? ButtonStyle.Primary : ButtonStyle.Secondary))
       .concat(navButtons(userId).slice(0, 2))
   }));
@@ -403,7 +401,7 @@ async function runGuess(prisma, guildId, userId, guess) {
   const answer = randomInt(1, 6);
   const won = guess === answer;
   await recordGuessResult(prisma, guildId, userId, won);
-  const result = won ? await awardGameReward(prisma, guildId, userId, WIN_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
+  const result = won ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
   return renderGuess(guess, answer, result, userId);
 }
 async function runRps(prisma, guildId, playerChoice, userId) {
