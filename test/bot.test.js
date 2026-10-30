@@ -93,21 +93,41 @@ function panelText(response) {
   return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
 }
 
-test("RPS returns a public no-coins result", async () => {
+test("RPS is free to play and rewards wins without wagers", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
+  const account = { guildId: "guild-1", userId: "user-1", balance: 0, lastGameRewardAt: null };
+  const transactions = [];
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyTransaction: {
+      create: async ({ data }) => { transactions.push(data); return data; }
+    },
+    currencyAccount: {
+      upsert: async () => account,
+      updateMany: async ({ where, data }) => {
+        if (where.OR && account.lastGameRewardAt !== null) return { count: 0 };
+        account.balance += data.balance.increment;
+        account.lastGameRewardAt = data.lastGameRewardAt;
+        return { count: 1 };
+      },
+      findUnique: async () => ({ ...account })
+    }
+  };
   await rpsCommand.execute({
     guildId: "guild-1",
     user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
-  }, { prisma: { currencyTransaction: { create: async ({ data }) => data } } });
+  }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /DUEL DECK/);
   assert.match(text, /You:/);
   assert.match(text, /Avero:/);
-  assert.match(text, /no coins involved/i);
+  assert.match(text, /No wagers/i);
+  assert.equal(transactions.filter((entry) => entry.type === "rps_reward").length,
+    transactions.some((entry) => entry.type === "rps_win") ? 1 : 0);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
 });
 
