@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import {
-  awardGameReward, claimDailyReward, purchaseCurrencyItem
+  awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem
 } from "../src/db/currency-repository.js";
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -21,6 +21,7 @@ async function createAccount(balance = 0) {
 }
 
 async function cleanGuild(guildId) {
+  await prisma.dailyContractClaim.deleteMany({ where: { guildId } });
   await prisma.currencyTransaction.deleteMany({ where: { guildId } });
   await prisma.currencyPurchase.deleteMany({ where: { guildId } });
   await prisma.currencyAccount.deleteMany({ where: { guildId } });
@@ -100,4 +101,31 @@ test("PostgreSQL awards a concurrent game reward only once inside its cooldown",
   });
   assert.equal(account.balance, 25);
   assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "guess_reward" } }), 1);
+});
+
+
+test("PostgreSQL allows only one concurrent claim for a completed daily contract", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount(10);
+  t.after(() => cleanGuild(guildId));
+  const now = new Date("2026-10-30T15:00:00.000Z");
+  await prisma.currencyTransaction.createMany({
+    data: [
+      { guildId, userId, amount: 80, type: "work", createdAt: now },
+      { guildId, userId, amount: 90, type: "work", createdAt: now }
+    ]
+  });
+
+  const results = await Promise.all([
+    claimDailyContract(prisma, guildId, userId, "work_shift", { now }),
+    claimDailyContract(prisma, guildId, userId, "work_shift", { now })
+  ]);
+
+  assert.equal(results.filter((result) => result.claimed).length, 1);
+  assert.equal(results.filter((result) => result.reason === "already_claimed").length, 1);
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId, userId } }
+  });
+  assert.equal(account.balance, 90);
+  assert.equal(await prisma.dailyContractClaim.count({ where: { guildId, userId, contractDate: "2026-10-30", contractId: "work_shift" } }), 1);
+  assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "contract_reward" } }), 1);
 });
