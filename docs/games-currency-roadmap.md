@@ -7,8 +7,8 @@ This roadmap keeps the games and economy focused, polished, and reliable. The cu
 Commands already in the feature branch:
 
 - Economy: `/balance`, `/daily`, `/work`, `/scavenge`, `/contracts`
-- Games: `/games`, `/guess`, `/rps`, `/vault`
-- Collectibles: `/shop`, `/buy`, `/inventory`
+- Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`
+- Collectibles: `/shop`, `/buy`, `/inventory`\n- Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
 - Progress and discovery: `/profile`, `/achievements`, `/leaderboard`, `/help`
 
 Current earning rules:
@@ -20,7 +20,7 @@ Current earning rules:
 | Scavenge | 25–55 coins, with a collectible drop chance | 10 minutes |
 | Correct guess | 25 coins | One reward every 10 minutes |
 | Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess and Vault |
-| The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess and RPS |
+| Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |\n| The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
 
 The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
@@ -48,7 +48,7 @@ Implemented as `/achievements` with server-scoped progress for First Shift, Fiel
 
 ### 5. Expand the adventure loop without command sprawl
 
-Improve `/scavenge` into a short Expedition/Loot Run with a few themed choices and occasional collectible discoveries. Prefer extending the existing command over adding several near-duplicate commands.
+Implemented: `/scavenge` now offers three themed expedition routes (Old Server Archive, Neon Plaza, Moonlit Garden), each with a distinct collectible drop pool. Coin rewards and cooldowns stay identical across routes, so route choice adds collection strategy without creating a pay-to-win advantage or changing the economy.
 
 ### 6. Add useful currency sinks
 
@@ -62,11 +62,11 @@ After the branch stack is integrated and the database migrations are applied in 
 2. Claim `/daily` twice; the second attempt must not pay.
 3. Run `/work` and `/scavenge` twice; each second attempt must respect its cooldown.
 4. Play `/guess` from the slash command and the `/games` buttons; confirm the 10-minute reward limit is shared.
-5. Open `/vault` to view the daily clues, submit a code, and confirm each member gets one code submission per UTC day and a correct solution earns at most one 25-coin reward under the shared game cooldown. Play `/rps` too; confirm no game has an entry fee or wager.
-6. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
-7. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
-8. Check coin, XP, games, guess, and RPS leaderboards.
-9. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
-10. Repeat balance and inventory checks in the second server to confirm strict server isolation.
+6. Open `/vault` to view the daily clues, submit a code, and confirm each member gets one code submission per UTC day and a correct solution earns at most one 25-coin reward under the shared game cooldown. Play `/rps` and `/coinflip` from both slash commands and `/games`; confirm no game has an entry fee or wager.
+7. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
+8. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
+9. Check coin, XP, games, coinflip, guess, RPS, and Vault leaderboards.
+10. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
+11. Repeat balance and inventory checks in the second server to confirm strict server isolation.
 
 Do not run production migrations, register global commands, deploy, or merge stacked PRs as part of this checklist without the repository owner's explicit go-ahead.
