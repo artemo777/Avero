@@ -5,7 +5,7 @@ import { runRps } from "../game-ui.js";
 export const rpsCommand = Object.freeze({
   data: Object.freeze({
     name: "rps",
-    description: "Play rock, paper, scissors against Avero. Completely free!",
+    description: "Play rock, paper, scissors for free. Wins can earn 25 coins every 10 minutes.",
     options: [{
       type: 3,
       name: "choice",
