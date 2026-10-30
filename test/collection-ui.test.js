@@ -73,8 +73,9 @@ test("shop exposes item detail controls and item details return to the shop", as
   const response = await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1");
   const json = panel(response);
   assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
-  assert.equal(json.components.some((component) => component.type === 12), false);
-  assert.equal(response.files, undefined);
+  assert.equal(json.components.some((component) => component.type === 12), true);
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "avero-panel.png");
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
   const ids = buttons(json).map((entry) => entry.custom_id);
   assert.equal(new Set(ids).size, ids.length, "shop must never send duplicate component custom IDs");
