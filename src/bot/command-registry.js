@@ -27,15 +27,3 @@ export function createCommandMap(commands) {
 export function getCommandDefinitions(commands) {
   return [...createCommandMap(commands).values()].map((command) => command.data);
 }
-
-/**
- * Find guild-scoped commands that shadow commands registered globally.
- * Only overlapping names are removed; unrelated server-only commands are preserved.
- */
-export function findGuildCommandDuplicates(guildCommands, globalDefinitions) {
-  if (!Array.isArray(guildCommands) || !Array.isArray(globalDefinitions)) {
-    throw new TypeError("Guild commands and global definitions must be arrays.");
-  }
-  const globalNames = new Set(globalDefinitions.map((command) => command?.name).filter(Boolean));
-  return guildCommands.filter((command) => globalNames.has(command?.name));
-}
