@@ -8,7 +8,7 @@ import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, renderGames } from "../src/bot/game-ui.js";
+import { handleGameComponent, renderCollectionSets, renderGames } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -201,7 +201,8 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("achievements"));
   assert.ok(names.includes("vault"));
   assert.ok(names.includes("coinflip"));
-  assert.equal(names.length, 19);
+  assert.equal(names.length, 20);
+  assert.ok(names.includes("collections"));
 });
 
 test("games hub uses a compact Components V2 panel with all game controls", () => {
@@ -346,4 +347,39 @@ test("daily Vault button opens the current puzzle clues from the games hub", asy
   const text = panelText(response);
   assert.match(text, /Today's vault is ready/);
   assert.match(text, /Daily three-dial puzzle/);
+});
+
+
+test("collection atlas panel shows route-linked set progress", async () => {
+  const response = await renderCollectionSets({
+    currencyPurchase: {
+      findMany: async () => [
+        { itemId: "neon_badge" },
+        { itemId: "vault_badge" },
+        { itemId: "avero_relic" }
+      ]
+    }
+  }, "guild-1", "user-1");
+  const text = panelText(response);
+  assert.match(text, /The Collection Atlas/);
+  assert.match(text, /1 \/ 3 themed sets completed/);
+  assert.match(text, /The Archive Protocol/);
+  assert.match(text, /Archive Keeper · Unlocked/);
+  assert.match(text, /Neon Circuit/);
+});
+
+test("collection atlas button opens the member's set progress", async () => {
+  let response;
+  const handled = await handleGameComponent({
+    customId: "avero|user-1|collections",
+    user: { id: "user-1" },
+    guildId: "guild-1",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, {
+    prisma: { currencyPurchase: { findMany: async () => [{ itemId: "moonlit_token" }] } }
+  });
+  assert.equal(handled, true);
+  assert.match(panelText(response), /Moonlit Relics/);
+  assert.match(panelText(response), /Moonlit Curator/);
 });
