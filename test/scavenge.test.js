@@ -81,7 +81,14 @@ test("scavenge pays coins, saves collectible drops, and records the transaction"
   assert.equal(result.account.lastScavengeAt.getTime(), now.getTime());
   assert.equal(prisma.purchases.size, 1);
   assert.equal(prisma.transactions[0].type, "scavenge");
-  assert.equal(prisma.transactions[0].amount, 40);\n  assert.deepEqual(prisma.transactions[1], {\n    guildId: "guild-1",\n    userId: "user-1",\n    amount: 0,\n    type: "scavenge_collectible",\n    createdAt: now\n  });
+  assert.equal(prisma.transactions[0].amount, 40);
+  assert.deepEqual(prisma.transactions[1], {
+    guildId: "guild-1",
+    userId: "user-1",
+    amount: 0,
+    type: "scavenge_collectible",
+    createdAt: now
+  });
 });
 
 test("scavenge cooldown blocks duplicate payouts", async () => {
