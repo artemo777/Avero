@@ -32,7 +32,7 @@ function buttons(json) {
 test("inventory exposes item detail buttons and collection progress", async () => {
   const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
   const json = panel(response);
-  assert.match(allText(json), /2 \/ 6 starter collectibles/);
+  assert.match(allText(json), /2 \/ 6 collectibles/);
   assert.equal(json.components.some((component) => component.type === 12), false);
   assert.equal(response.files, undefined);
   assert.match(allText(json), /Select an item below for its details/);
