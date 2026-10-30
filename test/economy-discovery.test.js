@@ -24,7 +24,7 @@ test("wallet explains every available coin earning route and cooldown", async ()
   assert.match(text, /contracts.*4 daily goals.*345\/day/);
   assert.match(text, /\/guess.*one reward every 10m/);
   assert.match(text, /\/rps.*\+25 on a win.*shared 10m cooldown/);
-  assert.match(text, /\/vault.*daily puzzle.*shared 10m cooldown/i);
+  assert.match(text, /\/vault.*daily puzzle.*one \+25 reward per UTC day/i);
 });
 
 test("insufficient-funds purchase response points to all main earning commands", () => {
