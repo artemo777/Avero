@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { COLLECTION_SETS, buildCollectionSetProgress } from "../src/bot/collection-sets.js";
+import { SCAVENGE_ROUTES } from "../src/bot/game-ui.js";
 
 test("collection atlas defines three distinct themed expedition sets", () => {
   assert.deepEqual(COLLECTION_SETS.map((set) => set.id), [
@@ -33,4 +34,16 @@ test("collection progress is deduplicated and set completion is exact", () => {
   assert.equal(moonlit.complete, false);
   assert.equal(moonlit.ownedCount, 1);
   assert.ok(progress.every((set) => set.items.length === set.totalCount));
+});
+
+
+test("each themed set matches the collectible pool of its named expedition", () => {
+  for (const set of COLLECTION_SETS) {
+    const route = SCAVENGE_ROUTES.find((candidate) => candidate.name === set.route);
+    assert.ok(route, "missing expedition route " + set.route);
+    assert.deepEqual(
+      [...route.items.map((item) => item.id)].sort(),
+      [...set.itemIds].sort()
+    );
+  }
 });
