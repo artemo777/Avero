@@ -36,7 +36,8 @@ export const profileCommand = Object.freeze({
     const currentLevelXp = experienceForLevel(level);
     const nextLevelXp = experienceForLevel(level + 1);
     const owned = new Set(purchases.map((purchase) => purchase.itemId));
-    const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;\n    const completedSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete).length;
+    const rarityCount = SHOP_ITEMS.filter((item) => owned.has(item.id)).length;
+    const completedSets = buildCollectionSetProgress([...owned]).filter((set) => set.complete).length;
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
     const badgeFilename = "profile-badge.png";
