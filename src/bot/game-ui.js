@@ -397,7 +397,7 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
     description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
       (won ? "\nToday's code: **" + challenge.code + "**" : "") + outcome +
-      "\n\n-# No entry fee or wager. One coin reward every 10 minutes, shared with Guess and RPS.",
+      "\n\n-# No entry fee or wager. One Vault reward per UTC day; shared 10-minute cooldown with Guess and RPS.",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.primary : THEME.colors.warning,
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
