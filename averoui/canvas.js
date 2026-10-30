@@ -74,7 +74,7 @@ export function renderAveroCanvas({ eyebrow = "GAMES & COINS", title = "Avero", 
   ctx.font = "700 54px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("$", coinX, coinY + 1);
+  ctx.fillText("A", coinX, coinY + 1);
   ctx.restore();
 
   ctx.textAlign = "left";
