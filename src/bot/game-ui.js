@@ -137,7 +137,7 @@ export async function renderBalance(prisma, guildId, userId) {
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
     title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown",
+    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\nServer balance · No cash value\n\n**Earn coins**\n✨ /daily · +100 every 24h\n🧰 /work · +60–120 every 30m\n🔎 /scavenge · +25–55 every 10m + collectible chance\n📜 /contracts · 4 daily goals · up to +345/day\n🎯 /guess · +25 on a win · one reward every 10m\n✊ /rps · Free to play · +25 on a win, shared 10m cooldown\\n🔐 /vault · Daily puzzle · +25 on a win, shared 10m cooldown",
     eyebrow: "WALLET",
     footer: "WALLET • SERVER-SCOPED BALANCE",
     buttons: navButtons(userId, true)
@@ -418,7 +418,7 @@ export function renderBuy(result, item, userId) {
   const description = success
     ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
-      : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily, /work, /scavenge, /contracts, /guess or /rps.";
+      : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily, /work, /scavenge, /contracts, /guess, /rps or /vault.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
     buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
