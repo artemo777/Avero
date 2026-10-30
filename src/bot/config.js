@@ -53,3 +53,9 @@ export function requireApplicationId(config) {
   return config.clientId;
 }
 
+export function requireGuildId(config) {
+  if (!config.guildId) {
+    throw new Error("DISCORD_GUILD_ID is required for test-server command registration. No commands were changed.");
+  }
+  return config.guildId;
+}
