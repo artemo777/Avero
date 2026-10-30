@@ -1,8 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimScavengeReward } from "../src/db/currency-repository.js";\nimport { runScavenge, SCAVENGE_ROUTES } from "../src/bot/game-ui.js";\nimport { scavengeCommand } from "../src/bot/commands/scavenge.js";\nimport { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
+import { claimScavengeReward } from "../src/db/currency-repository.js";
+import { runScavenge, SCAVENGE_ROUTES } from "../src/bot/game-ui.js";
+import { scavengeCommand } from "../src/bot/commands/scavenge.js";
+import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
-function panelText(response) {\n  return response.components[0].toJSON().components\n    .filter((component) => component.type === 10)\n    .map((component) => component.content)\n    .join("\\n");\n}\n\nfunction fakePrisma() {
+function panelText(response) {
+  return response.components[0].toJSON().components
+    .filter((component) => component.type === 10)
+    .map((component) => component.content)
+    .join("\n");
+}
+
+function fakePrisma() {
   const accounts = new Map();
   const purchases = new Map();
   const transactions = [];
