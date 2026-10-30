@@ -2,10 +2,10 @@ import { randomInt } from "node:crypto";
 import { MessageFlags } from "discord.js";
 import { awardGameReward, recordGuessResult } from "../../db/currency-repository.js";
 import { renderGuess } from "../game-ui.js";
+import { GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS } from "../economy-rules.js";
 
 const MIN_GUESS = 1;
 const MAX_GUESS = 5;
-const WIN_REWARD = 25;
 
 export const guessCommand = Object.freeze({
   data: Object.freeze({
@@ -35,7 +35,7 @@ export const guessCommand = Object.freeze({
     const won = guess === answer;
     await recordGuessResult(prisma, interaction.guildId, interaction.user.id, won);
     const result = won
-      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, WIN_REWARD, { type: "guess_reward", cooldownMs: 60_000 })
+      ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
       : null;
     await interaction.reply(renderGuess(guess, answer, result, interaction.user.id));
   }
