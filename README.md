@@ -64,7 +64,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess` and `/vault`. No entry fees or wagers.
-- `/vault code` — crack the daily three-dial puzzle. Clues are deterministic for each server and UTC date; wins can earn 25 coins on the shared 10-minute game-reward cooldown. Free play, no wagers.
+- `/vault code` — crack the daily three-dial puzzle. Clues are deterministic for each server and UTC date; each member can earn one 25-coin Vault reward per UTC day, subject to the shared 10-minute Guess/RPS reward cooldown. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
@@ -106,7 +106,7 @@ The bot must have permission to manage roles, and each reward role must be below
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, scavenge, and game-reward cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. `DailyContractClaim` prevents each daily contract reward from being claimed more than once per member, server, and UTC date. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
+Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, scavenge, and game-reward cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. `DailyContractClaim` prevents each daily contract reward and the daily Vault reward from being claimed more than once per member, server, and UTC date. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
 
 ## Shared AveroUI assets
 
