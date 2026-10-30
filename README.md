@@ -167,6 +167,7 @@ npm test
 │   ├── bot/
 │   │   ├── commands/
 │   │   ├── command-registry.js
+│   │   ├── economy-rules.js
 │   │   ├── config.js
 │   │   └── leveling.js
 │   ├── bot.js
