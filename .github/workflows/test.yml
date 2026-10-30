@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, "feat/**", "fix/**", "skatesum/**"]
   push:
-    branches: [main, "feat/**", "skatesum/**"]
+    branches: [main, "feat/**", "fix/**", "skatesum/**"]
 
 permissions:
   contents: read
