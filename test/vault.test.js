@@ -56,7 +56,7 @@ test("vault win records a free game result and shares the reward cooldown", asyn
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
   const { interaction, response } = interactionFor(challenge.code);
-  const { prisma, transactions, account } = makePrisma();
+  const { prisma, transactions, account, claims } = makePrisma();
 
   await vaultCommand.execute(interaction, { prisma, now });
 
