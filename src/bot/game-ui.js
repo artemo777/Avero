@@ -432,13 +432,13 @@ export function renderCoinflip(call, result, reward, userId) {
   const won = call === result;
   const outcome = won
     ? reward?.awarded
-      ? "🎉 **You won · +" + reward.amount + " coins**\\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
-      : "🎉 **You won!**\\nYour shared 10-minute game-reward cooldown is active, so no coins were added."
+      ? "🎉 **You won · +" + reward.amount + " coins**\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
+      : "🎉 **You won!**\nYour shared 10-minute game-reward cooldown is active, so no coins were added."
     : "Not this time — no coins were lost. Try again whenever you like.";
   return gamePayload(createGamePanel({
     title: won ? "A clean call!" : "The coin landed",
     eyebrow: "COINFLIP",
-    description: "Free play · no wagers · virtual coins only\\n\\nYou called **" + call.toUpperCase() + "**\\nAvero flipped **" + result.toUpperCase() + "**\\n\\n" + outcome,
+    description: "Free play · no wagers · virtual coins only\n\nYou called **" + call.toUpperCase() + "**\nAvero flipped **" + result.toUpperCase() + "**\n\n" + outcome,
     footer: "FREE PLAY • NO WAGERS • VIRTUAL COINS ONLY",
     buttons: [
       button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, "🪙"),
