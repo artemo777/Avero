@@ -55,17 +55,17 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/help` — groups the available commands by category.
 - `/rank [member]` — shows level, total XP, and progress toward the next level.
 - `/profile [member]` — combines wallet, XP, and collection progress.
-- `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/leaderboard [category]` — shows the server's top coin, XP, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
 - `/achievements [member]` — tracks nine server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC.
 - `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
-- `/scavenge` — search every 10 minutes for 25–55 coins and a chance at a collectible; duplicate finds grant a coin bonus.
-- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
-- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess` and `/vault`. No entry fees or wagers.
-- `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS cooldown is ready. Free play, no wagers.
-- `/games` — open the button-driven quick-play hub.
+- `/scavenge [route]` — choose the Old Server Archive, Neon Plaza, or Moonlit Garden every 10 minutes for 25–55 coins and a route-specific collectible drop; duplicate finds grant a coin bonus. Leave the route blank for a random expedition.
+- `/coinflip call` — call heads or tails for a free round; a win can earn 25 coins under the shared 10-minute game-reward cooldown. No wagers or entry fees.\n- `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
+- `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.
+- `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS/Coinflip cooldown is ready. Free play, no wagers.
+- `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
 - `/shop` — browse six collectible badges and relics with rarity labels and prices.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view.
@@ -179,4 +179,4 @@ npm test
 └── test/
 ```
 
-RPS is the first Duel Deck game. Daily Contracts and the nine-milestone achievements command are implemented; the next increments are The Vault and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and the nine-milestone achievements command are implemented; the remaining economy finish work is final balance/reliability verification and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). These remain separate from the paused leveling migration.
