@@ -58,17 +58,20 @@ Add optional profile frames, themes, title styles, and color accents to the shop
 
 ## Live acceptance checklist
 
-After the branch stack is integrated and the database migrations are applied in the Codespace:
+After the branch stack is integrated and the database migrations are applied in a confirmed development/test Codespace:
 
 1. Check `/balance` on a new member and after earning coins.
 2. Claim `/daily` twice; the second attempt must not pay.
 3. Run `/work` and `/scavenge` twice; each second attempt must respect its cooldown.
-4. Play `/guess` from the slash command and the `/games` buttons; confirm the 10-minute reward limit is shared.
-6. Open `/vault` to view the daily clues, submit a code, and confirm each member gets one code submission per UTC day and a correct solution earns at most one 25-coin reward under the shared game cooldown. Play `/rps` and `/coinflip` from both slash commands and `/games`; confirm no game has an entry fee or wager.
-7. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
-8. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
-9. Check coin, XP, games, coinflip, guess, RPS, and Vault leaderboards.
-10. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
-11. Repeat balance and inventory checks in the second server to confirm strict server isolation.
+4. Try all three scavenge routes and verify each route only awards collectibles from its own loot pool.
+5. Play `/guess` from the slash command and the `/games` buttons; confirm the shared 10-minute reward cooldown.
+6. Play `/rps` and `/coinflip` from both slash commands and `/games`; confirm wins, losses, ties where applicable, and no entry fees or wagers.
+7. Open `/vault`, submit a code, and confirm one attempt per member per UTC day and at most one reward under the shared game cooldown.
+8. Open `/contracts`, complete each objective, claim each reward, and verify repeated claims never pay twice.
+9. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
+10. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
+11. Check coin, XP, games, coinflip, guess, RPS, and Vault leaderboards.
+12. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
+13. Repeat balance and inventory checks in a second server to confirm strict server isolation.
 
 Do not run production migrations, register global commands, deploy, or merge stacked PRs as part of this checklist without the repository owner's explicit go-ahead.
