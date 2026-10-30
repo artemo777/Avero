@@ -214,12 +214,13 @@ test("games hub uses a compact Components V2 panel with all game controls", () =
   assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
   assert.match(text, /Guess the number/);
   assert.match(text, /25 coins/);
-  assert.match(text, /The Vault/);\n  assert.match(text, /Coinflip/);
+  assert.match(text, /The Vault/);
+  assert.match(text, /Coinflip/);
   assert.match(text, /one code attempt and \+25 reward per UTC day/);
   assert.doesNotMatch(text, /Tap a button below to play instantly/);
   const rows = panel.components.filter((component) => component.type === 1);
-  assert.equal(rows.length, 2);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 8);
+  assert.equal(rows.length, 3);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 11);
 });
 
 test("help command groups the real commands into compact embeds", async () => {
