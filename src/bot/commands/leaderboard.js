@@ -6,7 +6,7 @@ const CATEGORIES = Object.freeze(["coins", "games", "coinflip", "guess", "rps", 
 export const leaderboardCommand = Object.freeze({
   data: Object.freeze({
     name: "leaderboard",
-    description: "View the top members by coins or game record.",
+    description: "See who's leading in coins and games.",
     options: [{
       type: 3,
       name: "category",
