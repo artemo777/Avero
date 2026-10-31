@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MessageFlags } from "discord.js";
-import { configCommand } from "../src/bot/commands/config.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
+import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
@@ -183,8 +183,9 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("config"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 22);
+  assert.equal(names.length, 23);
   assert.ok(names.includes("collections"));
+  assert.ok(names.includes("setup"));
 });
 
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
@@ -403,46 +404,23 @@ test("malformed, stale, and unknown game controls receive a private fallback res
   }
 });
 
-test("config command acknowledges before loading settings and edits the deferred reply", async () => {
-  const events = [];
-  const settings = {
-    guildId: "12345678901234567",
-    gamesEnabled: true,
-    currencyEnabled: true,
-    dailyReward: 100,
-    workMinReward: 60,
-    workMaxReward: 120,
-    boosterRoleId: null,
-    funderRoleId: null,
-    voterRoleId: null,
-    profileName: null,
-    profileBio: null,
-    profileTheme: "violet"
-  };
-  const interaction = {
-    guildId: settings.guildId,
-    guild: { name: "Test server" },
-    memberPermissions: { has: () => true },
-    options: { getAttachment: () => null },
-    deferReply: async (payload) => { events.push(["defer", payload]); },
-    editReply: async (payload) => { events.push(["edit", payload]); },
-    reply: async () => { throw new Error("config should edit its deferred reply"); }
-  };
-  const prisma = {
-    guildSettings: {
-      upsert: async () => {
-        events.push(["load"]);
-        return settings;
-      }
-    }
-  };
-
-  await configCommand.execute(interaction, { prisma });
-
-  assert.equal(events[0][0], "defer");
-  assert.deepEqual(events[0][1], { flags: MessageFlags.Ephemeral });
-  assert.equal(events[1][0], "load");
-  assert.equal(events[2][0], "edit");
-  assert.equal(events[2][1].flags, undefined);
-  assert.equal(events[2][1].embeds.length, 1);
+test("setup command reports channel permissions, feature status and first steps privately", async () => {
+  let response;
+  const granted = new Set([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]);
+  await setupCommand.execute({
+    appPermissions: { has: (permission) => granted.has(permission) },
+    reply: async (payload) => { response = payload; }
+  }, {
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+  assert.equal(response.flags, MessageFlags.Ephemeral);
+  const embed = response.embeds[0];
+  assert.match(embed.description, /\/games/);
+  assert.match(embed.description, /\/daily/);
+  assert.match(embed.description, /Manage Server required/);
+  assert.match(embed.fields[0].value, /View Channel/);
+  assert.match(embed.fields[0].value, /Send Messages/);
+  assert.match(embed.fields[0].value, /Embed Links.*needed/);
+  assert.match(embed.fields[1].value, /Games.*Ready/);
+  assert.match(embed.fields[1].value, /Currency.*Paused/);
 });
