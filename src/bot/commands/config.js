@@ -40,41 +40,96 @@ function configModal(kind, settings) {
   }
   return modal;
 }
-function panelPayload(settings, guildName) {
+export function buildConfigPanel(settings, guildName) {
   const theme = THEME_COLORS[settings.profileTheme] ?? THEME.colors.primary;
-  const profile = [
-    "**" + (settings.profileName || "Avero") + "**",
-    settings.profileBio || "Your server's Avero profile. Add a short bio to make it yours.",
-    "Theme: **" + (THEME_LABELS[settings.profileTheme] || "Violet") + "**"
-  ].join("\n");
+  const themeLabel = THEME_LABELS[settings.profileTheme] || "Violet";
+  const profileName = settings.profileName || "Avero";
+  const profileBio = settings.profileBio || "No server bio added yet.";
+  const roleStatus = (id) => id ? "Configured" : "Not set";
+
   const embed = createEmbed({
-    title: "◈ Avero · Server control",
-    description: "Compact controls for **" + guildName + "**. Changes are isolated to this server.",
+    title: "AVERO  /  SERVER SETTINGS",
+    description: [
+      "A centralized control panel for **" + guildName + "**.",
+      "Each section below is independent and applies only to this server.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ].join("\\n"),
     color: theme,
     fields: [
-      { name: "Games", value: settings.gamesEnabled ? "🟢 On" : "⚪ Paused", inline: true },
-      { name: "Currency", value: settings.currencyEnabled ? "🟢 On" : "⚪ Paused", inline: true },
-      { name: "Daily reward", value: settings.dailyReward.toLocaleString("en-US") + " coins", inline: true },
-      { name: "Work range", value: settings.workMinReward + "–" + settings.workMaxReward + " coins", inline: true },
-      { name: "Role perks", value: ["Booster " + (settings.boosterRoleId ? "✓" : "—"), "Funder " + (settings.funderRoleId ? "✓" : "—"), "Voter " + (settings.voterRoleId ? "✓" : "—")].join(" · "), inline: true },
-      { name: "Avero · Server profile", value: profile, inline: false }
+      {
+        name: "01  ·  SYSTEM",
+        value: [
+          "**Games**  " + (settings.gamesEnabled ? "🟢 Enabled" : "⚪ Paused"),
+          "**Currency**  " + (settings.currencyEnabled ? "🟢 Enabled" : "⚪ Paused")
+        ].join("\\n"),
+        inline: false
+      },
+      {
+        name: "02  ·  ECONOMY & REWARDS",
+        value: [
+          "**Daily claim**  " + settings.dailyReward.toLocaleString("en-US") + " coins",
+          "**Work payout**  " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins"
+        ].join("\\n"),
+        inline: false
+      },
+      {
+        name: "03  ·  ROLE PERKS",
+        value: [
+          "**Booster role**  " + roleStatus(settings.boosterRoleId),
+          "**Funder role**  " + roleStatus(settings.funderRoleId),
+          "**Voter role**  " + roleStatus(settings.voterRoleId)
+        ].join("\\n"),
+        inline: false
+      },
+      {
+        name: "04  ·  SERVER PROFILE",
+        value: [
+          "**Display name**  " + profileName,
+          "**Bio**  " + profileBio,
+          "**Appearance**  " + themeLabel + " theme",
+          "",
+          "To update the server avatar, run `/config` and attach `profile_image`."
+        ].join("\\n"),
+        inline: false
+      }
     ],
-    footer: "Manage Server required · server-specific settings"
+    footer: "Manage Server permission required  ·  Changes are server-specific"
   });
-  const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|toggle-games").setLabel(settings.gamesEnabled ? "Pause games" : "Enable games").setStyle(settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("avero-config|toggle-currency").setLabel(settings.currencyEnabled ? "Pause currency" : "Enable currency").setStyle(settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("avero-config|games").setLabel("Rewards").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("avero-config|roles").setLabel("Role perks").setStyle(ButtonStyle.Secondary)
+
+  // Controls are grouped by the same categories as the dashboard above.
+  const systemRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|toggle-games")
+      .setLabel(settings.gamesEnabled ? "Pause games" : "Enable games")
+      .setStyle(settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("avero-config|toggle-currency")
+      .setLabel(settings.currencyEnabled ? "Pause currency" : "Enable currency")
+      .setStyle(settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success)
   );
-  const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|profile").setLabel("Edit profile").setStyle(ButtonStyle.Primary),
-    ...GUILD_PROFILE_THEMES.slice(0, 4).map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+  const economyRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|games")
+      .setLabel("Edit rewards & limits").setStyle(ButtonStyle.Primary)
   );
-  const row3 = new ActionRowBuilder().addComponents(
-    ...GUILD_PROFILE_THEMES.slice(4).map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+  const rolesRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|roles")
+      .setLabel("Configure role perks").setStyle(ButtonStyle.Secondary)
   );
-  return { embeds: [embed], components: [row1, row2, row3], flags: MessageFlags.Ephemeral };
+  const profileRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|profile")
+      .setLabel("Edit server profile").setStyle(ButtonStyle.Primary)
+  );
+  const themesRow = new ActionRowBuilder().addComponents(
+    ...GUILD_PROFILE_THEMES.map((name) => new ButtonBuilder()
+      .setCustomId("avero-config|theme|" + name)
+      .setLabel((settings.profileTheme === name ? "✓ " : "") + THEME_LABELS[name])
+      .setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+  );
+
+  return {
+    embeds: [embed],
+    components: [systemRow, economyRow, rolesRow, profileRow, themesRow],
+    flags: MessageFlags.Ephemeral
+  };
 }
 async function loadUploadedAvatar(attachment) {
   if (!attachment) return null;
@@ -106,7 +161,7 @@ export const configCommand = Object.freeze({
       await interaction.guild.members.editMe({ avatar });
     }
     const settings = await getGuildSettings(prisma, interaction.guildId);
-    await interaction.reply(panelPayload(settings, interaction.guild.name));
+    await interaction.reply(buildConfigPanel(settings, interaction.guild.name));
     if (uploaded) await interaction.followUp({ content: "✓ Uploaded artwork applied to Avero's avatar in this server only.", flags: MessageFlags.Ephemeral });
   }
 });
@@ -126,7 +181,7 @@ export async function handleConfigButton(interaction, prisma) {
     }
     await updateGuildSettings(prisma, interaction.guildId, { profileTheme: value });
     const settings = await getGuildSettings(prisma, interaction.guildId);
-    await interaction.update(panelPayload(settings, interaction.guild.name));
+    await interaction.update(buildConfigPanel(settings, interaction.guild.name));
     return true;
   }
   if (action === "toggle-games" || action === "toggle-currency") {
@@ -134,7 +189,7 @@ export async function handleConfigButton(interaction, prisma) {
     const field = action === "toggle-games" ? "gamesEnabled" : "currencyEnabled";
     await updateGuildSettings(prisma, interaction.guildId, { [field]: !settings[field] });
     const next = await getGuildSettings(prisma, interaction.guildId);
-    await interaction.update(panelPayload(next, interaction.guild.name));
+    await interaction.update(buildConfigPanel(next, interaction.guild.name));
     return true;
   }
   if (!["games", "roles", "profile"].includes(action)) {
