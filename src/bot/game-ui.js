@@ -186,10 +186,7 @@ export async function renderShop(prisma, guildId, userId) {
     sectionThumbnails: artwork.filenames,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
-    buttons: [
-      button(userId, "inventory", "Collection", "", ButtonStyle.Secondary, "🎒"),
-      button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️")
-    ]
+
   }), artwork.files);
 }
 export async function renderInventory(prisma, guildId, userId, page = 0) {
