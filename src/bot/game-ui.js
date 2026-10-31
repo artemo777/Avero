@@ -312,27 +312,27 @@ export function renderScavenge(result, userId, route, item) {
   if (!result.claimed) {
     const next = new Date(result.account.lastScavengeAt.getTime() + SCAVENGE_COOLDOWN_MS);
     return gamePayload(createGamePanel({
-      title: "Expedition on cooldown",
-      description: "You have already explored recently.\n\nNext expedition: <t:" + Math.floor(next.getTime() / 1000) + ":R>",
+      title: "You're on cooldown.",
+      description: "You've explored recently. Your next run opens <t:" + Math.floor(next.getTime() / 1000) + ":R>.",
       eyebrow: "SCAVENGE",
       color: THEME.colors.warning,
-      footer: "EXPEDITIONS • ONE RUN EVERY 10 MINUTES",
+      footer: "ONE EXPEDITION EVERY 10 MINUTES",
       buttons: navButtons(userId, true)
     }));
   }
   const dropText = result.itemId && item
-    ? "\n\n🎁 **Collectible found!**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
+    ? "\n\n🎁 **New collectible**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
     : result.duplicateItemId && item
-      ? "\n\n🔁 You found another " + item.icon + " **" + item.name + "**, which you already own.\nDuplicate bonus: **+" + result.bonus + " coins**."
+      ? "\n\n🔁 **Duplicate find** · " + item.icon + " **" + item.name + "**\nConverted to **+" + result.bonus + " coins**."
       : "";
   return gamePayload(createGamePanel({
-    title: result.itemId ? "Expedition discovery!" : "Expedition complete",
+    title: result.itemId ? "New find!" : "Run complete.",
     description: "### 🧭 " + route.name + "\n" + route.description + "\n\n✦ **+" + result.amount + " coins**" + dropText +
-      "\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext expedition in 10 minutes.",
-    eyebrow: "SCAVENGE • EXPEDITION",
+      "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 10 minutes.",
+    eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
-    footer: "EXPEDITION • COINS AND COLLECTIBLES SAVED • FREE TO PLAY",
-    buttons: [button(userId, "scavenge", "Explore again", route.id, ButtonStyle.Primary, "🧭"), ...navButtons(userId, true).slice(0, 4)]
+    footer: "REWARDS SAVED • FREE TO PLAY",
+    buttons: [button(userId, "scavenge", "Run it back", route.id, ButtonStyle.Primary, "🧭"), ...navButtons(userId, true).slice(0, 4)]
   }));
 }
 export async function runScavenge(prisma, guildId, userId, routeId = null) {
@@ -362,20 +362,20 @@ export function renderWork(result, userId, task) {
   if (!result.claimed) {
     const nextWork = new Date(result.account.lastWorkAt.getTime() + WORK_COOLDOWN_MS);
     return gamePayload(createGamePanel({
-      title: "Shift already completed",
-      description: "Your last shift is still on cooldown.\n\nNext shift: <t:" + Math.floor(nextWork.getTime() / 1000) + ":R>",
+      title: "You're off the clock.",
+      description: "You've already finished a shift. Next one opens <t:" + Math.floor(nextWork.getTime() / 1000) + ":R>.",
       eyebrow: "WORKSHOP",
       color: THEME.colors.warning,
-      footer: "WORK • ONE SHIFT EVERY 30 MINUTES",
+      footer: "ONE SHIFT EVERY 30 MINUTES",
       buttons: navButtons(userId, true)
     }));
   }
   return gamePayload(createGamePanel({
-    title: "Shift complete!",
-    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nYour next shift is available in 30 minutes.",
+    title: "Shift done.",
+    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nBack in 30 minutes.",
     eyebrow: "WORKSHOP",
     color: THEME.colors.success,
-    footer: "WORK • REWARD SAVED TO YOUR SERVER WALLET",
+    footer: "REWARD ADDED TO YOUR SERVER WALLET",
     buttons: navButtons(userId, true)
   }));
 }
@@ -396,21 +396,21 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
   if (!result.claimed) {
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
-      title: "Daily drop already claimed",
-      description: "You already claimed today's **+" + reward + " coins**." +
-        "\n🔥 Daily streak: **" + (result.account.dailyStreak ?? 0) + " days**." + perkLine +
-        "\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
+      title: "Already claimed.",
+      description: "Today's **+" + reward + " coins** are already in your wallet." +
+        "\n🔥 Streak: **" + (result.account.dailyStreak ?? 0) + " days**." + perkLine +
+        "\n\nNext drop <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>.",
       eyebrow: "DAILY DROP", color: THEME.colors.warning,
-      footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
+      footer: "ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
     }));
   }
   return gamePayload(createGamePanel({
-    title: "Daily drop claimed!",
-    description: "## ✨ +" + reward + " coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**" +
-      "\n🔥 Daily streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." + perkLine +
-      "\n\nNext drop in 24 hours.",
+    title: "Daily claimed.",
+    description: "## ✨ +" + reward + " coins\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
+      "\n🔥 Streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." + perkLine +
+      "\n\nSee you tomorrow.",
     eyebrow: "DAILY DROP", color: THEME.colors.success,
-    footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
+    footer: "REWARD ADDED TO YOUR SERVER WALLET", buttons: navButtons(userId)
   }));
 }
 export function renderGuess(guess, answer, result, userId) {
