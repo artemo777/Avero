@@ -44,14 +44,14 @@ export function buildConfigPanel(settings, guildName) {
   const theme = THEME_COLORS[settings.profileTheme] ?? THEME.colors.primary;
   const themeLabel = THEME_LABELS[settings.profileTheme] || "Violet";
   const profileName = settings.profileName || "Avero";
-  const profileBio = settings.profileBio || "No server bio added yet.";
+  const profileBio = settings.profileBio || "No bio set.";
   const roleStatus = (id) => id ? "Configured" : "Not set";
 
   const embed = createEmbed({
     title: "AVERO  /  SERVER SETTINGS",
     description: [
-      "A centralized control panel for **" + guildName + "**.",
-      "Each section below is independent and applies only to this server.",
+      "Settings for **" + guildName + "**.",
+      "Changes here only affect this server.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     ].join("\n"),
@@ -89,12 +89,12 @@ export function buildConfigPanel(settings, guildName) {
           "**Bio**  " + profileBio,
           "**Appearance**  " + themeLabel + " theme",
           "",
-          "To update the server avatar, run `/config` and attach `profile_image`."
+          "Change Avero's server avatar with `/config` and `profile_image`."
         ].join("\n"),
         inline: false
       }
     ],
-    footer: "Manage Server permission required  ·  Changes are server-specific"
+    footer: "Manage Server required · Only affects this server"
   });
 
   // Controls are grouped by the same categories as the dashboard above.
@@ -146,13 +146,13 @@ async function loadUploadedAvatar(attachment) {
 export const configCommand = Object.freeze({
   data: Object.freeze({
     name: "config",
-    description: "Open Avero's customizable server dashboard.",
+    description: "Open Manage Avero for this server.",
     options: [{ type: 11, name: "profile_image", description: "Optional image upload for Avero's server-specific avatar.", required: false }]
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Config command requires a database client.");
     if (!canManage(interaction)) {
-      await interaction.reply({ content: "You need **Manage Server** to edit Avero settings.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "You need **Manage Server** to change these settings.", flags: MessageFlags.Ephemeral });
       return;
     }
     const uploaded = interaction.options.getAttachment("profile_image");
@@ -168,7 +168,7 @@ export const configCommand = Object.freeze({
 export async function handleConfigButton(interaction, prisma) {
   if (!interaction.customId?.startsWith("avero-config|")) return false;
   if (!interaction.guildId || !canManage(interaction)) {
-    await interaction.reply({ content: "Only server admins with **Manage Server** can edit this panel.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "You need **Manage Server** to edit these settings.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const parts = interaction.customId.split("|");
@@ -203,7 +203,7 @@ export async function handleConfigButton(interaction, prisma) {
 export async function handleConfigModal(interaction, prisma) {
   if (!interaction.customId?.startsWith("avero-config-modal|")) return false;
   if (!interaction.guildId || !canManage(interaction)) {
-    await interaction.reply({ content: "Only server admins with **Manage Server** can save these settings.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "You need **Manage Server** to save these settings.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const kind = interaction.customId.split("|")[1];
@@ -218,7 +218,7 @@ export async function handleConfigModal(interaction, prisma) {
       workMinReward: parseAmount("workMinReward"),
       workMaxReward: parseAmount("workMaxReward")
     });
-    await interaction.reply({ content: "✓ Reward settings saved. Games and currency can be paused instantly from the dashboard.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "Reward settings saved. You can pause games or currency from the dashboard.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "roles") {
@@ -230,7 +230,7 @@ export async function handleConfigModal(interaction, prisma) {
       values[field] = id || null;
     }
     await updateGuildSettings(prisma, interaction.guildId, values);
-    await interaction.reply({ content: "✓ Role perks saved for this server.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "Role perks saved.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "profile") {
@@ -242,7 +242,7 @@ export async function handleConfigModal(interaction, prisma) {
       profileBio: profileBio || null
     });
     if (profileName) await interaction.guild.members.editMe({ nick: profileName });
-    await interaction.reply({ content: "✓ Avero's per-server profile was updated. The bot's global identity is unchanged.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "Server profile updated. This only changes Avero in this server.", flags: MessageFlags.Ephemeral });
     return true;
   }
   await interaction.reply({ content: "That settings page is no longer available.", flags: MessageFlags.Ephemeral });
