@@ -27,3 +27,13 @@ export function createCommandMap(commands) {
 export function getCommandDefinitions(commands) {
   return [...createCommandMap(commands).values()].map((command) => command.data);
 }
+
+export function findGuildCommandDuplicates(globalCommands, guildCommands) {
+  if (!Array.isArray(globalCommands) || !Array.isArray(guildCommands)) {
+    throw new TypeError("Global and guild commands must be arrays.");
+  }
+  const globalNames = new Set(globalCommands
+    .map((command) => command?.name)
+    .filter((name) => typeof name === "string"));
+  return guildCommands.filter((command) => globalNames.has(command?.name));
+}
