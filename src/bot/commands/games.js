@@ -4,7 +4,7 @@ import { renderGames } from "../game-ui.js";
 export const gamesCommand = Object.freeze({
   data: Object.freeze({
     name: "games",
-    description: "Open Avero's quick-play games menu."
+    description: "Pick a quick game to play."
   }),
   async execute(interaction) {
     if (!interaction.guildId) {
