@@ -71,24 +71,24 @@ function createFakePrisma(initialBalance = 0) {
 }
 
 
-test("shop renders compact item sections with purchase controls directly beneath each collectible", async () => {
+test("shop renders thumbnail item sections with controls directly beneath each collectible", async () => {
   const response = await renderShop(createFakePrisma(500), "guild-1", "user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
-  const textDisplays = panel.components.filter((component) => component.type === 10);
-  assert.equal(textDisplays.length, SHOP_ITEMS.length + 1);
+  assert.equal(panel.components.filter((component) => component.type === 9).length, SHOP_ITEMS.length);
   assert.match(panelText(response), /THE DROP/);
   for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
   const rows = panel.components.filter((component) => component.type === 1);
-  assert.equal(rows.length, SHOP_ITEMS.length + 1, "one compact control row per item plus one navigation row");
+  assert.equal(rows.length, SHOP_ITEMS.length + 1, "one control row per item plus one navigation row");
   const componentIds = rows.flatMap((row) => row.components.map((component) => component.custom_id));
   assert.equal(new Set(componentIds).size, componentIds.length, "all component custom IDs are unique");
-  for (const item of SHOP_ITEMS) {
-    const listingIndex = panel.components.findIndex((component) => component.type === 10 && component.content.includes(item.name));
-    assert.ok(listingIndex >= 0, item.name + " has a listing");
-    assert.equal(panel.components[listingIndex + 1]?.type, 1, item.name + " controls immediately follow its listing");
+  const sections = panel.components.filter((component) => component.type === 9);
+  for (const [index, section] of sections.entries()) {
+    assert.equal(section.accessory?.media?.url, "attachment://avero-collectible-" + index + ".png");
+    assert.equal(panel.components[panel.components.indexOf(section) + 1]?.type, 1, "item controls immediately follow its thumbnail listing");
   }
 });
+
 
 test("shop catalog has unique item IDs and positive prices", () => {
   assert.equal(new Set(SHOP_ITEMS.map((item) => item.id)).size, SHOP_ITEMS.length);
