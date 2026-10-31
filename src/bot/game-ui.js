@@ -590,7 +590,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
     case "titles_page": {
       const page = Number(parsed.arg);
-      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       const titlePayload = await renderTitlesPage(prisma, interaction.guildId, interaction.user, interaction.user.id, page);
       await interaction.update(titlePayload);
       return true;
