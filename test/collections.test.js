@@ -20,13 +20,17 @@ test("collections command renders route-linked set progress for a server member"
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  const embed = response.embeds[0];
-  assert.match(embed.title, /Ada's Avero collections/);
-  assert.match(embed.description, /1 \/ 3 sets completed/);
-  assert.equal(embed.fields.length, 3);
-  assert.match(embed.fields[0].name, /The Archive Protocol · 3\/3/);
-  assert.match(embed.fields[0].value, /Archive Keeper · Unlocked/);
-  assert.deepEqual(response.allowedMentions, { parse: [] });
+  const panel = response.components[0].toJSON();
+  const text = panel.components.flatMap((component) =>
+    component.type === 10 ? [component.content] :
+    component.type === 9 ? component.components.map((part) => part.content) : []
+  ).join("\\n");
+  assert.match(text, /The Collection Atlas/);
+  assert.match(text, /1 \/ 3 themed sets completed/);
+  assert.match(text, /The Archive Protocol/);
+  assert.match(text, /Archive Keeper · Unlocked/);
+  assert.match(text, /Neon Circuit/);
+  assert.equal(response.embeds, undefined);
 });
 
 test("collections command rejects direct messages privately", async () => {
