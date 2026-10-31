@@ -6,7 +6,7 @@ export { SHOP_ITEMS } from "../shop-catalog.js";
 export const shopCommand = Object.freeze({
   data: Object.freeze({
     name: "shop",
-    description: "Browse collectibles from three themed Avero sets."
+    description: "Browse collectibles across three themed sets."
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Shop command requires a database client.");
