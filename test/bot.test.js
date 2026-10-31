@@ -377,7 +377,7 @@ test("setup command reports channel permissions, feature status and first steps 
     settings: { gamesEnabled: true, currencyEnabled: false }
   });
   assert.equal(response.flags, MessageFlags.Ephemeral);
-  const embed = response.embeds[0].toJSON();
+  const embed = response.embeds[0];
   assert.match(embed.description, /\/games/);
   assert.match(embed.description, /\/daily/);
   assert.match(embed.description, /Manage Server required/);
