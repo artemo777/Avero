@@ -54,7 +54,7 @@ export function buildConfigPanel(settings, guildName) {
       "Each section below is independent and applies only to this server.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    ].join("\\n"),
+    ].join("\n"),
     color: theme,
     fields: [
       {
@@ -62,7 +62,7 @@ export function buildConfigPanel(settings, guildName) {
         value: [
           "**Games**  " + (settings.gamesEnabled ? "🟢 Enabled" : "⚪ Paused"),
           "**Currency**  " + (settings.currencyEnabled ? "🟢 Enabled" : "⚪ Paused")
-        ].join("\\n"),
+        ].join("\n"),
         inline: false
       },
       {
@@ -70,7 +70,7 @@ export function buildConfigPanel(settings, guildName) {
         value: [
           "**Daily claim**  " + settings.dailyReward.toLocaleString("en-US") + " coins",
           "**Work payout**  " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins"
-        ].join("\\n"),
+        ].join("\n"),
         inline: false
       },
       {
@@ -79,7 +79,7 @@ export function buildConfigPanel(settings, guildName) {
           "**Booster role**  " + roleStatus(settings.boosterRoleId),
           "**Funder role**  " + roleStatus(settings.funderRoleId),
           "**Voter role**  " + roleStatus(settings.voterRoleId)
-        ].join("\\n"),
+        ].join("\n"),
         inline: false
       },
       {
@@ -90,7 +90,7 @@ export function buildConfigPanel(settings, guildName) {
           "**Appearance**  " + themeLabel + " theme",
           "",
           "To update the server avatar, run `/config` and attach `profile_image`."
-        ].join("\\n"),
+        ].join("\n"),
         inline: false
       }
     ],
