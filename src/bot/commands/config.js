@@ -3,11 +3,12 @@ import {
   PermissionFlagsBits, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
-import { getGuildSettings, updateGuildSettings } from "../../db/guild-settings-repository.js";
+import { getGuildSettings, updateGuildSettings, GUILD_PROFILE_THEMES } from "../../db/guild-settings-repository.js";
+
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
-const IMAGE_HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net"]);
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const THEME_COLORS = Object.freeze({ violet: 0x8b5cf6, ocean: 0x0ea5e9, sunset: 0xf97316, mint: 0x10b981, mono: 0x64748b });
+const THEME_LABELS = Object.freeze({ violet: "Violet", ocean: "Ocean", sunset: "Sunset", mint: "Mint", mono: "Mono" });
 function canManage(interaction) {
   return Boolean(interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild));
 }
@@ -21,8 +22,6 @@ function configModal(kind, settings) {
     .setTitle(kind === "games" ? "Games & Currency" : kind === "roles" ? "Role perks" : "Avero server profile");
   if (kind === "games") {
     modal.addComponents(
-      textInput("gamesEnabled", "Games enabled? true / false", settings.gamesEnabled, { required: true }),
-      textInput("currencyEnabled", "Currency enabled? true / false", settings.currencyEnabled, { required: true }),
       textInput("dailyReward", "Daily coins (1–100000)", settings.dailyReward, { required: true }),
       textInput("workMinReward", "Work minimum (1–100000)", settings.workMinReward, { required: true }),
       textInput("workMaxReward", "Work maximum (1–100000)", settings.workMaxReward, { required: true })
@@ -35,55 +34,77 @@ function configModal(kind, settings) {
     );
   } else {
     modal.addComponents(
-      textInput("bio", "Server bio (max 190 chars; 'clear' removes)", "", { maxLength: 190 }),
-      textInput("avatarUrl", "Avatar URL (Discord CDN or 'clear')", "", { maxLength: 1000 }),
-      textInput("bannerUrl", "Banner URL (Discord CDN or 'clear')", "", { maxLength: 1000 })
+      textInput("profileName", "Avero display name (max 32)", settings.profileName, { maxLength: 32 }),
+      textInput("profileBio", "Server profile bio (max 190)", settings.profileBio, { style: TextInputStyle.Paragraph, maxLength: 190 })
     );
   }
   return modal;
 }
-async function readDiscordImage(value) {
-  const url = new URL(value);
-  if (url.protocol !== "https:" || !IMAGE_HOSTS.has(url.hostname)) throw new Error("Use an HTTPS image link from cdn.discordapp.com or media.discordapp.net.");
-  const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10000) });
-  if (!response.ok) throw new Error("Could not load that image.");
-  const finalUrl = new URL(response.url);
-  if (finalUrl.protocol !== "https:" || !IMAGE_HOSTS.has(finalUrl.hostname)) throw new Error("That image link redirected outside the Discord CDN.");
-  const type = response.headers.get("content-type")?.split(";")[0]?.toLowerCase();
-  if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(type)) throw new Error("The link must point to a PNG, JPG, WEBP or GIF image.");
+function panelPayload(settings, guildName) {
+  const theme = THEME_COLORS[settings.profileTheme] ?? THEME.colors.primary;
+  const profile = [
+    "**" + (settings.profileName || "Avero") + "**",
+    settings.profileBio || "Your server's Avero profile. Add a short bio to make it yours.",
+    "Theme: **" + (THEME_LABELS[settings.profileTheme] || "Violet") + "**"
+  ].join("\n");
+  const embed = createEmbed({
+    title: "◈ Avero · Server control",
+    description: "Compact controls for **" + guildName + "**. Changes are isolated to this server.",
+    color: theme,
+    fields: [
+      { name: "Games", value: settings.gamesEnabled ? "🟢 On" : "⚪ Paused", inline: true },
+      { name: "Currency", value: settings.currencyEnabled ? "🟢 On" : "⚪ Paused", inline: true },
+      { name: "Daily reward", value: settings.dailyReward.toLocaleString("en-US") + " coins", inline: true },
+      { name: "Work range", value: settings.workMinReward + "–" + settings.workMaxReward + " coins", inline: true },
+      { name: "Role perks", value: ["Booster " + (settings.boosterRoleId ? "✓" : "—"), "Funder " + (settings.funderRoleId ? "✓" : "—"), "Voter " + (settings.voterRoleId ? "✓" : "—")].join(" · "), inline: true },
+      { name: "Avero · Server profile", value: profile, inline: false }
+    ],
+    footer: "Manage Server required · server-specific settings"
+  });
+  const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|toggle-games").setLabel(settings.gamesEnabled ? "Pause games" : "Enable games").setStyle(settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("avero-config|toggle-currency").setLabel(settings.currencyEnabled ? "Pause currency" : "Enable currency").setStyle(settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
+    new ButtonBuilder().setCustomId("avero-config|games").setLabel("Rewards").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("avero-config|roles").setLabel("Role perks").setStyle(ButtonStyle.Secondary)
+  );
+  const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero-config|profile").setLabel("Edit profile").setStyle(ButtonStyle.Primary),
+    ...GUILD_PROFILE_THEMES.map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+  );
+  return { embeds: [embed], components: [row1, row2], flags: MessageFlags.Ephemeral };
+}
+async function loadUploadedAvatar(attachment) {
+  if (!attachment) return null;
+  const url = new URL(attachment.url);
+  if (url.protocol !== "https:" || !["cdn.discordapp.com", "media.discordapp.net"].includes(url.hostname)) throw new Error("Upload the image directly in Discord.");
+  if (!/^image\/(png|jpeg|webp|gif)$/i.test(attachment.contentType || "")) throw new Error("Profile artwork must be PNG, JPG, WEBP or GIF.");
+  if (attachment.size > 8 * 1024 * 1024) throw new Error("Profile artwork must be under 8 MB.");
+  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error("Discord could not load that upload. Please try again.");
   const buffer = Buffer.from(await response.arrayBuffer());
-  if (!buffer.length || buffer.length > MAX_IMAGE_BYTES) throw new Error("Images must be under 8 MB.");
+  if (!buffer.length || buffer.length > 8 * 1024 * 1024) throw new Error("Profile artwork must be under 8 MB.");
   return buffer;
 }
 export const configCommand = Object.freeze({
-  data: Object.freeze({ name: "config", description: "Open Avero's server settings for games, currency and profile." }),
+  data: Object.freeze({
+    name: "config",
+    description: "Open Avero's customizable server dashboard.",
+    options: [{ type: 11, name: "profile_image", description: "Optional image upload for Avero's server-specific avatar.", required: false }]
+  }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Config command requires a database client.");
     if (!canManage(interaction)) {
       await interaction.reply({ content: "You need **Manage Server** to edit Avero settings.", flags: MessageFlags.Ephemeral });
       return;
     }
+    const uploaded = interaction.options.getAttachment("profile_image");
+    if (uploaded) {
+      const avatar = await loadUploadedAvatar(uploaded);
+      await interaction.guild.members.editMe({ avatar });
+    }
     const settings = await getGuildSettings(prisma, interaction.guildId);
-    await interaction.reply({
-      embeds: [createEmbed({
-        title: "◈ Avero · Server control",
-        description: "One clean panel. Your settings only affect **this server**.",
-        color: THEME.colors.primary,
-        fields: [
-          { name: "Games", value: settings.gamesEnabled ? "Enabled" : "Paused", inline: true },
-          { name: "Currency", value: settings.currencyEnabled ? "Enabled" : "Paused", inline: true },
-          { name: "Daily drop", value: settings.dailyReward + " coins", inline: true },
-          { name: "Role perks", value: [settings.boosterRoleId ? "Booster set" : "Booster —", settings.funderRoleId ? "Funder set" : "Funder —", settings.voterRoleId ? "Voter set" : "Voter —"].join("\\n") }
-        ],
-        footer: "Manage Server required · changes are server-only"
-      })],
-      components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId("avero-config|games").setLabel("Games & Currency").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("avero-config|roles").setLabel("Role perks").setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId("avero-config|profile").setLabel("Server profile").setStyle(ButtonStyle.Secondary)
-      )],
-      flags: MessageFlags.Ephemeral
-    });
+    await interaction.reply(panelPayload(settings, interaction.guild.name));
+    if (uploaded) await interaction.followUp({ content: "✓ Uploaded artwork applied to Avero's avatar in this server only.", flags: MessageFlags.Ephemeral });
   }
 });
 export async function handleConfigButton(interaction, prisma) {
@@ -92,13 +113,31 @@ export async function handleConfigButton(interaction, prisma) {
     await interaction.reply({ content: "Only server admins with **Manage Server** can edit this panel.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  const kind = interaction.customId.split("|")[1];
-  if (!["games", "roles", "profile"].includes(kind)) {
+  const [, , action, value] = interaction.customId.split("|");
+  if (action === "theme") {
+    if (!GUILD_PROFILE_THEMES.includes(value)) {
+      await interaction.reply({ content: "That profile theme is unavailable.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    await updateGuildSettings(prisma, interaction.guildId, { profileTheme: value });
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(panelPayload(settings, interaction.guild.name));
+    return true;
+  }
+  if (action === "toggle-games" || action === "toggle-currency") {
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    const field = action === "toggle-games" ? "gamesEnabled" : "currencyEnabled";
+    await updateGuildSettings(prisma, interaction.guildId, { [field]: !settings[field] });
+    const next = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(panelPayload(next, interaction.guild.name));
+    return true;
+  }
+  if (!["games", "roles", "profile"].includes(action)) {
     await interaction.reply({ content: "That settings page is no longer available.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const settings = await getGuildSettings(prisma, interaction.guildId);
-  await interaction.showModal(configModal(kind, settings));
+  await interaction.showModal(configModal(action, settings));
   return true;
 }
 export async function handleConfigModal(interaction, prisma) {
@@ -109,25 +148,17 @@ export async function handleConfigModal(interaction, prisma) {
   }
   const kind = interaction.customId.split("|")[1];
   if (kind === "games") {
-    const parseBoolean = (id) => {
-      const value = interaction.fields.getTextInputValue(id).trim().toLowerCase();
-      if (value !== "true" && value !== "false") throw new Error(id + " must be true or false.");
-      return value === "true";
-    };
     const parseAmount = (id) => {
       const value = Number(interaction.fields.getTextInputValue(id).trim());
       if (!Number.isSafeInteger(value) || value < 1 || value > 100000) throw new Error(id + " must be between 1 and 100000.");
       return value;
     };
-    const dailyReward = parseAmount("dailyReward");
-    const workMinReward = parseAmount("workMinReward");
-    const workMaxReward = parseAmount("workMaxReward");
-    if (workMinReward > workMaxReward) throw new Error("Work minimum cannot exceed work maximum.");
     await updateGuildSettings(prisma, interaction.guildId, {
-      gamesEnabled: parseBoolean("gamesEnabled"), currencyEnabled: parseBoolean("currencyEnabled"),
-      dailyReward, workMinReward, workMaxReward
+      dailyReward: parseAmount("dailyReward"),
+      workMinReward: parseAmount("workMinReward"),
+      workMaxReward: parseAmount("workMaxReward")
     });
-    await interaction.reply({ content: "✓ Games & Currency settings saved for this server.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "✓ Reward settings saved. Games and currency can be paused instantly from the dashboard.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "roles") {
@@ -139,20 +170,19 @@ export async function handleConfigModal(interaction, prisma) {
       values[field] = id || null;
     }
     await updateGuildSettings(prisma, interaction.guildId, values);
-    await interaction.reply({ content: "✓ Booster, Funder and Voter roles saved.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "✓ Role perks saved for this server.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "profile") {
-    const bioValue = interaction.fields.getTextInputValue("bio").trim();
-    const avatarValue = interaction.fields.getTextInputValue("avatarUrl").trim();
-    const bannerValue = interaction.fields.getTextInputValue("bannerUrl").trim();
-    const changes = {};
-    if (bioValue) changes.bio = bioValue.toLowerCase() === "clear" ? null : bioValue;
-    if (avatarValue) changes.avatar = avatarValue.toLowerCase() === "clear" ? null : await readDiscordImage(avatarValue);
-    if (bannerValue) changes.banner = bannerValue.toLowerCase() === "clear" ? null : await readDiscordImage(bannerValue);
-    if (!Object.keys(changes).length) throw new Error("Add at least one profile change.");
-    await interaction.guild.members.editMe(changes);
-    await interaction.reply({ content: "✓ Avero's **server profile** was updated. This does not change the global bot profile.", flags: MessageFlags.Ephemeral });
+    const profileName = interaction.fields.getTextInputValue("profileName").trim();
+    const profileBio = interaction.fields.getTextInputValue("profileBio").trim();
+    if (profileName.length > 32 || profileBio.length > 190) throw new Error("Profile name or bio is too long.");
+    await updateGuildSettings(prisma, interaction.guildId, {
+      profileName: profileName || null,
+      profileBio: profileBio || null
+    });
+    if (profileName) await interaction.guild.members.editMe({ nick: profileName });
+    await interaction.reply({ content: "✓ Avero's per-server profile was updated. The bot's global identity is unchanged.", flags: MessageFlags.Ephemeral });
     return true;
   }
   await interaction.reply({ content: "That settings page is no longer available.", flags: MessageFlags.Ephemeral });
