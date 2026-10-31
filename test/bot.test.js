@@ -382,7 +382,9 @@ test("malformed, stale, and unknown game controls receive a private fallback res
     "avero|user-1",
     "avero|user-1|unknown_action",
     "avero|user-1|shop_page|not-a-page",
-    "avero|user-1|titles_page|999999"
+    "avero|user-1|titles_page|999999",
+    "avero|user-1|collections_page|not-a-page",
+    "avero|user-1|inventory|-1"
   ]) {
     let response;
     const handled = await handleGameComponent({
