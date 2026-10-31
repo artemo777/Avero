@@ -29,6 +29,7 @@ model CurrencyAccount {
   userId       String
   balance      Int      @default(0)
   lastDailyAt  DateTime?
+  dailyStreak  Int      @default(0)
   lastWorkAt   DateTime?
   lastScavengeAt DateTime?
   lastGameRewardAt DateTime?
