@@ -82,7 +82,9 @@ test("shop renders thumbnail item sections with controls directly beneath each c
   assert.match(panelText(response), /THE DROP/);
   for (const item of SHOP_ITEMS) assert.match(panelText(response), new RegExp(item.name));
   const rows = panel.components.filter((component) => component.type === 1);
-  assert.equal(rows.length, SHOP_ITEMS.length + 1, "one control row per item plus one navigation row");
+  assert.equal(rows.length, SHOP_ITEMS.length, "one control row per item; no extra navigation row");
+  const countNested = (component) => 1 + (component.components ?? []).reduce((sum, child) => sum + countNested(child), 0) + (component.accessory ? countNested(component.accessory) : 0);
+  assert.ok(countNested(panel) <= 40, "shop stays within Discord's 40-component limit");
   const componentIds = rows.flatMap((row) => row.components.map((component) => component.custom_id));
   assert.equal(new Set(componentIds).size, componentIds.length, "all component custom IDs are unique");
   const sections = panel.components.filter((component) => component.type === 9);
