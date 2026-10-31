@@ -237,15 +237,14 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"), button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
-export async function renderCollectionSets(prisma, guildId, userId) {
+export async function renderCollectionSets(prisma, guildId, userId, controlUserId = userId) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const sets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
   const completed = sets.filter((set) => set.complete).length;
   const sections = sets.map((set) =>
     (set.complete ? "✓ " : "◇ ") + set.icon + " **" + set.name + "** · " + set.ownedCount + "/" + set.totalCount + "\n" +
-    set.description + "\n**Expedition:** " + set.route + "\n" +
     set.items.map((item) => (item.owned ? "✓ " : "◇ ") + item.name).join(" · ") + "\n" +
-    "**Cosmetic title:** " + set.title + (set.complete ? " · Unlocked" : " · " + set.progress + "%")
+    "**Title:** " + set.title + (set.complete ? " · Unlocked" : " · " + set.progress + "%")
   );
   return gamePayload(createGamePanel({
     title: "The Collection Atlas",
@@ -254,9 +253,9 @@ export async function renderCollectionSets(prisma, guildId, userId) {
     sections,
     color: completed === sets.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [
-      button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
-      button(userId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
-      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+      button(controlUserId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
+      button(controlUserId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
+      button(controlUserId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
     ],
     footer: "COLLECTION ATLAS • SERVER-SCOPED PROGRESS",
   }));
