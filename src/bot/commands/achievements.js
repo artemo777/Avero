@@ -1,4 +1,4 @@
-import { MessageFlags } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
 import { getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
@@ -21,6 +21,47 @@ function buildAchievements(stats, ownedCount, collectionSets) {
   ];
 }
 
+export async function renderAchievementsPage(prisma, guildId, target, controlUserId, page = 0) {
+  const [stats, purchases] = await Promise.all([
+    getCurrencyStats(prisma, guildId, target.id),
+    getCurrencyPurchases(prisma, guildId, target.id)
+  ]);
+  const ownedCount = new Set(purchases.map((purchase) => purchase.itemId)).size;
+  const collectionSets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
+  const achievements = buildAchievements(stats, ownedCount, collectionSets);
+  const unlocked = achievements.filter((achievement) => achievement.progress >= achievement.target).length;
+  const pageSize = 7;
+  const pageCount = Math.max(1, Math.ceil(achievements.length / pageSize));
+  const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
+  const pageItems = achievements.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const fields = pageItems.map((achievement) => {
+    const complete = achievement.progress >= achievement.target;
+    const progress = Math.min(achievement.progress, achievement.target);
+    return {
+      name: (complete ? "✓ " : "◇ ") + achievement.name,
+      value: achievement.description + "\\n" +
+        (complete ? "**Unlocked**" : "**Progress:** " + progress.toLocaleString("en-US") + " / " + achievement.target.toLocaleString("en-US"))
+    };
+  });
+  const components = pageCount > 1 ? [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("avero|" + controlUserId + "|achievements_page|" + target.id + ":" + Math.max(0, currentPage - 1)).setLabel("← Previous").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
+    new ButtonBuilder().setCustomId("avero|" + controlUserId + "|achievements_page|" + target.id + ":" + Math.min(pageCount - 1, currentPage + 1)).setLabel("Next →").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === pageCount - 1)
+  )] : [];
+  return {
+    allowedMentions: { parse: [] },
+    embeds: [createEmbed({
+      title: "🏆 " + target.username + "'s achievements",
+      description: "**" + unlocked + " / " + achievements.length + " unlocked** · Server milestones" +
+        (pageCount > 1 ? " · Page " + (currentPage + 1) + "/" + pageCount : "") +
+        "\\nCosmetic progress only · virtual coins have no cash value.",
+      color: unlocked === achievements.length ? THEME.colors.success : THEME.colors.primary,
+      fields,
+      footer: "Avero achievements • progress is saved per server"
+    })],
+    components
+  };
+}
+
 export const achievementsCommand = Object.freeze({
   data: Object.freeze({
     name: "achievements",
@@ -41,35 +82,7 @@ export const achievementsCommand = Object.freeze({
       });
       return;
     }
-
     const target = interaction.options.getUser("member") ?? interaction.user;
-    const [stats, purchases] = await Promise.all([
-      getCurrencyStats(prisma, interaction.guildId, target.id),
-      getCurrencyPurchases(prisma, interaction.guildId, target.id)
-    ]);
-    const ownedCount = new Set(purchases.map((purchase) => purchase.itemId)).size;
-    const collectionSets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
-    const achievements = buildAchievements(stats, ownedCount, collectionSets);
-    const unlocked = achievements.filter((achievement) => achievement.progress >= achievement.target).length;
-    const fields = achievements.map((achievement) => {
-      const complete = achievement.progress >= achievement.target;
-      const progress = Math.min(achievement.progress, achievement.target);
-      return {
-        name: (complete ? "✓ " : "◇ ") + achievement.name,
-        value: achievement.description + "\n" +
-          (complete ? "**Unlocked**" : "**Progress:** " + progress.toLocaleString("en-US") + " / " + achievement.target.toLocaleString("en-US"))
-      };
-    });
-
-    await interaction.reply({
-      allowedMentions: { parse: [] },
-      embeds: [createEmbed({
-        title: "🏆 " + target.username + "'s achievements",
-        description: "**" + unlocked + " / " + achievements.length + " unlocked** · Server milestones\nCosmetic progress only · virtual coins have no cash value.",
-        color: unlocked === achievements.length ? THEME.colors.success : THEME.colors.primary,
-        fields,
-        footer: "Avero achievements • progress is saved per server"
-      })]
-    });
+    await interaction.reply(await renderAchievementsPage(prisma, interaction.guildId, target, interaction.user.id));
   }
 });
