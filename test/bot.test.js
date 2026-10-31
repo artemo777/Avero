@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MessageFlags } from "discord.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { helpCommand } from "../src/bot/commands/help.js";
+import { setupCommand } from "../src/bot/commands/setup.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
@@ -363,4 +364,26 @@ test("collection atlas button opens the member's set progress", async () => {
   assert.equal(handled, true);
   assert.match(panelText(response), /Moonlit Relics/);
   assert.match(panelText(response), /Moonlit Curator/);
+});
+
+
+test("setup command reports channel permissions, feature status and first steps privately", async () => {
+  let response;
+  const granted = new Set([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]);
+  await setupCommand.execute({
+    appPermissions: { has: (permission) => granted.has(permission) },
+    reply: async (payload) => { response = payload; }
+  }, {
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+  assert.equal(response.flags, MessageFlags.Ephemeral);
+  const embed = response.embeds[0].toJSON();
+  assert.match(embed.description, /\/games/);
+  assert.match(embed.description, /\/daily/);
+  assert.match(embed.description, /Manage Server required/);
+  assert.match(embed.fields[0].value, /View Channel/);
+  assert.match(embed.fields[0].value, /Send Messages/);
+  assert.match(embed.fields[0].value, /Embed Links.*needed/);
+  assert.match(embed.fields[1].value, /Games.*Ready/);
+  assert.match(embed.fields[1].value, /Currency.*Paused/);
 });
