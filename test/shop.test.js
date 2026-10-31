@@ -164,7 +164,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
   };
 
   await inventoryCommand.execute(interaction, { prisma });
-  assert.match(panelText(replies[0]), /Neon Badge/);
+  assert.match(panelText(replies[0]), /Glitch Gremlin/);
 
   const emptyInteraction = {
     ...interaction,
