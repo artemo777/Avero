@@ -17,6 +17,7 @@ import { profileCommand } from "./profile.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
+import { setupCommand } from "./setup.js";
 import { workCommand } from "./work.js";
 import { vaultCommand } from "./vault.js";
 import { titlesCommand } from "./titles.js";
@@ -43,5 +44,6 @@ export const commands = Object.freeze([
   workCommand,
   scavengeCommand,
   vaultCommand,
-  titlesCommand
+  titlesCommand,
+  setupCommand
 ]);
