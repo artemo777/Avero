@@ -15,6 +15,7 @@ model MemberProfile {
   level            Int      @default(0)
   lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
+  equippedTitleId     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -88,4 +89,16 @@ model GuildSettings {
   voterRoleId     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model MemberTitle {
+  id         String   @id @default(cuid())
+  guildId    String
+  userId     String
+  titleId    String
+  source     String   @default("milestone")
+  acquiredAt DateTime @default(now())
+
+  @@unique([guildId, userId, titleId])
+  @@index([guildId, userId])
 }
