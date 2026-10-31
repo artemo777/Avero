@@ -606,11 +606,16 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     }
     case "collections_page": {
       const page = Number(parsed.arg);
-      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);
       break;
     }
-    case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
+    case "inventory": {
+      const page = Number(parsed.arg ?? 0);
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
+      payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, page);
+      break;
+    }
     case "collection_page": {
       const page = Number(parsed.arg);
       if (!Number.isInteger(page) || page < 0 || page > 100) {
