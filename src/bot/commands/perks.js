@@ -18,7 +18,7 @@ export const perksCommand = Object.freeze({
         title: "Your perks",
         description: perk.id === "member" ? "No role perk active right now." : "**" + perk.flair + "** is active · +" + perk.dailyBonus + " daily coins.",
         color: THEME.colors.primary,
-        fields: [{ name: "Available in this server", value: configured.length ? configured.join("\\n") : "No role perks have been set up here yet." }],
+        fields: [{ name: "Available in this server", value: configured.length ? configured.join("\n") : "No role perks have been set up here yet." }],
         footer: "Only your highest role perk applies · virtual coins only"
       })],
       flags: MessageFlags.Ephemeral
