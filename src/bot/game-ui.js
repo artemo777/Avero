@@ -581,7 +581,8 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       if (!targetId || !Number.isInteger(page) || page < 0 || page > 100) return false;
       const target = await interaction.client.users.fetch(targetId);
       payload = await renderAchievementsPage(prisma, interaction.guildId, target, interaction.user.id, page);
-      break;
+      await interaction.update(payload);
+      return true;
     }
     case "collections_page": {\n      const page = Number(parsed.arg);\n      if (!Number.isInteger(page) || page < 0 || page > 100) return false;\n      payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);\n      break;\n    }
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
