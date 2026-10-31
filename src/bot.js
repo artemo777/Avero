@@ -149,8 +149,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    const isVaultClueRequest = interaction.commandName === "vault" && !interaction.options.getString("code");
-    const needsDatabase = !isVaultClueRequest && (
+    const needsDatabase = (
       interaction.commandName === "rank" ||
       interaction.commandName === "config" ||
       gameCommandNames.has(interaction.commandName) ||
