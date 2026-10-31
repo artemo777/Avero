@@ -11,7 +11,7 @@ function panelText(response) {
   return response.components[0].toJSON().components.flatMap((component) =>
     component.type === 10 ? [component.content] :
     component.type === 9 ? component.components.map((part) => part.content) : []
-  ).join("\\n");
+  ).join("\n");
 }
 
 function createFakePrisma(initialBalance = 0) {
