@@ -42,7 +42,7 @@ test("command map validates and registers the ping command", () => {
   assert.equal(map.get("ping"), pingCommand);
   assert.deepEqual(getCommandDefinitions([pingCommand]), [{
     name: "ping",
-    description: "Check Avero's connection and response latency."
+    description: "Check Avero's response and gateway latency."
   }]);
 });
 
