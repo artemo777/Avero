@@ -42,7 +42,7 @@ const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper"
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
 const COIN_ICON = getAssetSymbol("coin");
 function collectibleButtonEmoji(itemId) {
-  const emojis = { neon_badge: "🌟", vault_badge: "🔐", starlight_badge: "✨", moonlit_token: "🌙", prism_crown: "👑", avero_relic: "💠" };
+  const emojis = { neon_badge: "👾", vault_badge: "🐀", starlight_badge: "📡", moonlit_token: "🛸", prism_crown: "🧪", avero_relic: "🪩" };
   return emojis[itemId] ?? "🏅";
 }
 function collectibleIcon(item) {
