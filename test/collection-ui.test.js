@@ -41,14 +41,14 @@ test("inventory exposes item detail buttons and collection progress", async () =
   assert.ok(itemButtons.some((entry) => entry.custom_id.includes("neon_badge:0")));
 });
 
-test("inventory pagination shows at most four collectibles and a next-page control", async () => {
+test("inventory keeps up to seven collectibles on one compact page", async () => {
   const response = await renderInventory(fakePrisma([
     "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
   ]), "guild-1", "user-1");
   const json = panel(response);
-  assert.match(allText(json), /page 1 of 2/i);
-  assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 4);
-  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_page|1"));
+  assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
+  assert.doesNotMatch(allText(json), /page 1 of 2/i);
+  assert.ok(!buttons(json).some((entry) => entry.custom_id.startsWith("avero|user-1|collection_page|")));
 });
 
 test("item detail shows owned state and does not offer a second purchase", async () => {
