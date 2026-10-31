@@ -166,23 +166,27 @@ export async function renderShop(prisma, guildId, userId) {
     return "**" + item.name + "** · " + item.rarity + "\n" +
       "**" + item.price.toLocaleString("en-US") + " coins** · " + status;
   });
-  const itemButtons = SHOP_ITEMS.map((item) => {
-    const purchase = button(userId, "buy", owned.has(item.id) ? "Owned" : "Buy " + item.price.toLocaleString("en-US"),
-      item.id, owned.has(item.id) ? ButtonStyle.Secondary : ButtonStyle.Success,
-      owned.has(item.id) ? "☑️" : "🛒");
-    if (owned.has(item.id)) purchase.disabled = true;
-    return purchase;
+  const sectionButtons = SHOP_ITEMS.map((item) => {
+    const ownedItem = owned.has(item.id);
+    return [
+      button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, "ℹ️"),
+      {
+        ...button(userId, "buy", ownedItem ? "Owned" : "Buy " + item.price.toLocaleString("en-US"),
+          item.id, ownedItem ? ButtonStyle.Secondary : ButtonStyle.Success, ownedItem ? "☑️" : "🛒"),
+        disabled: ownedItem
+      }
+    ];
   });
   return gamePayload(createGamePanel({
     title: "Collectible shop",
     description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") +
-      " coins\n-# Six server collectibles · cosmetic only",
+      " coins\\n-# Six server collectibles · cosmetic only",
     sections,
+    sectionButtons,
     sectionThumbnails: artwork.filenames,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
-      ...itemButtons,
       button(userId, "inventory", "Collection", "", ButtonStyle.Secondary, "🎒"),
       button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"),
       button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
