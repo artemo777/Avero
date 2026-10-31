@@ -10,7 +10,7 @@ import { TITLE_CATALOG } from "../title-catalog.js";
 export const profileCommand = Object.freeze({
   data: Object.freeze({
     name: "profile",
-    description: "View your or another member's Avero profile.",
+    description: "Check your profile or another member's.",
     options: [{
       type: 6,
       name: "member",
