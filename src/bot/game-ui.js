@@ -173,7 +173,7 @@ export async function renderShop(prisma, guildId, userId, page = 0) {
   const sectionButtons = pageItems.map((item) => {
     const ownedItem = owned.has(item.id);
     return [
-      button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, "ℹ️"),
+      button(userId, "item", "Details", item.id + ":" + currentPage + ":shop", ButtonStyle.Secondary, "ℹ️"),
       {
         ...button(userId, "buy", ownedItem ? "Owned" : "Buy " + item.price.toLocaleString("en-US"),
           item.id, ownedItem ? ButtonStyle.Secondary : ButtonStyle.Success, ownedItem ? "☑️" : "🛒"),
