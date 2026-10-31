@@ -46,6 +46,15 @@ export async function claimDailyReward(
       update: {}
     });
 
+    const accountBefore = await tx.currencyAccount.findUnique({
+      where: { guildId_userId: key }
+    });
+    const utcDay = (date) => Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const daysSinceLastClaim = accountBefore.lastDailyAt
+      ? Math.floor((utcDay(now) - utcDay(accountBefore.lastDailyAt)) / 86_400_000)
+      : null;
+    const dailyStreak = daysSinceLastClaim === 1 ? (accountBefore.dailyStreak ?? 0) + 1 : 1;
+
     const updated = await tx.currencyAccount.updateMany({
       where: {
         ...key,
@@ -56,7 +65,8 @@ export async function claimDailyReward(
       },
       data: {
         balance: { increment: amount },
-        lastDailyAt: now
+        lastDailyAt: now,
+        dailyStreak
       }
     });
 
@@ -70,7 +80,7 @@ export async function claimDailyReward(
     await tx.currencyTransaction.create({
       data: { ...key, amount, type: "daily", createdAt: now }
     });
-    return { claimed: true, amount, account };
+    return { claimed: true, amount, account, dailyStreak };
   });
 }
 
