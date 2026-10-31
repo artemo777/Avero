@@ -1,7 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
-import { getCurrencyPurchases } from "../../db/currency-repository.js";
-import { buildCollectionSetProgress } from "../collection-sets.js";
+import { renderCollectionSets } from "../game-ui.js";
 
 export const collectionsCommand = Object.freeze({
   data: Object.freeze({
@@ -23,27 +21,12 @@ export const collectionsCommand = Object.freeze({
       });
       return;
     }
-
     const target = interaction.options.getUser("member") ?? interaction.user;
-    const purchases = await getCurrencyPurchases(prisma, interaction.guildId, target.id);
-    const sets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
-    const completed = sets.filter((set) => set.complete).length;
-    const fields = sets.map((set) => ({
-      name: (set.complete ? "✓ " : "◇ ") + set.icon + " " + set.name + " · " + set.ownedCount + "/" + set.totalCount,
-      value: set.description + "\n**Expedition:** " + set.route +
-        "\n**Items:** " + set.items.map((item) => (item.owned ? "✓ " : "◇ ") + item.name).join(" · ") +
-        "\n**Set title:** " + set.title + (set.complete ? " · Unlocked" : " · " + set.progress + "% complete")
-    }));
-
-    await interaction.reply({
-      allowedMentions: { parse: [] },
-      embeds: [createEmbed({
-        title: "🗺️ " + target.username + "'s Avero collections",
-        description: "**" + completed + " / " + sets.length + " sets completed** · Collect through the shop or their matching expeditions.\nSet titles are cosmetic milestones; completing a set does not grant extra coins.",
-        color: completed === sets.length ? THEME.colors.success : THEME.colors.primary,
-        fields,
-        footer: "COLLECTION ATLAS • PROGRESS SAVED PER SERVER"
-      })]
-    });
+    await interaction.reply(await renderCollectionSets(
+      prisma,
+      interaction.guildId,
+      target.id,
+      interaction.user.id
+    ));
   }
 });
