@@ -188,8 +188,7 @@ export async function renderShop(prisma, guildId, userId) {
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
     buttons: [
       button(userId, "inventory", "Collection", "", ButtonStyle.Secondary, "🎒"),
-      button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"),
-      button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+      button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️")
     ]
   }), artwork.files);
 }
