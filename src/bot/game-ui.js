@@ -574,12 +574,14 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const page = Number(parsed.arg);
       if (!Number.isInteger(page) || page < 0 || page > 100) return false;
       payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page);
-      break;\n    }
-    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;\n    case "titles_page": {
+      break;
+    }
+    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
+    case "titles_page": {
       const page = Number(parsed.arg);
       if (!Number.isInteger(page) || page < 0 || page > 100) return false;
-      const payload = await renderTitlesPage(prisma, interaction.guildId, interaction.user, interaction.user.id, page);
-      await interaction.update(payload);
+      const titlePayload = await renderTitlesPage(prisma, interaction.guildId, interaction.user, interaction.user.id, page);
+      await interaction.update(titlePayload);
       return true;
     }
     case "achievements_page": {
@@ -587,13 +589,16 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const page = Number(pageText);
       if (!targetId || !Number.isInteger(page) || page < 0 || page > 100) return false;
       const target = await interaction.client.users.fetch(targetId);
-      payload = await renderAchievementsPage(prisma, interaction.guildId, target, interaction.user.id, page);
-      await interaction.update(payload);
+      const achievementPayload = await renderAchievementsPage(prisma, interaction.guildId, target, interaction.user.id, page);
+      await interaction.update(achievementPayload);
       return true;
     }
     case "collections_page": {
-      const page = Number(parsed.arg);\n      if (!Number.isInteger(page) || page < 0 || page > 100) return false;\n      payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);
-      break;\n    }
+      const page = Number(parsed.arg);
+      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);
+      break;
+    }
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
     case "collection_page": {
       const page = Number(parsed.arg);
