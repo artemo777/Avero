@@ -3,7 +3,7 @@ import { createEmbed, THEME } from "../../../averoui/index.js";
 import { getGuildSettings } from "../../db/guild-settings-repository.js";
 import { getRolePerk } from "../role-perks.js";
 export const perksCommand = Object.freeze({
-  data: Object.freeze({ name: "perks", description: "View your server's Booster, Funder and Voter perks." }),
+  data: Object.freeze({ name: "perks", description: "See which role perks are active for you." }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Perks command requires a database client.");
     const settings = await getGuildSettings(prisma, interaction.guildId);
@@ -15,11 +15,11 @@ export const perksCommand = Object.freeze({
     ].filter(Boolean);
     await interaction.reply({
       embeds: [createEmbed({
-        title: "Avero perks",
-        description: perk.id === "member" ? "No exclusive role perk is active for you yet." : "**" + perk.flair + "** is active · +" + perk.dailyBonus + " daily coins.",
+        title: "Your perks",
+        description: perk.id === "member" ? "No role perk active right now." : "**" + perk.flair + "** is active · +" + perk.dailyBonus + " daily coins.",
         color: THEME.colors.primary,
-        fields: [{ name: "Server perks", value: configured.length ? configured.join("\\n") : "The server has not set up role perks yet." }],
-        footer: "One highest-tier perk applies · server-specific · virtual coins only"
+        fields: [{ name: "Available in this server", value: configured.length ? configured.join("\\n") : "No role perks have been set up here yet." }],
+        footer: "Only your highest role perk applies · virtual coins only"
       })],
       flags: MessageFlags.Ephemeral
     });
