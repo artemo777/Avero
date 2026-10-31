@@ -21,16 +21,16 @@ async function syncMilestoneTitles(prisma, guildId, userId, stats, purchases) {
 
 export async function renderTitlesPage(prisma, guildId, user, controlUserId, page = 0) {
   const [stats, purchases, account] = await Promise.all([
-    getCurrencyStats(prisma, interaction.guildId, user.id),
-    getCurrencyPurchases(prisma, interaction.guildId, user.id),
-    getCurrencyAccount(prisma, interaction.guildId, user.id)
+    getCurrencyStats(prisma, guildId, user.id),
+    getCurrencyPurchases(prisma, guildId, user.id),
+    getCurrencyAccount(prisma, guildId, user.id)
   ]);
   const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0 };
-  const newlyUnlocked = await syncMilestoneTitles(prisma, interaction.guildId, user.id, milestoneStats, purchases);
+  const newlyUnlocked = await syncMilestoneTitles(prisma, guildId, user.id, milestoneStats, purchases);
   const [owned, profile] = await Promise.all([
-    getMemberTitles(prisma, interaction.guildId, user.id),
+    getMemberTitles(prisma, guildId, user.id),
     prisma.memberProfile.findUnique({
-      where: { guildId_userId: { guildId: interaction.guildId, userId: user.id } }
+      where: { guildId_userId: { guildId: guildId, userId: user.id } }
     })
   ]);
   const ownedIds = new Set(owned.map((entry) => entry.titleId));
@@ -55,8 +55,8 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
   const description = [
     newlyUnlocked.length ? "✨ Just unlocked: " + newlyUnlocked.map((id) => TITLE_CATALOG.find((title) => title.id === id)?.name).filter(Boolean).join(", ") : null,
     "**Titles · owned and locked**",
-    pageLines.join("\\n")
-  ].filter((line) => line !== null).join("\\n");
+    pageLines.join("\n")
+  ].filter((line) => line !== null).join("\n");
   const components = pageCount > 1 ? [new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("avero|" + controlUserId + "|titles_page|" + Math.max(0, currentPage - 1)).setLabel("← Previous").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
     new ButtonBuilder().setCustomId("avero|" + controlUserId + "|titles_page|" + Math.min(pageCount - 1, currentPage + 1)).setLabel("Next →").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === pageCount - 1)
