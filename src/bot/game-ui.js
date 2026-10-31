@@ -10,7 +10,7 @@ import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { SHOP_ITEMS } from "./shop-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
-import { createVaultChallenge } from "./vault-puzzle.js";\nimport { renderAchievementsPage } from "./commands/achievements.js";
+import { createVaultChallenge } from "./vault-puzzle.js";\nimport { renderAchievementsPage } from "./commands/achievements.js";\nimport { renderTitlesPage } from "./commands/titles.js";
 import {
   DAILY_REWARD, DAILY_COOLDOWN_MS, WORK_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
   WORK_REWARD_MIN, WORK_REWARD_MAX, SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX,
@@ -561,7 +561,14 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;\n    case "shop_page": {\n      const page = Number(parsed.arg);\n      if (!Number.isInteger(page) || page < 0 || page > 100) return false;\n      payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page);\n      break;\n    }
-    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;\n    case "achievements_page": {
+    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;\n    case "titles_page": {
+      const page = Number(parsed.arg);
+      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      const payload = await renderTitlesPage(prisma, interaction.guildId, interaction.user, interaction.user.id, page);
+      await interaction.update(payload);
+      return true;
+    }
+    case "achievements_page": {
       const [targetId, pageText] = parsed.arg.split(":");
       const page = Number(pageText);
       if (!targetId || !Number.isInteger(page) || page < 0 || page > 100) return false;
