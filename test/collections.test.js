@@ -24,7 +24,7 @@ test("collections command renders route-linked set progress for a server member"
   const text = panel.components.flatMap((component) =>
     component.type === 10 ? [component.content] :
     component.type === 9 ? component.components.map((part) => part.content) : []
-  ).join("\\n");
+  ).join("\n");
   assert.match(text, /The Collection Atlas/);
   assert.match(text, /1 \/ 3 themed sets completed/);
   assert.match(text, /The Archive Protocol/);
