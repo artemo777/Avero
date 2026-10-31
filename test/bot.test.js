@@ -201,7 +201,9 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("achievements"));
   assert.ok(names.includes("vault"));
   assert.ok(names.includes("coinflip"));
-  assert.equal(names.length, 20);
+  assert.ok(names.includes("config"));
+  assert.ok(names.includes("perks"));
+  assert.equal(names.length, 22);
   assert.ok(names.includes("collections"));
 });
 
