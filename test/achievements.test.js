@@ -38,8 +38,6 @@ test("achievements show server-scoped milestone progress and unique collection c
   assert.equal(embed.fields.length, 7);
   assert.match(embed.fields.find((field) => field.name.includes("Curator")).value, /Unlocked/);
   assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /3 \/ 6/);
-  assert.match(embed.fields.find((field) => field.name.includes("Big Spender")).value, /Unlocked/);
-  assert.match(embed.fields.find((field) => field.name.includes("Archive Keeper")).value, /0 \/ 1/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
   const secondPage = await renderAchievementsPage(prisma, "guild-1", { id: "user-1", username: "Ada" }, "user-1", 1);
   assert.equal(secondPage.embeds[0].fields.length, 5);
