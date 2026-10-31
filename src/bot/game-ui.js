@@ -154,19 +154,23 @@ export async function renderBalance(prisma, guildId, userId) {
     buttons: navButtons(userId, true),
   }));
 }
-export async function renderShop(prisma, guildId, userId) {
+export async function renderShop(prisma, guildId, userId, page = 0) {
   const [purchases, account] = await Promise.all([
     getCurrencyPurchases(prisma, guildId, userId),
     getCurrencyAccount(prisma, guildId, userId)
   ]);
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const artwork = await collectibleArtwork(SHOP_ITEMS, 96);
-  const sections = SHOP_ITEMS.map((item) => {
+  const pageSize = 7;
+  const pageCount = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
+  const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
+  const pageItems = SHOP_ITEMS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const artwork = await collectibleArtwork(pageItems, 96);
+  const sections = pageItems.map((item) => {
     const status = owned.has(item.id) ? "✓ Owned" : "Available";
     return "**" + item.name + "** · " + item.rarity + "\n" +
       "**" + item.price.toLocaleString("en-US") + " coins** · " + status;
   });
-  const sectionButtons = SHOP_ITEMS.map((item) => {
+  const sectionButtons = pageItems.map((item) => {
     const ownedItem = owned.has(item.id);
     return [
       button(userId, "item", "Details", item.id + ":0:shop", ButtonStyle.Secondary, "ℹ️"),
@@ -193,7 +197,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const itemMap = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
   const items = purchases.map((purchase) => itemMap.get(purchase.itemId)).filter(Boolean);
-  const pageSize = 4;
+  const pageSize = 7;
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
@@ -237,11 +241,15 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"), button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
   }));
 }
-export async function renderCollectionSets(prisma, guildId, userId, controlUserId = userId) {
+export async function renderCollectionSets(prisma, guildId, userId, controlUserId = userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const sets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
   const completed = sets.filter((set) => set.complete).length;
-  const sections = sets.map((set) =>
+  const pageSize = 7;
+  const pageCount = Math.max(1, Math.ceil(sets.length / pageSize));
+  const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
+  const pageSets = sets.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const sections = pageSets.map((set) =>
     (set.complete ? "✓ " : "◇ ") + set.icon + " **" + set.name + "** · " + set.ownedCount + "/" + set.totalCount + "\n" +
     set.items.map((item) => (item.owned ? "✓ " : "◇ ") + item.name).join(" · ") + "\n" +
     "**Title:** " + set.title + (set.complete ? " · Unlocked" : " · " + set.progress + "%")
@@ -552,8 +560,8 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
   let payload;
   switch (parsed.action) {
     case "games": payload = renderGames(interaction.user.id); break;
-    case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
-    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
+    case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;\n    case "shop_page": {\n      const page = Number(parsed.arg);\n      if (!Number.isInteger(page) || page < 0 || page > 100) return false;\n      payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page);\n      break;\n    }
+    case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;\n    case "collections_page": {\n      const page = Number(parsed.arg);\n      if (!Number.isInteger(page) || page < 0 || page > 100) return false;\n      payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);\n      break;\n    }
     case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
     case "collection_page": {
       const page = Number(parsed.arg);
