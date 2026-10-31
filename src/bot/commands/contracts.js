@@ -6,7 +6,7 @@ import { claimDailyContract, DAILY_CONTRACTS, getDailyContracts } from "../../db
 export const contractsCommand = Object.freeze({
   data: Object.freeze({
     name: "contracts",
-    description: "View today's free Avero challenges and claim completed rewards.",
+    description: "Check today's goals and claim your bonus coins.",
     options: [{
       type: 3,
       name: "claim",
@@ -35,17 +35,17 @@ export const contractsCommand = Object.freeze({
     }
 
     const snapshot = await getDailyContracts(prisma, interaction.guildId, interaction.user.id);
-    let description = "Complete free daily goals · progress resets at 00:00 UTC.";
+    let description = "Three daily goals. Finish them for bonus coins · resets at 00:00 UTC.";
     if (result?.claimed) {
       description = "✦ **+" + result.amount + " coins** · " + DAILY_CONTRACTS.find((contract) => contract.id === selectedContract).title + " claimed.";
     } else if (result?.reason === "incomplete") {
-      description = "Not complete yet · " + result.progress + "/" + result.target + ".";
+      description = "Not quite yet · " + result.progress + "/" + result.target + ".";
     } else if (result?.reason === "already_claimed") {
-      description = "Already claimed today · no duplicate payout.";
+      description = "You already claimed this one today.";
     }
     const sections = snapshot.contracts.map((contract) => {
       const status = contract.claimed ? "✓ Claimed" : contract.complete
-        ? "Ready · `/contracts claim:" + contract.id + "`"
+        ? "Ready to claim · `/contracts claim:" + contract.id + "`"
         : "In progress";
       return "**" + contract.title + "** · " + contract.progress + "/" + contract.target +
         "\n+" + contract.reward + " coins · " + status;
@@ -56,7 +56,7 @@ export const contractsCommand = Object.freeze({
       description,
       sections,
       color: result?.claimed ? THEME.colors.success : THEME.colors.primary,
-      footer: "FREE DAILY GOALS • SERVER-SCOPED"
+      footer: "DAILY GOALS · SERVER PROGRESS"
     })));
   }
 });

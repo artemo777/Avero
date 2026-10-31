@@ -4,7 +4,7 @@ import { renderCollectionSets } from "../game-ui.js";
 export const collectionsCommand = Object.freeze({
   data: Object.freeze({
     name: "collections",
-    description: "Track themed collectible sets and their cosmetic titles.",
+    description: "Check your themed sets and unlockable titles.",
     options: [{
       type: 6,
       name: "member",

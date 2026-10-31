@@ -4,7 +4,7 @@ import { runCoinflip } from "../game-ui.js";
 export const coinflipCommand = Object.freeze({
   data: Object.freeze({
     name: "coinflip",
-    description: "Call heads or tails. Free to play; a win can earn 25 coins every 10 minutes.",
+    description: "Heads or tails? Free to play · wins can earn 25 coins every 10 min.",
     options: [{
       type: 3,
       name: "call",

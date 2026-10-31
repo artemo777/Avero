@@ -65,7 +65,7 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
 export const achievementsCommand = Object.freeze({
   data: Object.freeze({
     name: "achievements",
-    description: "View earned Avero milestones and collection progress.",
+    description: "Check your milestones and collection progress.",
     options: [{
       type: 6,
       name: "member",

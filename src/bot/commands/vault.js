@@ -7,7 +7,7 @@ import { GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS } from "../economy-rules.js";
 export const vaultCommand = Object.freeze({
   data: Object.freeze({
     name: "vault",
-    description: "View your server daily three-dial clues or submit one free code attempt per UTC day.",
+    description: "Crack the daily three-digit code · one free attempt per UTC day.",
     options: [{
       type: 3,
       name: "code",

@@ -33,7 +33,7 @@ client.on(Events.MessageCreate, async (message) => {
   if (client.user && message.mentions.users.has(client.user.id)) {
     const intro = new ContainerBuilder().setAccentColor(THEME.colors.primary);
     intro.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-      "-# AVERO • SERVER ASSISTANT\n## Hey, I'm Avero.\nGames, coins, collectibles and little wins — all in one place.\n-# Try **/games**, **/daily** or **/shop** to get started."
+      "-# AVERO • SERVER ASSISTANT\n## Hey, I'm Avero.\nGames, coins, collectibles. The good stuff.\n-# Start with **/games**, **/daily** or **/shop**."
     ));
     intro.addActionRowComponents(new ActionRowBuilder().addComponents(
       new ButtonBuilder().setLabel("Support").setStyle(ButtonStyle.Link).setURL(AVERO_SUPPORT_URL)
@@ -53,7 +53,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         await handleConfigButton(interaction, getPrismaClient());
       } catch (error) {
-        const payload = { content: "Could not open settings: " + error.message, flags: MessageFlags.Ephemeral };
+        const payload = { content: "Could not open settings. Check your permissions and try again.", flags: MessageFlags.Ephemeral };
         if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
         else await interaction.reply(payload).catch(() => {});
       }
@@ -91,7 +91,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await handleConfigModal(interaction, getPrismaClient());
     } catch (error) {
-      const payload = { content: "Settings not saved: " + error.message, flags: MessageFlags.Ephemeral };
+      const payload = { content: "Settings could not be saved. Check the values and try again.", flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }

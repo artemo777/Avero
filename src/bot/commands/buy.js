@@ -6,7 +6,7 @@ import { SHOP_ITEMS } from "../shop-catalog.js";
 export const buyCommand = Object.freeze({
   data: Object.freeze({
     name: "buy",
-    description: "Unlock a collectible with your Avero coins.",
+    description: "Unlock a collectible with your coins.",
     options: [{
       type: 3,
       name: "item",

@@ -4,7 +4,7 @@ import { createPanel, ICONS, THEME } from "../../../averoui/index.js";
 export const pingCommand = Object.freeze({
   data: Object.freeze({
     name: "ping",
-    description: "Check Avero's connection and response latency."
+    description: "Check Avero's response and gateway latency."
   }),
 
   async execute(interaction) {

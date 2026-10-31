@@ -41,8 +41,8 @@ test("help documents game-specific leaderboards and free game rules", async () =
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
   const fields = response.embeds[0].fields;
-  const games = fields.find((field) => field.name.includes("Games")).value;
-  const profile = fields.find((field) => field.name.includes("Profile")).value;
+  const games = fields.find((field) => field.name.toLowerCase().includes("games")).value;
+  const profile = fields.find((field) => field.name.toLowerCase().includes("profile")).value;
 
   assert.match(games, /free, 10m reward cooldown/);
   assert.match(games, /free/);

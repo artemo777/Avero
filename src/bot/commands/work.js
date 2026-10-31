@@ -5,7 +5,7 @@ import { runWork } from "../game-ui.js";
 export const workCommand = Object.freeze({
   data: Object.freeze({
     name: "work",
-    description: "Complete a shift for Avero coins. Cooldown: 30 minutes."
+    description: "Finish a shift for coins · 30 min cooldown."
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Work command requires a database client.");
