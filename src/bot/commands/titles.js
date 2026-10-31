@@ -1,6 +1,6 @@
 import { MessageFlags } from "discord.js";
 import { createEmbed, THEME } from "../../../averoui/index.js";
-import { getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
+import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { equipMemberTitle, getMemberTitles, purchaseMemberTitle, unlockMemberTitle } from "../../db/title-repository.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
 import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../title-catalog.js";
@@ -93,11 +93,13 @@ export const titlesCommand = Object.freeze({
       return;
     }
 
-    const [stats, purchases] = await Promise.all([
+    const [stats, purchases, account] = await Promise.all([
       getCurrencyStats(prisma, interaction.guildId, interaction.user.id),
-      getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id)
+      getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id),
+      getCurrencyAccount(prisma, interaction.guildId, interaction.user.id)
     ]);
-    const newlyUnlocked = await syncMilestoneTitles(prisma, interaction.guildId, interaction.user.id, stats, purchases);
+    const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0 };
+    const newlyUnlocked = await syncMilestoneTitles(prisma, interaction.guildId, interaction.user.id, milestoneStats, purchases);
     const [owned, profile] = await Promise.all([
       getMemberTitles(prisma, interaction.guildId, interaction.user.id),
       prisma.memberProfile.findUnique({
@@ -108,7 +110,11 @@ export const titlesCommand = Object.freeze({
     const unlockedLines = TITLE_CATALOG.filter((title) => ownedIds.has(title.id))
       .map((title) => (profile?.equippedTitleId === title.id ? "▶ " : "• ") + "**" + title.name + "**" + (title.price ? " · shop" : " · earned"));
     const lockedLines = TITLE_CATALOG.filter((title) => !ownedIds.has(title.id))
-      .map((title) => "◇ **" + title.name + "** · " + (title.price ? title.price.toLocaleString("en-US") + " coins" : title.description));
+      .map((title) => {
+        if (title.price) return "◇ **" + title.name + "** · " + title.price.toLocaleString("en-US") + " coins";
+        const current = title.unlock.stat === "completedSets" ? buildCollectionSetProgress([...new Set(purchases.map((purchase) => purchase.itemId))]).filter((set) => set.complete).length : (milestoneStats[title.unlock.stat] ?? 0);
+        return "◇ **" + title.name + "** · " + Math.min(current, title.unlock.target) + "/" + title.unlock.target + " · " + title.description;
+      });
     const description = [
       newlyUnlocked.length ? "✨ Just unlocked: " + newlyUnlocked.map((id) => TITLE_CATALOG.find((title) => title.id === id)?.name).filter(Boolean).join(", ") : null,
       "**Your titles**",
