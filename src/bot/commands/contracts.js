@@ -1,5 +1,6 @@
 import { MessageFlags } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { THEME } from "../../../averoui/theme.js";
+import { createGamePanel, gamePayload } from "../game-ui.js";
 import { claimDailyContract, DAILY_CONTRACTS, getDailyContracts } from "../../db/currency-repository.js";
 
 export const contractsCommand = Object.freeze({
@@ -34,35 +35,28 @@ export const contractsCommand = Object.freeze({
     }
 
     const snapshot = await getDailyContracts(prisma, interaction.guildId, interaction.user.id);
-    const fields = snapshot.contracts.map((contract) => {
-      const status = contract.claimed
-        ? "Claimed"
-        : contract.complete
-          ? "Complete · run `/contracts claim:" + contract.id + "`"
-          : "In progress";
-      return {
-        name: contract.title + " · " + contract.progress + "/" + contract.target,
-        value: contract.description + "\n**Reward:** " + contract.reward + " coins\n**Status:** " + status
-      };
-    });
-
-    let description = "Complete today's free goals to earn virtual coins. Progress resets at 00:00 UTC.";
+    let description = "Complete free daily goals · progress resets at 00:00 UTC.";
     if (result?.claimed) {
-      description = "✨ **+" + result.amount + " coins** · " + DAILY_CONTRACTS.find((contract) => contract.id === selectedContract).title + " claimed.";
+      description = "✦ **+" + result.amount + " coins** · " + DAILY_CONTRACTS.find((contract) => contract.id === selectedContract).title + " claimed.";
     } else if (result?.reason === "incomplete") {
-      description = "That contract is not complete yet (" + result.progress + "/" + result.target + "). Keep going!";
+      description = "Not complete yet · " + result.progress + "/" + result.target + ".";
     } else if (result?.reason === "already_claimed") {
-      description = "You've already claimed that contract today. Your reward was not paid twice.";
+      description = "Already claimed today · no duplicate payout.";
     }
-
-    await interaction.reply({
-      embeds: [createEmbed({
-        title: "📜 Avero Daily Contracts",
-        description,
-        color: result?.claimed ? THEME.colors.success : THEME.colors.primary,
-        fields,
-        footer: "Free to complete · no wagers · server-specific progress"
-      })]
+    const sections = snapshot.contracts.map((contract) => {
+      const status = contract.claimed ? "✓ Claimed" : contract.complete
+        ? "Ready · `/contracts claim:" + contract.id + "`"
+        : "In progress";
+      return "**" + contract.title + "** · " + contract.progress + "/" + contract.target +
+        "\n+" + contract.reward + " coins · " + status;
     });
+    await interaction.reply(gamePayload(createGamePanel({
+      title: "Daily contracts",
+      eyebrow: "COINS",
+      description,
+      sections,
+      color: result?.claimed ? THEME.colors.success : THEME.colors.primary,
+      footer: "FREE DAILY GOALS • SERVER-SCOPED"
+    })));
   }
 });
