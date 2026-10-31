@@ -378,30 +378,36 @@ export function renderWork(result, userId, task) {
     buttons: navButtons(userId, true)
   }));
 }
-export async function runWork(prisma, guildId, userId) {
+export async function runWork(prisma, guildId, userId, { minReward = WORK_REWARD_MIN, maxReward = WORK_REWARD_MAX } = {}) {
+  if (!Number.isSafeInteger(minReward) || !Number.isSafeInteger(maxReward) || minReward < 1 || maxReward < minReward || maxReward > 100000) {
+    throw new RangeError("Work reward range is invalid.");
+  }
   const task = WORK_TASKS[randomInt(WORK_TASKS.length)];
-  const amount = randomInt(WORK_REWARD_MIN, WORK_REWARD_MAX + 1);
+  const amount = randomInt(minReward, maxReward + 1);
   const result = await claimWorkReward(prisma, guildId, userId, {
     amount,
     cooldownMs: WORK_COOLDOWN_MS
   });
   return renderWork(result, userId, task);
 }
-export function renderDaily(result, userId) {
+export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null } = {}) {
+  const perkLine = perk?.dailyBonus ? "\n\n" + perk.flair + " perk: **+" + perk.dailyBonus + " coins**." : "";
   if (!result.claimed) {
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
-      description: "You already claimed **+100 coins**.\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
-      eyebrow: "DAILY DROP",
-      color: THEME.colors.warning, footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
+      description: "You already claimed today's **+" + reward + " coins**." + perkLine +
+        "\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
+      eyebrow: "DAILY DROP", color: THEME.colors.warning,
+      footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
-    description: "## ✨ +100 coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**\n\nNext drop in 24 hours.",
-    eyebrow: "DAILY DROP",
-    color: THEME.colors.success, footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
+    description: "## ✨ +" + reward + " coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**" + perkLine +
+      "\n\nNext drop in 24 hours.",
+    eyebrow: "DAILY DROP", color: THEME.colors.success,
+    footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
   }));
 }
 export function renderGuess(guess, answer, result, userId) {
@@ -545,7 +551,7 @@ export async function runRps(prisma, guildId, playerChoice, userId) {
     : null;
   return renderRps(playerChoice, botChoice, userId, reward);
 }
-export async function handleGameComponent(interaction, { prisma } = {}) {
+export async function handleGameComponent(interaction, { prisma, settings } = {}) {
   const parsed = readComponentId(interaction.customId);
   if (!parsed) return false;
   if (parsed.userId !== interaction.user.id) {
@@ -581,7 +587,7 @@ export async function handleGameComponent(interaction, { prisma } = {}) {
       break;
     }
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
-    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
+    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id, { minReward: settings?.workMinReward ?? WORK_REWARD_MIN, maxReward: settings?.workMaxReward ?? WORK_REWARD_MAX }); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id, parsed.arg || null); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);

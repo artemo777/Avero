@@ -75,3 +75,10 @@ After the branch stack is integrated and the database migrations are applied in 
 13. Repeat balance and inventory checks in a second server to confirm strict server isolation.
 
 Do not run production migrations, register global commands, deploy, or merge stacked PRs as part of this checklist without the repository owner's explicit go-ahead.
+
+
+## Server controls and supporter perks
+
+The finish branch adds a server-scoped GuildSettings record and a compact /config panel. Admins with Manage Server can pause games or currency, set the daily reward and work reward range, and assign Booster, Funder and Voter roles. Only the highest matching role perk applies: Funder +15 daily coins; Booster or Voter +10. These are modest virtual-currency bonuses, not wagers or paid advantages.
+
+The /perks command explains configured roles. Mentioning @Avero triggers a compact Components V2 intro with a Support link. The Server Profile page updates Avero's guild-specific bio, avatar and banner through Discord's current-member profile API; image links are restricted to Discord's CDN and files under 8 MB.

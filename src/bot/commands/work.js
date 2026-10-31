@@ -1,4 +1,5 @@
 import { MessageFlags } from "discord.js";
+import { getGuildSettings } from "../../db/guild-settings-repository.js";
 import { runWork } from "../game-ui.js";
 
 export const workCommand = Object.freeze({
@@ -12,6 +13,9 @@ export const workCommand = Object.freeze({
       await interaction.reply({ content: "Work rewards are available inside a server.", flags: MessageFlags.Ephemeral });
       return;
     }
-    await interaction.reply(await runWork(prisma, interaction.guildId, interaction.user.id));
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.reply(await runWork(prisma, interaction.guildId, interaction.user.id, {
+      minReward: settings.workMinReward, maxReward: settings.workMaxReward
+    }));
   }
 });

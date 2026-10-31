@@ -75,3 +75,17 @@ model DailyContractClaim {
   @@unique([guildId, userId, contractDate, contractId])
   @@index([guildId, contractDate])
 }
+
+model GuildSettings {
+  guildId         String   @id
+  gamesEnabled    Boolean  @default(true)
+  currencyEnabled Boolean  @default(true)
+  dailyReward     Int      @default(100)
+  workMinReward   Int      @default(60)
+  workMaxReward   Int      @default(120)
+  boosterRoleId   String?
+  funderRoleId    String?
+  voterRoleId     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
