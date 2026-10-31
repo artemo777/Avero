@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MessageFlags } from "discord.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
+import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
@@ -182,8 +183,9 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("config"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 22);
+  assert.equal(names.length, 23);
   assert.ok(names.includes("collections"));
+  assert.ok(names.includes("setup"));
 });
 
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
@@ -400,4 +402,25 @@ test("malformed, stale, and unknown game controls receive a private fallback res
       flags: MessageFlags.Ephemeral
     }, customId);
   }
+});
+
+test("setup command reports channel permissions, feature status and first steps privately", async () => {
+  let response;
+  const granted = new Set([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]);
+  await setupCommand.execute({
+    appPermissions: { has: (permission) => granted.has(permission) },
+    reply: async (payload) => { response = payload; }
+  }, {
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+  assert.equal(response.flags, MessageFlags.Ephemeral);
+  const embed = response.embeds[0];
+  assert.match(embed.description, /\/games/);
+  assert.match(embed.description, /\/daily/);
+  assert.match(embed.description, /Manage Server required/);
+  assert.match(embed.fields[0].value, /View Channel/);
+  assert.match(embed.fields[0].value, /Send Messages/);
+  assert.match(embed.fields[0].value, /Embed Links.*needed/);
+  assert.match(embed.fields[1].value, /Games.*Ready/);
+  assert.match(embed.fields[1].value, /Currency.*Paused/);
 });
