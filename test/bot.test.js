@@ -8,7 +8,7 @@ import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, renderCollectionSets, renderGames } from "../src/bot/game-ui.js";
+import { handleGameComponent, readComponentId, renderCollectionSets, renderGames } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -363,4 +363,41 @@ test("collection atlas button opens the member's set progress", async () => {
   assert.equal(handled, true);
   assert.match(panelText(response), /Moonlit Relics/);
   assert.match(panelText(response), /Moonlit Curator/);
+});
+
+
+test("component IDs reject malformed namespaces and unexpected extra segments", () => {
+  assert.equal(readComponentId("avero|user-1"), null);
+  assert.equal(readComponentId("other|user-1|shop"), null);
+  assert.equal(readComponentId("avero|user-1|shop|page|extra"), null);
+  assert.deepEqual(readComponentId("avero|user-1|shop_page|2"), {
+    userId: "user-1",
+    action: "shop_page",
+    arg: "2"
+  });
+});
+
+test("malformed, stale, and unknown game controls receive a private fallback response", async () => {
+  for (const customId of [
+    "avero|user-1",
+    "avero|user-1|unknown_action",
+    "avero|user-1|shop_page|not-a-page",
+    "avero|user-1|titles_page|999999",
+    "avero|user-1|collections_page|not-a-page",
+    "avero|user-1|inventory|-1"
+  ]) {
+    let response;
+    const handled = await handleGameComponent({
+      customId,
+      user: { id: "user-1" },
+      guildId: "guild-1",
+      reply: async (payload) => { response = payload; }
+    }, { prisma: {} });
+
+    assert.equal(handled, true, customId);
+    assert.deepEqual(response, {
+      content: "That Avero control is no longer available. Run the command again to open a fresh panel.",
+      flags: MessageFlags.Ephemeral
+    }, customId);
+  }
 });

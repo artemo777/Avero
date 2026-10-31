@@ -55,7 +55,10 @@ export function componentId(userId, action, arg = "") {
   return ["avero", userId, action, arg].filter((part) => part !== "").join("|");
 }
 export function readComponentId(customId) {
-  const [namespace, userId, action, arg] = customId.split("|");
+  if (typeof customId !== "string") return null;
+  const parts = customId.split("|");
+  if (parts.length < 3 || parts.length > 4) return null;
+  const [namespace, userId, action, arg] = parts;
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
@@ -556,8 +559,15 @@ export async function runRps(prisma, guildId, playerChoice, userId) {
   return renderRps(playerChoice, botChoice, userId, reward);
 }
 export async function handleGameComponent(interaction, { prisma, settings } = {}) {
+  const unavailable = async () => {
+    await interaction.reply({
+      content: "That Avero control is no longer available. Run the command again to open a fresh panel.",
+      flags: MessageFlags.Ephemeral
+    });
+    return true;
+  };
   const parsed = readComponentId(interaction.customId);
-  if (!parsed) return false;
+  if (!parsed) return unavailable();
   if (parsed.userId !== interaction.user.id) {
     await interaction.reply({ content: "These controls belong to the person who opened this Avero panel. Run the command to open your own.", flags: MessageFlags.Ephemeral });
     return true;
@@ -573,14 +583,14 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "shop_page": {
       const page = Number(parsed.arg);
-      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page);
       break;
     }
     case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
     case "titles_page": {
       const page = Number(parsed.arg);
-      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       const titlePayload = await renderTitlesPage(prisma, interaction.guildId, interaction.user, interaction.user.id, page);
       await interaction.update(titlePayload);
       return true;
@@ -588,7 +598,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     case "achievements_page": {
       const [targetId, pageText] = parsed.arg.split(":");
       const page = Number(pageText);
-      if (!targetId || !Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!targetId || !Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       const target = await interaction.client.users.fetch(targetId);
       const achievementPayload = await renderAchievementsPage(prisma, interaction.guildId, target, interaction.user.id, page);
       await interaction.update(achievementPayload);
@@ -596,11 +606,16 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     }
     case "collections_page": {
       const page = Number(parsed.arg);
-      if (!Number.isInteger(page) || page < 0 || page > 100) return false;
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
       payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id, interaction.user.id, page);
       break;
     }
-    case "inventory": payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, Number(parsed.arg) || 0); break;
+    case "inventory": {
+      const page = Number(parsed.arg ?? 0);
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
+      payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, page);
+      break;
+    }
     case "collection_page": {
       const page = Number(parsed.arg);
       if (!Number.isInteger(page) || page < 0 || page > 100) {
@@ -678,7 +693,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       }
       payload = await runRps(prisma, interaction.guildId, parsed.arg, interaction.user.id);
       break;
-    default: return false;
+    default: return unavailable();
   }
   await interaction.update({
     components: payload.components,
