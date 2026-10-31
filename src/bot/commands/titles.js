@@ -71,7 +71,8 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     components
   };
 }
-\nexport const titlesCommand = Object.freeze({
+
+export const titlesCommand = Object.freeze({
   data: Object.freeze({
     name: "titles",
     description: "Unlock, buy and equip your Avero profile title.",
