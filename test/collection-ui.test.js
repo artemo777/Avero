@@ -69,19 +69,29 @@ test("unowned item detail offers a direct unlock action", async () => {
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|vault_badge"));
 });
 
-test("shop exposes compact item details, thumbnails and buy controls", async () => {
+test("shop stays within Discord container limits across paginated item cards", async () => {
   const response = await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1");
   const json = panel(response);
   const componentIds = buttons(json).map((entry) => entry.custom_id);
-  assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|item|")).length, 6);
-  assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|buy|")).length, 6);
-  assert.equal(json.components.filter((component) => component.type === 9).length, 6);
-  assert.equal(response.files.length, 6);
+  assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|item|")).length, 3);
+  assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|buy|")).length, 3);
+  assert.equal(json.components.filter((component) => component.type === 9).length, 3);
+  assert.equal(response.files.length, 3);
   assert.ok(response.files.every((file) => file.name.startsWith("avero-collectible-") && file.name.endsWith(".png")));
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
   assert.ok(buttons(json).find((entry) => entry.custom_id === "avero|user-1|buy|neon_badge").disabled);
   assert.equal(new Set(componentIds).size, componentIds.length, "shop must never send duplicate component custom IDs");
   assert.ok(json.components.every((component) => component.type !== 12));
+  assert.ok(json.components.length <= 10, "shop panel must stay within Discord container component limits");
+  assert.match(allText(json), /COLLECTIBLES • VIRTUAL ITEMS ONLY/);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|shop_page|1"));
+
+  const secondPage = panel(await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1", 1));
+  assert.equal(secondPage.components.filter((component) => component.type === 9).length, 3);
+  assert.equal(buttons(secondPage).filter((entry) => entry.custom_id.startsWith("avero|user-1|buy|")).length, 3);
+  assert.ok(buttons(secondPage).some((entry) => entry.custom_id === "avero|user-1|item|avero_relic:1:shop"));
+  assert.ok(secondPage.components.length <= 10);
+
   const detail = panel(await renderItemDetails(fakePrisma([]), "guild-1", "user-1", "vault_badge", 0, "shop"));
   assert.ok(buttons(detail).some((entry) => entry.custom_id === "avero|user-1|shop"));
   assert.ok(!detail.components.some((component) => component.type === 12));

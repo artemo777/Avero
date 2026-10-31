@@ -88,6 +88,7 @@ export const leaderboardCommand = Object.freeze({
       : "No scores yet. Start playing to get on the board.";
 
     await interaction.reply({
+      allowedMentions: { parse: [] },
       embeds: [createEmbed({
         title: category === "coins" ? "🪙 Coin leaderboard" : category === "guess" ? "🎯 Guess leaderboard" : category === "rps" ? "✊ Rock-paper-scissors leaderboard" : category === "vault" ? "🔐 Vault leaderboard" : category === "coinflip" ? "🪙 Coinflip leaderboard" : "🎮 Games leaderboard",
         description,

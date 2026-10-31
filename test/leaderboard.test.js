@@ -36,6 +36,7 @@ test("games leaderboard adds legacy guess wins and all new wins exactly once", a
   assert.match(response.embeds[0].description, /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
   assert.match(response.embeds[0].description, /<@user-2> — \*\*4W \/ 3L \/ 0T · 57% win rate\*\*/);
   assert.ok(response.embeds[0].description.indexOf("<@user-1>") < response.embeds[0].description.indexOf("<@user-2>"));
+  assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
 

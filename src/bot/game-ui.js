@@ -92,6 +92,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     }));
     container.addActionRowComponents(row);
   }
+  if (footer) container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
   return container;
 }
 export function gamePayload(panel, files = []) {
@@ -162,7 +163,7 @@ export async function renderShop(prisma, guildId, userId, page = 0) {
     getCurrencyAccount(prisma, guildId, userId)
   ]);
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const pageSize = 7;
+  const pageSize = 3;
   const pageCount = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = SHOP_ITEMS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
