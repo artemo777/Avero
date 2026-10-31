@@ -5,6 +5,7 @@ import { getMemberProfile, levelForExperience, experienceForLevel } from "../../
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
 import { getArcadeMastery } from "../arcade-mastery.js";
+import { TITLE_CATALOG } from "../title-catalog.js";
 
 export const profileCommand = Object.freeze({
   data: Object.freeze({
@@ -46,6 +47,7 @@ export const profileCommand = Object.freeze({
     ).join("\n");
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
+    const equippedTitle = TITLE_CATALOG.find((title) => title.id === profile?.equippedTitleId);
     const badgeFilename = "profile-badge.png";
     let badgeFiles = [];
     if (equippedBadge) {
@@ -73,6 +75,7 @@ export const profileCommand = Object.freeze({
           { name: "🧰 Work shifts", value: String(stats.workShifts), inline: true },
           { name: "🔎 Scavenges", value: String(stats.scavenges), inline: true },
           { name: "Coins spent", value: stats.lifetimeSpent.toLocaleString("en-US"), inline: true },
+          { name: "Profile title", value: equippedTitle?.name ?? "None", inline: true },
           { name: "Equipped badge", value: equippedBadge?.name ?? "None", inline: true },
           { name: "Badges", value: badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None", inline: false }
         ]
