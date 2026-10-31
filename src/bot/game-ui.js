@@ -190,7 +190,10 @@ export async function renderShop(prisma, guildId, userId, page = 0) {
     sectionThumbnails: artwork.filenames,
     eyebrow: "THE DROP",
     footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
-
+    buttons: pageCount > 1 ? [
+      { ...button(userId, "shop_page", "← Previous", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
+      { ...button(userId, "shop_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 }
+    ] : []
   }), artwork.files);
 }
 export async function renderInventory(prisma, guildId, userId, page = 0) {
@@ -261,6 +264,10 @@ export async function renderCollectionSets(prisma, guildId, userId, controlUserI
     sections,
     color: completed === sets.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [
+      ...(pageCount > 1 ? [
+        { ...button(controlUserId, "collections_page", "← Previous", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
+        { ...button(controlUserId, "collections_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 }
+      ] : []),
       button(controlUserId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
       button(controlUserId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
       button(controlUserId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
