@@ -8,7 +8,7 @@ import { DAILY_REWARD, DAILY_COOLDOWN_MS } from "../economy-rules.js";
 export const dailyCommand = Object.freeze({
   data: Object.freeze({
     name: "daily",
-    description: "Claim your daily Avero coin drop."
+    description: "Grab your daily coin drop."
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Daily command requires a database client.");
