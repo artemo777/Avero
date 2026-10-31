@@ -207,21 +207,19 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("collections"));
 });
 
-test("games hub uses a compact Components V2 panel with all game controls", () => {
+test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "avero-panel.png");
+  assert.equal(response.files, undefined);
   const panel = response.components[0].toJSON();
-  assert.ok(panel.components.some((component) => component.type === 12));
+  assert.equal(panel.components.some((component) => component.type === 12), false);
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
   assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
-  assert.match(text, /Guess the number/);
-  assert.match(text, /25 coins/);
-  assert.match(text, /The Vault/);
+  assert.match(text, /Guess/);
+  assert.match(text, /Vault/);
   assert.match(text, /Coinflip/);
-  assert.match(text, /one code attempt per UTC day and \+25 on a correct solve/);
-  assert.doesNotMatch(text, /Tap a button below to play instantly/);
+  assert.match(text, /Free games · no wagers/);
+  assert.doesNotMatch(text, /one code attempt per UTC day/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
   assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
