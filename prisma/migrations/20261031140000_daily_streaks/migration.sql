@@ -1,0 +1,2 @@
+ALTER TABLE "CurrencyAccount"
+ADD COLUMN "dailyStreak" INTEGER NOT NULL DEFAULT 0;

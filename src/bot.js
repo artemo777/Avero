@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, Events, GatewayIntentBits, MessageFlags, TextDisplayBuilder } from "discord.js";
 import { createEmbed, ICONS, THEME } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
@@ -7,6 +7,8 @@ import { grantLevelRoleRewards, randomMessageExperience } from "./bot/leveling.j
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { handleGameComponent } from "./bot/game-ui.js";
 import { recordMessageExperience } from "./db/member-repository.js";
+import { getGuildSettings } from "./db/guild-settings-repository.js";
+import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
 
 let config;
 try {
@@ -17,7 +19,8 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
-const gameCommandNames = new Set(["balance", "daily", "coinflip", "guess", "leaderboard", "profile", "shop", "buy", "inventory", "work", "scavenge", "rps", "contracts", "achievements", "vault", "collections"]);
+const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
+const currencyCommandNames = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -28,6 +31,21 @@ client.once(Events.ClientReady, (readyClient) => {
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guildId || message.author.bot || !message.member) return;
+
+  if (client.user && message.mentions.users.has(client.user.id)) {
+    const intro = new ContainerBuilder().setAccentColor(THEME.colors.primary);
+    intro.addTextDisplayComponents(new TextDisplayBuilder().setContent(
+      "-# AVERO • SERVER ASSISTANT\n## Hey, I'm Avero.\nGames, coins, collectibles and little wins — all in one place.\n-# Try **/games**, **/daily** or **/shop** to get started."
+    ));
+    intro.addActionRowComponents(new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setLabel("Support").setStyle(ButtonStyle.Link).setURL(AVERO_SUPPORT_URL)
+    ));
+    await message.channel.send({
+      flags: MessageFlags.IsComponentsV2,
+      components: [intro],
+      allowedMentions: { parse: [] }
+    }).catch((error) => console.error("Mention intro panel failed:", error));
+  }
 
   try {
     const prisma = getPrismaClient();
@@ -72,13 +90,49 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton()) {
+    if (interaction.customId.startsWith("avero-config|")) {
+      try {
+        await handleConfigButton(interaction, getPrismaClient());
+      } catch (error) {
+        const payload = { content: "Could not open settings: " + error.message, flags: MessageFlags.Ephemeral };
+        if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+        else await interaction.reply(payload).catch(() => {});
+      }
+      return;
+    }
     if (!interaction.customId.startsWith("avero|")) return;
     try {
+      if (!interaction.guildId) {
+        await interaction.reply({ content: "Avero games and currency are available inside a server.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      const prisma = getPrismaClient();
+      const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
-      await handleGameComponent(interaction, { prisma: getPrismaClient() });
+      const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "collections", "collection_page", "item", "equip_badge", "unequip_badge"]);
+      if (gameActions.has(action) && !settings.gamesEnabled) {
+        await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      if (currencyActions.has(action) && !settings.currencyEnabled) {
+        await interaction.reply({ content: "Currency is paused by this server's admins.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      await handleGameComponent(interaction, { prisma, settings });
     } catch (error) {
       console.error("Game component failed:", error);
       const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith("avero-config-modal|")) {
+    try {
+      await handleConfigModal(interaction, getPrismaClient());
+    } catch (error) {
+      const payload = { content: "Settings not saved: " + error.message, flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }
@@ -95,10 +149,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    const isVaultClueRequest = interaction.commandName === "vault" && !interaction.options.getString("code");
-    const needsDatabase = !isVaultClueRequest && (interaction.commandName === "rank" || gameCommandNames.has(interaction.commandName));
+    // Every command except the two database-free utilities receives a shared Prisma client.
+    // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
+    const needsDatabase = !["ping", "help"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
-    await command.execute(interaction, { prisma });
+    const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
+    if (gameCommandNames.has(interaction.commandName) && !settings.gamesEnabled) {
+      await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    if (currencyCommandNames.has(interaction.commandName) && !settings.currencyEnabled) {
+      await interaction.reply({ content: "Currency is paused by this server's admins.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    await command.execute(interaction, { prisma, settings });
   } catch (error) {
     console.error("Command execution failed (" + interaction.commandName + "):", error);
     const payload = {

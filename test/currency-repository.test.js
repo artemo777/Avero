@@ -13,7 +13,7 @@ function createFakePrisma() {
     currencyAccount: {
       async upsert({ where, create }) {
         const key = keyOf(where.guildId_userId);
-        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, lastDailyAt: null, lastGameRewardAt: null });
+        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, lastDailyAt: null, dailyStreak: 0, lastGameRewardAt: null });
         return accounts.get(key);
       },
       async findUnique({ where }) {
@@ -35,7 +35,7 @@ function createFakePrisma() {
         }
         if (data.balance?.increment !== undefined) account.balance += data.balance.increment;
         for (const [field, value] of Object.entries(data)) {
-          if (field.startsWith("last") && value !== undefined) account[field] = value;
+          if ((field.startsWith("last") || field === "dailyStreak") && value !== undefined) account[field] = value;
         }
         return { count: 1 };
       }
@@ -129,6 +129,25 @@ test("daily reward is available exactly at the cooldown boundary", async () => {
   assert.equal(atBoundary.claimed, true);
   assert.equal(atBoundary.account.balance, 200);
   assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 2);
+});
+
+
+test("daily streak increments on consecutive UTC days and resets after a missed day", async () => {
+  const prisma = createFakePrisma();
+  const first = await claimDailyReward(prisma, "lightx", "streak-user", {
+    now: new Date("2026-10-27T12:00:00.000Z")
+  });
+  const second = await claimDailyReward(prisma, "lightx", "streak-user", {
+    now: new Date("2026-10-28T12:00:00.000Z")
+  });
+  const afterGap = await claimDailyReward(prisma, "lightx", "streak-user", {
+    now: new Date("2026-10-30T12:00:00.000Z")
+  });
+
+  assert.equal(first.dailyStreak, 1);
+  assert.equal(second.dailyStreak, 2);
+  assert.equal(afterGap.dailyStreak, 1);
+  assert.equal(afterGap.account.dailyStreak, 1);
 });
 
 test("currency repository rejects invalid identifiers, cooldowns, and dates", async () => {

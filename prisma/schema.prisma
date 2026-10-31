@@ -15,6 +15,7 @@ model MemberProfile {
   level            Int      @default(0)
   lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
+  equippedTitleId     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -28,6 +29,7 @@ model CurrencyAccount {
   userId       String
   balance      Int      @default(0)
   lastDailyAt  DateTime?
+  dailyStreak  Int      @default(0)
   lastWorkAt   DateTime?
   lastScavengeAt DateTime?
   lastGameRewardAt DateTime?
@@ -74,4 +76,33 @@ model DailyContractClaim {
 
   @@unique([guildId, userId, contractDate, contractId])
   @@index([guildId, contractDate])
+}
+
+model GuildSettings {
+  guildId         String   @id
+  gamesEnabled    Boolean  @default(true)
+  currencyEnabled Boolean  @default(true)
+  dailyReward     Int      @default(100)
+  workMinReward   Int      @default(60)
+  workMaxReward   Int      @default(120)
+  boosterRoleId   String?
+  funderRoleId    String?
+  voterRoleId     String?
+  profileName     String?
+  profileBio      String?
+  profileTheme    String   @default("violet")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model MemberTitle {
+  id         String   @id @default(cuid())
+  guildId    String
+  userId     String
+  titleId    String
+  source     String   @default("milestone")
+  acquiredAt DateTime @default(now())
+
+  @@unique([guildId, userId, titleId])
+  @@index([guildId, userId])
 }
