@@ -4,7 +4,7 @@ import { renderBalance } from "../game-ui.js";
 export const balanceCommand = Object.freeze({
   data: Object.freeze({
     name: "balance",
-    description: "Open your interactive Avero coin wallet."
+    description: "Check your coin balance."
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Balance command requires a database client.");
