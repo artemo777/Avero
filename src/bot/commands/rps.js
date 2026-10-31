@@ -7,7 +7,7 @@ const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 export const rpsCommand = Object.freeze({
   data: Object.freeze({
     name: "rps",
-    description: "Play rock, paper, scissors for free. Wins can earn 25 coins every 10 minutes.",
+    description: "Rock, paper, scissors. Free to play · wins can earn 25 coins every 10 min.",
     options: [{
       type: 3,
       name: "choice",
