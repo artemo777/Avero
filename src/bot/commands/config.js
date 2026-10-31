@@ -69,9 +69,12 @@ function panelPayload(settings, guildName) {
   );
   const row2 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("avero-config|profile").setLabel("Edit profile").setStyle(ButtonStyle.Primary),
-    ...GUILD_PROFILE_THEMES.map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+    ...GUILD_PROFILE_THEMES.slice(0, 4).map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
   );
-  return { embeds: [embed], components: [row1, row2], flags: MessageFlags.Ephemeral };
+  const row3 = new ActionRowBuilder().addComponents(
+    ...GUILD_PROFILE_THEMES.slice(4).map((name) => new ButtonBuilder().setCustomId("avero-config|theme|" + name).setLabel(THEME_LABELS[name]).setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
+  );
+  return { embeds: [embed], components: [row1, row2, row3], flags: MessageFlags.Ephemeral };
 }
 async function loadUploadedAvatar(attachment) {
   if (!attachment) return null;
@@ -113,7 +116,9 @@ export async function handleConfigButton(interaction, prisma) {
     await interaction.reply({ content: "Only server admins with **Manage Server** can edit this panel.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  const [, , action, value] = interaction.customId.split("|");
+  const parts = interaction.customId.split("|");
+  const action = parts[1];
+  const value = parts[2];
   if (action === "theme") {
     if (!GUILD_PROFILE_THEMES.includes(value)) {
       await interaction.reply({ content: "That profile theme is unavailable.", flags: MessageFlags.Ephemeral });
