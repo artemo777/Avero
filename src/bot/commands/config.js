@@ -155,13 +155,15 @@ export const configCommand = Object.freeze({
       await interaction.reply({ content: "You need **Manage Server** to change these settings.", flags: MessageFlags.Ephemeral });
       return;
     }
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const uploaded = interaction.options.getAttachment("profile_image");
     if (uploaded) {
       const avatar = await loadUploadedAvatar(uploaded);
       await interaction.guild.members.editMe({ avatar });
     }
     const settings = await getGuildSettings(prisma, interaction.guildId);
-    await interaction.reply(buildConfigPanel(settings, interaction.guild.name));
+    const { flags: _flags, ...panel } = buildConfigPanel(settings, interaction.guild.name);
+    await interaction.editReply(panel);
     if (uploaded) await interaction.followUp({ content: "✓ Uploaded artwork applied to Avero's avatar in this server only.", flags: MessageFlags.Ephemeral });
   }
 });

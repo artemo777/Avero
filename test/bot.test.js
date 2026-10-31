@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
+import { configCommand } from "../src/bot/commands/config.js";
 import { createCommandMap, getCommandDefinitions } from "../src/bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
@@ -400,4 +401,48 @@ test("malformed, stale, and unknown game controls receive a private fallback res
       flags: MessageFlags.Ephemeral
     }, customId);
   }
+});
+
+test("config command acknowledges before loading settings and edits the deferred reply", async () => {
+  const events = [];
+  const settings = {
+    guildId: "12345678901234567",
+    gamesEnabled: true,
+    currencyEnabled: true,
+    dailyReward: 100,
+    workMinReward: 60,
+    workMaxReward: 120,
+    boosterRoleId: null,
+    funderRoleId: null,
+    voterRoleId: null,
+    profileName: null,
+    profileBio: null,
+    profileTheme: "violet"
+  };
+  const interaction = {
+    guildId: settings.guildId,
+    guild: { name: "Test server" },
+    memberPermissions: { has: () => true },
+    options: { getAttachment: () => null },
+    deferReply: async (payload) => { events.push(["defer", payload]); },
+    editReply: async (payload) => { events.push(["edit", payload]); },
+    reply: async () => { throw new Error("config should edit its deferred reply"); }
+  };
+  const prisma = {
+    guildSettings: {
+      upsert: async () => {
+        events.push(["load"]);
+        return settings;
+      }
+    }
+  };
+
+  await configCommand.execute(interaction, { prisma });
+
+  assert.equal(events[0][0], "defer");
+  assert.deepEqual(events[0][1], { flags: MessageFlags.Ephemeral });
+  assert.equal(events[1][0], "load");
+  assert.equal(events[2][0], "edit");
+  assert.equal(events[2][1].flags, undefined);
+  assert.equal(events[2][1].embeds.length, 1);
 });
