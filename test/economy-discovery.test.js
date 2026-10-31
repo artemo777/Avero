@@ -126,5 +126,5 @@ test("scavenge responses keep discoveries, duplicate bonuses and cooldowns clear
     account: { lastScavengeAt: new Date("2026-10-31T12:00:00Z") }
   }, "user-1", route, null));
   assert.match(cooldown, /on cooldown/i);
-  assert.match(cooldown, /Next run opens/);
+  assert.match(cooldown, /next run opens/i);
 });
