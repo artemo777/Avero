@@ -18,11 +18,11 @@ test("wallet explains every available coin earning route and cooldown", async ()
 
   const text = panelText(response);
   assert.match(text, /420 coins/);
-  assert.match(text, /\\/daily · every 24h/);
-  assert.match(text, /\\/work · every 30m/);
-  assert.match(text, /\\/scavenge · every 10m/);
-  assert.match(text, /\\/contracts · daily goals/);
-  assert.match(text, /\\/games · free mini-games/);
+  assert.ok(text.includes("/daily · every 24h"));
+  assert.ok(text.includes("/work · every 30m"));
+  assert.ok(text.includes("/scavenge · every 10m"));
+  assert.ok(text.includes("/contracts · daily goals"));
+  assert.ok(text.includes("/games · free mini-games"));
   assert.doesNotMatch(text, /canvas|attachment:\/\//i);
 });
 
