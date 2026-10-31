@@ -180,7 +180,7 @@ export async function renderShop(prisma, guildId, userId) {
   return gamePayload(createGamePanel({
     title: "Collectible shop",
     description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") +
-      " coins\\n-# Six server collectibles · cosmetic only",
+      " coins\n-# Six server collectibles · cosmetic only",
     sections,
     sectionButtons,
     sectionThumbnails: artwork.filenames,
