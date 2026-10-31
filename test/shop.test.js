@@ -8,7 +8,10 @@ import { inventoryCommand } from "../src/bot/commands/inventory.js";
 import { renderShop } from "../src/bot/game-ui.js";
 
 function panelText(response) {
-  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+  return response.components[0].toJSON().components.flatMap((component) =>
+    component.type === 10 ? [component.content] :
+    component.type === 9 ? component.components.map((part) => part.content) : []
+  ).join("\\n");
 }
 
 function createFakePrisma(initialBalance = 0) {
