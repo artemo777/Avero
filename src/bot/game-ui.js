@@ -380,7 +380,8 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
     const nextClaim = new Date(result.account.lastDailyAt.getTime() + DAILY_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "Daily drop already claimed",
-      description: "You already claimed today's **+" + reward + " coins**." + perkLine +
+      description: "You already claimed today's **+" + reward + " coins**." +
+        "\n🔥 Daily streak: **" + (result.account.dailyStreak ?? 0) + " days**." + perkLine +
         "\n\nNext drop: <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>",
       eyebrow: "DAILY DROP", color: THEME.colors.warning,
       footer: "DAILY DROP • ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
@@ -388,7 +389,8 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
   }
   return gamePayload(createGamePanel({
     title: "Daily drop claimed!",
-    description: "## ✨ +" + reward + " coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**" + perkLine +
+    description: "## ✨ +" + reward + " coins\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**" +
+      "\n🔥 Daily streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." + perkLine +
       "\n\nNext drop in 24 hours.",
     eyebrow: "DAILY DROP", color: THEME.colors.success,
     footer: "DAILY DROP • REWARD ADDED TO YOUR WALLET", buttons: navButtons(userId)
