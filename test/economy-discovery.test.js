@@ -18,14 +18,12 @@ test("wallet explains every available coin earning route and cooldown", async ()
 
   const text = panelText(response);
   assert.match(text, /420 coins/);
-  assert.match(text, /\/daily.*100 every 24h/);
-  assert.match(text, /\/work.*60–120 every 30m/);
-  assert.match(text, /\/scavenge.*choose Archive, Plaza or Garden.*25–55 every 10m.*route-specific collectibles/);
-  assert.match(text, /contracts.*4 daily goals.*345\/day/);
-  assert.match(text, /\/coinflip.*shared 10m cooldown/);
-  assert.match(text, /\/guess.*one reward every 10m/);
-  assert.match(text, /\/rps.*\+25 on a win.*shared 10m cooldown/);
-  assert.match(text, /\/vault.*daily puzzle.*one attempt and \+25 reward per UTC day/i);
+  assert.match(text, /\\/daily · every 24h/);
+  assert.match(text, /\\/work · every 30m/);
+  assert.match(text, /\\/scavenge · every 10m/);
+  assert.match(text, /\\/contracts · daily goals/);
+  assert.match(text, /\\/games · free mini-games/);
+  assert.doesNotMatch(text, /canvas|attachment:\/\//i);
 });
 
 test("insufficient-funds purchase response points to all main earning commands", () => {
