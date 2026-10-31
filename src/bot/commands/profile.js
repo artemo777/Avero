@@ -1,5 +1,4 @@
 import { AttachmentBuilder, MessageFlags } from "discord.js";
-import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { createEmbed, getCollectibleAssetId, renderRegisteredAsset, THEME } from "../../../averoui/index.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, levelForExperience, experienceForLevel } from "../../db/member-repository.js";
@@ -51,10 +50,7 @@ export const profileCommand = Object.freeze({
     let badgeFiles = [];
     if (equippedBadge) {
       const asset = await renderRegisteredAsset(getCollectibleAssetId(equippedBadge.id), 96);
-      const image = await loadImage(asset);
-      const badgeCanvas = createCanvas(96, 96);
-      badgeCanvas.getContext("2d").drawImage(image, 0, 0, 96, 96);
-      badgeFiles = [new AttachmentBuilder(badgeCanvas.toBuffer("image/png"), { name: badgeFilename })];
+      badgeFiles = [new AttachmentBuilder(asset, { name: badgeFilename })];
     }
     const embed = createEmbed({
         ...(equippedBadge ? {} : { title: target.username }),
