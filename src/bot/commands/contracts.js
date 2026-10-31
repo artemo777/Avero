@@ -6,7 +6,7 @@ import { claimDailyContract, DAILY_CONTRACTS, getDailyContracts } from "../../db
 export const contractsCommand = Object.freeze({
   data: Object.freeze({
     name: "contracts",
-    description: "View today's free Avero challenges and claim completed rewards.",
+    description: "Check today's goals and claim your bonus coins.",
     options: [{
       type: 3,
       name: "claim",
