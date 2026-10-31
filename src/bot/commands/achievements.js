@@ -39,7 +39,7 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
     const progress = Math.min(achievement.progress, achievement.target);
     return {
       name: (complete ? "✓ " : "◇ ") + achievement.name,
-      value: achievement.description + "\\n" +
+      value: achievement.description + "\n" +
         (complete ? "**Unlocked**" : "**Progress:** " + progress.toLocaleString("en-US") + " / " + achievement.target.toLocaleString("en-US"))
     };
   });
@@ -53,7 +53,7 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
       title: "🏆 " + target.username + "'s achievements",
       description: "**" + unlocked + " / " + achievements.length + " unlocked** · Server milestones" +
         (pageCount > 1 ? " · Page " + (currentPage + 1) + "/" + pageCount : "") +
-        "\\nCosmetic progress only · virtual coins have no cash value.",
+        "\nCosmetic progress only · virtual coins have no cash value.",
       color: unlocked === achievements.length ? THEME.colors.success : THEME.colors.primary,
       fields,
       footer: "Avero achievements • progress is saved per server"
