@@ -54,7 +54,7 @@ test("inventory pagination shows at most four collectibles and a next-page contr
 test("item detail shows owned state and does not offer a second purchase", async () => {
   const response = await renderItemDetails(fakePrisma(["neon_badge"]), "guild-1", "user-1", "neon_badge", 0);
   const json = panel(response);
-  assert.match(allText(json), /Neon Badge/);
+  assert.match(allText(json), /Glitch Gremlin/);
   assert.match(allText(json), /In your collection/);
   assert.equal(json.components.some((component) => component.type === 12), false);
   assert.equal(response.files, undefined);
