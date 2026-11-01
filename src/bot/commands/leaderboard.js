@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { createGamePanel, gamePayload } from "../game-ui.js";
 
 const CATEGORIES = Object.freeze(["coins", "games", "coinflip", "guess", "rps", "vault"]);
 
@@ -87,13 +87,16 @@ export const leaderboardCommand = Object.freeze({
         }).join("\n")
       : "No scores yet. Start playing to get on the board.";
 
+    const title = category === "coins" ? "Coin leaderboard" : category === "guess" ? "Guess leaderboard" : category === "rps" ? "Rock-paper-scissors leaderboard" : category === "vault" ? "Vault leaderboard" : category === "coinflip" ? "Coinflip leaderboard" : "Games leaderboard";
     await interaction.reply({
-      allowedMentions: { parse: [] },
-      embeds: [createEmbed({
-        title: category === "coins" ? "🪙 Coin leaderboard" : category === "guess" ? "🎯 Guess leaderboard" : category === "rps" ? "✊ Rock-paper-scissors leaderboard" : category === "vault" ? "🔐 Vault leaderboard" : category === "coinflip" ? "🪙 Coinflip leaderboard" : "🎮 Games leaderboard",
+      ...gamePayload(createGamePanel({
+        title,
+        eyebrow: "SERVER RANKINGS",
         description,
-        color: THEME.colors.primary,
-      })]
+        footer: "TOP 10 • SERVER-SCOPED STATS",
+        separators: true
+      })),
+      allowedMentions: { parse: [] }
     });
   }
 });

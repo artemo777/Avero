@@ -1,5 +1,5 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { createGamePanel, gamePayload } from "../game-ui.js";
 
 const REQUIRED_PERMISSIONS = Object.freeze([
   ["View Channel", PermissionFlagsBits.ViewChannel],
@@ -21,31 +21,22 @@ export const setupCommand = Object.freeze({
       "**Games** · " + (settings.gamesEnabled ? "Ready" : "Paused by a server admin"),
       "**Currency** · " + (settings.currencyEnabled ? "Ready" : "Paused by a server admin")
     ];
-    const description = [
-      missing
-        ? "Avero is in this server, but it needs a few channel permissions before every response can display properly."
+    const payload = gamePayload(createGamePanel({
+      title: "Server setup",
+      eyebrow: "AVERO • SETUP",
+      description: missing
+        ? "Avero is connected, but needs a few channel permissions before every response can display properly."
         : "Avero is connected and the key channel permissions are in place.",
-      "",
-      "**Start here**",
-      "1. Run /games to open the game hub.",
-      "2. Run /daily to claim coins.",
-      "3. Visit /shop and /collections to browse items.",
-      "",
-      "**Server admins**",
-      "Use /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile."
-    ].join("\n");
-    await interaction.reply({
-      embeds: [createEmbed({
-        title: "Avero · Server setup",
-        description,
-        color: missing ? THEME.colors.warning : THEME.colors.primary,
-        fields: [
-          { name: "Channel permissions", value: permissionLines.join("\n") },
-          { name: "Feature status", value: featureLines.join("\n") }
-        ],
-        footer: "Run /help for the full command list"
-      })],
-      flags: MessageFlags.Ephemeral
-    });
+      sections: [
+        "**Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
+        "**Server admins**\nUse /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile.",
+        "**Channel permissions**\n" + permissionLines.join("\n"),
+        "**Feature status**\n" + featureLines.join("\n")
+      ],
+      color: missing ? 0xFBBF24 : undefined,
+      footer: "RUN /HELP FOR THE FULL COMMAND LIST",
+      separators: true
+    }));
+    await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
   }
 });

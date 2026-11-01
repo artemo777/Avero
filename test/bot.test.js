@@ -206,17 +206,17 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
 });
 
-test("help command groups the real commands into compact embeds", async () => {
+test("help command groups the real commands into a compact Components V2 panel", async () => {
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
-  assert.equal(response.embeds.length, 1);
-  assert.equal(response.embeds[0].title, "Avero commands");
-  assert.equal(response.embeds[0].fields.length, 4);
-  assert.match(response.embeds[0].fields[0].value, /collections/);
-  assert.match(response.embeds[0].fields[0].value, /\/balance/);
-  assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
-  assert.match(response.embeds[0].fields[2].value, /achievements/);
-  assert.match(response.embeds[0].fields[1].value, /vault/);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Avero commands/);
+  assert.match(text, /collections/);
+  assert.ok(text.includes("/balance"));
+  assert.ok(text.includes("/leaderboard"));
+  assert.match(text, /achievements/);
+  assert.match(text, /vault/);
 });
 
 test("profile command combines wallet and collection data", async () => {
@@ -235,12 +235,13 @@ test("profile command combines wallet and collection data", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "Ada");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Ada/);
+  assert.match(text, /1,250 coins/);
+  assert.match(text, /1 \/ 6/);
+  assert.match(text, /Rookie Guess · 0 wins/);
   assert.equal(response.files, undefined);
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "None");
-  assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "🎒 Collection").value, "1 / 6");
-  assert.match(response.embeds[0].fields.find((field) => field.name === "🏅 Arcade mastery").value, /Rookie Guess · 0 wins/);
 });
 
 
@@ -259,12 +260,12 @@ test("profile lists all owned badges but displays only the selected badge beside
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-badge.png");
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "Prism Goblin");
-  assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Glitch Gremlin, Prism Goblin/);
+  assert.match(panelText(response), /Equipped badge.*Prism Goblin/);
+  assert.match(panelText(response), /Glitch Gremlin, Prism Goblin/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
@@ -283,11 +284,11 @@ test("profile shows the actual equipped collectible artwork beside the username"
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-badge.png");
-  assert.equal(response.embeds[0].title, undefined);
+  assert.match(panelText(response), /Ada/);
 });
 
 test("leaderboard sorts server members by the requested category", async () => {
@@ -311,9 +312,11 @@ test("leaderboard sorts server members by the requested category", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "🪙 Coin leaderboard");
-  assert.match(response.embeds[0].description, /<@user-1> — \*\*900 coins\*\*/);
-  assert.match(response.embeds[0].description, /<@user-2> — \*\*450 coins\*\*/);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Coin leaderboard/);
+  assert.ok(text.includes("<@user-1> — **900 coins**"));
+  assert.ok(text.includes("<@user-2> — **450 coins**"));
 });
 
 
@@ -413,14 +416,55 @@ test("setup command reports channel permissions, feature status and first steps 
   }, {
     settings: { gamesEnabled: true, currencyEnabled: false }
   });
-  assert.equal(response.flags, MessageFlags.Ephemeral);
-  const embed = response.embeds[0];
-  assert.match(embed.description, /\/games/);
-  assert.match(embed.description, /\/daily/);
-  assert.match(embed.description, /Manage Server required/);
-  assert.match(embed.fields[0].value, /View Channel/);
-  assert.match(embed.fields[0].value, /Send Messages/);
-  assert.match(embed.fields[0].value, /Embed Links.*needed/);
-  assert.match(embed.fields[1].value, /Games.*Ready/);
-  assert.match(embed.fields[1].value, /Currency.*Paused/);
+  assert.equal(response.flags, MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Server setup/);
+  assert.ok(text.includes("/games"));
+  assert.ok(text.includes("/daily"));
+  assert.match(text, /Manage Server required/);
+  assert.match(text, /View Channel/);
+  assert.match(text, /Send Messages/);
+  assert.match(text, /Embed Links.*needed/);
+  assert.match(text, /Games.*Ready/);
+  assert.match(text, /Currency.*Paused/);
+});
+
+
+test("title purchases return a compact ephemeral Components V2 panel", async () => {
+  const { titlesCommand } = await import("../src/bot/commands/titles.js");
+  let response;
+  const account = { balance: 10000 };
+  const tx = {
+    currencyAccount: {
+      upsert: async () => account,
+      findUnique: async () => ({ ...account }),
+      updateMany: async ({ data }) => {
+        account.balance -= data.balance.decrement;
+        return { count: 1 };
+      }
+    },
+    memberTitle: {
+      findUnique: async () => null,
+      create: async ({ data }) => data
+    },
+    currencyTransaction: { create: async () => ({}) }
+  };
+  const prisma = { $transaction: async (callback) => callback(tx) };
+  await titlesCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: {
+      getString: (name) => name === "action" ? "buy" : "main_character"
+    },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+
+  assert.equal(response.flags, MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
+  const panel = response.components[0].toJSON();
+  assert.equal(panel.type, 17);
+  const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
+  assert.match(text, /Title shop/);
+  assert.match(text, /Main Character/);
+  assert.match(text, /2,500 coins/);
+  assert.equal(response.embeds, undefined);
 });

@@ -183,7 +183,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
     async reply(payload) { replies.push(payload); }
   };
   await inventoryCommand.execute(emptyInteraction, { prisma });
-  assert.match(panelText(replies[1]), /No items yet/);
+  assert.match(panelText(replies[1]), /No collectibles yet/);
 });
 
 

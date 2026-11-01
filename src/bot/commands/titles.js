@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { createGamePanel, gamePayload } from "../game-ui.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { equipMemberTitle, getMemberTitles, purchaseMemberTitle, unlockMemberTitle } from "../../db/title-repository.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
@@ -57,19 +57,18 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     "**Titles · owned and locked**",
     pageLines.join("\n")
   ].filter((line) => line !== null).join("\n");
-  const components = pageCount > 1 ? [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero|" + controlUserId + "|titles_page|" + Math.max(0, currentPage - 1)).setLabel("← Previous").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
-    new ButtonBuilder().setCustomId("avero|" + controlUserId + "|titles_page|" + Math.min(pageCount - 1, currentPage + 1)).setLabel("Next →").setStyle(ButtonStyle.Secondary).setDisabled(currentPage === pageCount - 1)
-  )] : [];
-  return {
-    embeds: [createEmbed({
-      title: "🏷️ " + user.username + "'s titles",
-      description,
-      color: THEME.colors.primary,
-      footer: "Use /titles action:buy or action:equip · server-specific · Page " + (currentPage + 1) + "/" + pageCount
-    })],
-    components
-  };
+  const buttons = pageCount > 1 ? [
+    { customId: "avero|" + controlUserId + "|titles_page|" + Math.max(0, currentPage - 1), label: "← Previous", disabled: currentPage === 0 },
+    { customId: "avero|" + controlUserId + "|titles_page|" + Math.min(pageCount - 1, currentPage + 1), label: "Next →", disabled: currentPage === pageCount - 1 }
+  ] : [];
+  return gamePayload(createGamePanel({
+    title: user.username + "'s titles",
+    eyebrow: "PROFILE TITLES",
+    description,
+    buttons,
+    footer: "USE /TITLES TO BUY OR EQUIP • SERVER-SPECIFIC • PAGE " + (currentPage + 1) + "/" + pageCount,
+    separators: true
+  }));
 }
 
 export const titlesCommand = Object.freeze({
@@ -125,8 +124,13 @@ export const titlesCommand = Object.freeze({
           ? "You already own **" + selected.name + "**."
           : "You need **" + selected.price.toLocaleString("en-US") + " coins**. Your balance is **" + (result.account?.balance ?? 0).toLocaleString("en-US") + "**.";
       await interaction.reply({
-        embeds: [createEmbed({ title: "Title shop", description: message, color: result.purchased ? THEME.colors.success : THEME.colors.primary, footer: "Virtual coins only · no cash value" })],
-        flags: MessageFlags.Ephemeral
+        ...gamePayload(createGamePanel({
+          title: "Title shop",
+          eyebrow: "PROFILE TITLES",
+          description: message,
+          footer: "VIRTUAL COINS ONLY · NO CASH VALUE"
+        })),
+        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2
       });
       return;
     }

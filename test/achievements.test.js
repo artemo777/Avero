@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { achievementsCommand, renderAchievementsPage } from "../src/bot/commands/achievements.js";
+function panelText(response) { return response.components[0].toJSON().components.filter((item) => item.type === 10).map((item) => item.content).join("\n"); }
+function panelRows(response) { return response.components[0].toJSON().components.filter((item) => item.type === 1); }
 
 test("achievements show server-scoped milestone progress and unique collection counts", async () => {
   let response;
@@ -32,18 +34,17 @@ test("achievements show server-scoped milestone progress and unique collection c
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  const embed = response.embeds[0];
-  assert.match(embed.title, /Ada's achievements/);
-  assert.match(embed.description, /7 \/ 12 unlocked/);
-  assert.equal(embed.fields.length, 7);
-  assert.match(embed.fields.find((field) => field.name.includes("Curator")).value, /Unlocked/);
-  assert.match(embed.fields.find((field) => field.name.includes("Full Set")).value, /3 \/ 6/);
+  const text = panelText(response);
+  assert.match(text, /Ada's achievements/);
+  assert.match(text, /7 \/ 12 unlocked/);
+  assert.match(text, /Curator[\s\S]*Unlocked/);
+  assert.match(text, /Full Set[\s\S]*3 \/ 6/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
   const secondPage = await renderAchievementsPage(prisma, "guild-1", { id: "user-1", username: "Ada" }, "user-1", 1);
-  assert.equal(secondPage.embeds[0].fields.length, 5);
-  assert.match(secondPage.embeds[0].fields.find((field) => field.name.includes("Big Spender")).value, /Unlocked/);
-  assert.match(secondPage.embeds[0].fields.find((field) => field.name.includes("Archive Keeper")).value, /0 \/ 1/);
-  assert.equal(secondPage.components.length, 1);
+  const secondText = panelText(secondPage);
+  assert.match(secondText, /Big Spender[\s\S]*Unlocked/);
+  assert.match(secondText, /Archive Keeper[\s\S]*0 \/ 1/);
+  assert.equal(panelRows(secondPage).length, 1);
 
 });
 
