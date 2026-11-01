@@ -15,7 +15,7 @@ function fakePrisma() {
         job = { ...data, id: "job-1", shifts: 0, promotions: 0, lastShiftAt: null };
         return { ...job };
       },
-      async delete() { const old = job; job = null; return old; },
+      async update({ data }) { job = { ...job, ...data }; return { ...job }; },
       async updateMany({ where, data }) {
         if (!job) return { count: 0 };
         const allowed = where.OR.some((condition) => condition.lastShiftAt === null
@@ -81,6 +81,15 @@ test("job shifts pay salary, enforce cooldown, and grant three promotions", asyn
 test("resigning removes the active career and allows a new application", async () => {
   const prisma = fakePrisma();
   await applyForJob(prisma, "guild", "member", "barista");
+  const firstShiftAt = new Date("2026-11-01T12:00:00.000Z");
+  await runJobShift(prisma, "guild", "member", { now: firstShiftAt });
   assert.equal((await resignFromJob(prisma, "guild", "member")).resigned, true);
-  assert.equal((await applyForJob(prisma, "guild", "member", "developer")).applied, true);
+  assert.equal(await getMemberJob(prisma, "guild", "member"), null);
+  const reapplied = await applyForJob(prisma, "guild", "member", "developer");
+  assert.equal(reapplied.applied, true);
+  const blocked = await runJobShift(prisma, "guild", "member", { now: new Date(firstShiftAt.getTime() + 1000) });
+  assert.equal(blocked.reason, "cooldown");
+  const afterCooldown = await runJobShift(prisma, "guild", "member", { now: new Date(firstShiftAt.getTime() + 60 * 60 * 1000) });
+  assert.equal(afterCooldown.worked, true);
+  assert.equal(afterCooldown.salary, 140);
 });
