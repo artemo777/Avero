@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
+function panelText(response) { return response.components[0].toJSON().components.filter((item) => item.type === 10).map((item) => item.content).join("\n"); }
 
 test("Vault leaderboard ranks server members by vault wins and records losses", async () => {
   let response;
@@ -23,7 +24,7 @@ test("Vault leaderboard ranks server members by vault wins and records losses", 
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "🔐 Vault leaderboard");
-  assert.match(response.embeds[0].description, /<@user-1> — \*\*3W \/ 2L · 60% win rate\*\*/);
-  assert.match(response.embeds[0].description, /<@user-2> — \*\*1W \/ 0L · 100% win rate\*\*/);
+  assert.match(panelText(response), /Vault leaderboard/);
+  assert.match(panelText(response), /<@user-1> — \*\*3W \/ 2L · 60% win rate\*\*/);
+  assert.match(panelText(response), /<@user-2> — \*\*1W \/ 0L · 100% win rate\*\*/);
 });
