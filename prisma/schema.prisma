@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Member-owned records use the reserved "__avero_global__" guildId scope.
+/// GuildSettings and MoneyRequest remain server-scoped by design.
 model MemberProfile {
   id               String   @id @default(cuid())
   guildId          String
