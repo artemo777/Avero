@@ -83,7 +83,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
       tx.memberJob.findUnique({ where: { guildId_userId: memberKey } })
     ]);
     return {
-      worked: true, salary, account, current: updated, job,
+      worked: true, salary, account, current: updated, job, cooldownMs,
       promoted: nextPromotions > current.promotions,
       promotion: nextPromotions,
       nextPromotionAt: WORK_PROMOTION_THRESHOLDS[nextPromotions] ?? null
