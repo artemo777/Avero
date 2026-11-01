@@ -1,6 +1,6 @@
 import {
   ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags,
-  SectionBuilder, TextDisplayBuilder, ThumbnailBuilder
+  SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder, ThumbnailBuilder
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
@@ -62,9 +62,10 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, sections = [], sectionButtons = [], sectionThumbnails = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [] }) {
+export function createGamePanel({ title, description, sections = [], sectionButtons = [], sectionThumbnails = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], separators = false }) {
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + eyebrow + "\n## " + title + "\n" + description));
+  if (separators && (sections.length || buttons.length)) container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
   for (const [index, section] of sections.entries()) {
     const thumbnail = sectionThumbnails[index];
     if (thumbnail) {
@@ -95,7 +96,10 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     }));
     container.addActionRowComponents(row);
   }
-  if (footer) container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
+  if (footer) {
+    if (separators) container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + footer));
+  }
   return container;
 }
 export function gamePayload(panel, files = []) {
@@ -153,11 +157,13 @@ export async function renderBalance(prisma, guildId, userId) {
   const account = await getCurrencyAccount(prisma, guildId, userId);
   const balance = account?.balance ?? 0;
   return gamePayload(createGamePanel({
-    title: "Your wallet",
-    description: "### " + COIN_ICON + " " + balance.toLocaleString("en-US") + " coins\n-# Server wallet · virtual currency only\n\n**Earn**\n✨ /daily · every 24h\n🧰 /work · every 30m\n🧭 /scavenge · every 10m\n📜 /contracts · daily goals\n🎮 /games · free mini-games",
+    title: "Your balance",
     eyebrow: "WALLET",
-    footer: "WALLET • SERVER-SCOPED BALANCE",
+    description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "**\\n-# Server wallet · virtual currency only",
+    sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 30m\\n🧭 /scavenge · every 10m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
+    footer: "SERVER WALLET",
     buttons: navButtons(userId, true),
+    separators: true
   }));
 }
 export async function renderShop(prisma, guildId, userId, page = 0) {
@@ -206,48 +212,34 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const itemMap = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
   const items = purchases.map((purchase) => itemMap.get(purchase.itemId)).filter(Boolean);
-  const pageSize = 7;
+  const pageSize = 5;
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const totalMarketValue = items.reduce((sum, item) => sum + item.price, 0);
+  const pageMarketValue = pageItems.reduce((sum, item) => sum + item.price, 0);
   const collection = pageItems.length
-    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
-    : "No items yet. Open the shop to get your first collectible.";
+    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\\n")
+    : "No collectibles yet. Browse the shop to get your first one.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
-  const collectionSets = buildCollectionSetProgress(items.map((item) => item.id));
-  const completedSets = collectionSets.filter((set) => set.complete).length;
-  const milestones = [
-    { count: 1, name: "First Find" },
-    { count: 3, name: "Curator" },
-    { count: SHOP_ITEMS.length, name: "Full Set" }
+  const completedSets = buildCollectionSetProgress(items.map((item) => item.id)).filter((set) => set.complete).length;
+  const pageButtons = [
+    { ...button(userId, "collection_page", "≪", "0"), disabled: currentPage === 0 },
+    { ...button(userId, "collection_page", "‹", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
+    button(userId, "inventory", "↻", String(currentPage)),
+    { ...button(userId, "collection_page", "›", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 },
+    { ...button(userId, "collection_page", "≫", String(pageCount - 1)), disabled: currentPage === pageCount - 1 }
   ];
-  const earnedMilestones = milestones.filter((milestone) => items.length >= milestone.count);
-  const nextMilestone = milestones.find((milestone) => items.length < milestone.count);
-  const milestoneSummary = earnedMilestones.length
-    ? earnedMilestones.map((milestone) => "✓ " + milestone.name).join(" · ")
-    : "No milestones yet";
-  const milestoneProgress = nextMilestone
-    ? " · Next: **" + nextMilestone.name + "** — " + items.length + "/" + nextMilestone.count + " items"
-    : " · All collection milestones complete";
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
-  const pageButtons = [];
-  if (pageCount > 1) {
-    const previous = button(userId, "collection_page", "← Previous", String(Math.max(0, currentPage - 1)), ButtonStyle.Secondary);
-    const next = button(userId, "collection_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1)), ButtonStyle.Secondary);
-    previous.disabled = currentPage === 0;
-    next.disabled = currentPage === pageCount - 1;
-    pageButtons.push(previous, next);
-  }
   return gamePayload(createGamePanel({
-    title: "Your collection",
+    title: "Your inventory",
     eyebrow: "COLLECTION",
-    description: "🎒 **" + items.length + " / " + SHOP_ITEMS.length + " collectibles** · " + progress + "%\n" +
-      collection +
-      "\n🗺️ **Set atlas:** " + completedSets + "/3 complete · use `/collections` to explore themed sets" +
-      "\n🏆 " + milestoneSummary + milestoneProgress +
-      (pageCount > 1 ? "\n-# Page " + (currentPage + 1) + " of " + pageCount : items.length ? "\n-# Select an item below for its details." : ""),
+    description: "**Total Market Value:** " + totalMarketValue.toLocaleString("en-US") + "\\n**Page Market Value:** " + pageMarketValue.toLocaleString("en-US"),
+    sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\\n**Sets completed:** " + completedSets + "/3"],
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Primary, "🗺️"), button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, "🗺️"), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, "🛍️")],
+    footer: "PAGE " + (currentPage + 1) + " OF " + pageCount,
+    separators: true
   }));
 }
 export async function renderCollectionSets(prisma, guildId, userId, controlUserId = userId, page = 0) {
