@@ -74,7 +74,7 @@ test("wallet Work button renders career-shift reward and cooldown", () => {
     current: { shifts: 1, promotions: 0 }, account: { balance: 500 }
   }, "user-1"));
   assert.match(complete, /Shift done/);
-  assert.match(complete, /\+80 coins/);
+  assert.match(complete, /\+70 coins/);
   assert.match(complete, /500 coins/);
   assert.match(complete, /Back in 60 minutes/);
 
