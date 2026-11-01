@@ -165,7 +165,7 @@ export async function renderBalance(prisma, guildId, userId) {
   return gamePayload(createGamePanel({
     title: "Your balance",
     eyebrow: "WALLET",
-    description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "**\\n-# Server wallet · virtual currency only",
+    description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n-# Server wallet · virtual currency only",
     sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 30m\\n🧭 /scavenge · every 10m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
     footer: "SERVER WALLET",
     buttons: navButtons(userId, true),
@@ -526,12 +526,14 @@ export function renderRps(playerChoice, botChoice, userId, reward = null) {
   }));
 }
 export function renderBuy(result, item, userId) {
+  const currency = item.currency === "gems" ? "gems" : "coins";
+  const balance = currency === "gems" ? (result.account?.gemBalance ?? 0) : (result.account?.balance ?? 0);
   const success = result.purchased;
-  const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough coins";
+  const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough " + currency;
   const description = success
-    ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " coins**.\n\nBalance: **" + result.account.balance.toLocaleString("en-US") + " coins**."
-    : result.reason === "owned" ? "You already own **" + item.name + "**. Your coins were not charged again."
-      : "**" + item.name + "** costs **" + item.price + " coins**.\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**.\n\nEarn more with /daily, /work, /scavenge, /contracts, /guess, /rps or /vault.";
+    ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " " + currency + "**.\n\nBalance: **" + balance.toLocaleString("en-US") + " " + currency + "**."
+    : result.reason === "owned" ? "You already own **" + item.name + "**. Your balance was not charged again."
+      : "**" + item.name + "** costs **" + item.price + " " + currency + "**.\nBalance: **" + balance.toLocaleString("en-US") + " " + currency + "**.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
     buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
