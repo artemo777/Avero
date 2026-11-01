@@ -206,17 +206,17 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
 });
 
-test("help command groups the real commands into compact embeds", async () => {
+test("help command groups the real commands into a compact Components V2 panel", async () => {
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
-  assert.equal(response.embeds.length, 1);
-  assert.equal(response.embeds[0].title, "Avero commands");
-  assert.equal(response.embeds[0].fields.length, 4);
-  assert.match(response.embeds[0].fields[0].value, /collections/);
-  assert.match(response.embeds[0].fields[0].value, /\/balance/);
-  assert.match(response.embeds[0].fields[2].value, /\/leaderboard/);
-  assert.match(response.embeds[0].fields[2].value, /achievements/);
-  assert.match(response.embeds[0].fields[1].value, /vault/);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Avero commands/);
+  assert.match(text, /collections/);
+  assert.match(text, /\\/balance/);
+  assert.match(text, /\\/leaderboard/);
+  assert.match(text, /achievements/);
+  assert.match(text, /vault/);
 });
 
 test("profile command combines wallet and collection data", async () => {
@@ -235,12 +235,13 @@ test("profile command combines wallet and collection data", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "Ada");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Ada/);
+  assert.match(text, /1,250 coins/);
+  assert.match(text, /1 \/ 6/);
+  assert.match(text, /Rookie Guess · 0 wins/);
   assert.equal(response.files, undefined);
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "None");
-  assert.equal(response.embeds[0].fields[0].value, "1,250 coins");
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "🎒 Collection").value, "1 / 6");
-  assert.match(response.embeds[0].fields.find((field) => field.name === "🏅 Arcade mastery").value, /Rookie Guess · 0 wins/);
 });
 
 
@@ -259,12 +260,12 @@ test("profile lists all owned badges but displays only the selected badge beside
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-badge.png");
-  assert.equal(response.embeds[0].fields.find((field) => field.name === "Equipped badge").value, "Prism Goblin");
-  assert.match(response.embeds[0].fields.find((field) => field.name === "Badges").value, /Glitch Gremlin, Prism Goblin/);
+  assert.match(panelText(response), /Equipped badge.*Prism Goblin/);
+  assert.match(panelText(response), /Glitch Gremlin, Prism Goblin/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
@@ -283,11 +284,11 @@ test("profile shows the actual equipped collectible artwork beside the username"
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].author.name, "Ada");
-  assert.equal(response.embeds[0].author.icon_url, "attachment://profile-badge.png");
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-badge.png");
-  assert.equal(response.embeds[0].title, undefined);
+  assert.match(panelText(response), /Ada/);
 });
 
 test("leaderboard sorts server members by the requested category", async () => {
