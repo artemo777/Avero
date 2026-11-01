@@ -95,7 +95,7 @@ Reusable visual assets live in one place instead of being scattered through comm
 
 - `averoui/icons.js` — small text-safe glyphs used in Discord UI.
 - `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
-- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, and six individually illustrated shop collectibles. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
+- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, six individually illustrated shop collectibles, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
 - `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments.
 - Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels.
