@@ -9,7 +9,7 @@ function requireIdentifier(value, name) {
 
 function currencyKey(guildId, userId) {
   return {
-    guildId: GLOBAL_SCOPE_ID,
+    guildId: (requireIdentifier(guildId, "guildId"), GLOBAL_SCOPE_ID),
     userId: requireIdentifier(userId, "userId")
   };
 }
