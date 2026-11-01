@@ -66,10 +66,10 @@ export function buildConfigPanel(settings, guildName) {
     description: "Settings for **" + guildName + "**. Changes here only affect this server.",
     color: theme,
     sections: [
-      "**01 · SYSTEM**\\n**Games** · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "\\n**Currency** · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
-      "**02 · ECONOMY & REWARDS**\\n**Daily claim** · " + settings.dailyReward.toLocaleString("en-US") + " coins\\n**Work payout** · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins",
-      "**03 · ROLE PERKS**\\n**Booster** · " + roleStatus(settings.boosterRoleId) + "\\n**Funder** · " + roleStatus(settings.funderRoleId) + "\\n**Voter** · " + roleStatus(settings.voterRoleId),
-      "**04 · SERVER PROFILE**\\n**Display name** · " + profileName + "\\n**Bio** · " + profileBio + "\\n**Appearance** · " + themeLabel + " theme\\nChange the server avatar with /config profile_image."
+      "**01 · SYSTEM**\n**Games** · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "\n**Currency** · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
+      "**02 · ECONOMY & REWARDS**\n**Daily claim** · " + settings.dailyReward.toLocaleString("en-US") + " coins\n**Work payout** · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins",
+      "**03 · ROLE PERKS**\n**Booster** · " + roleStatus(settings.boosterRoleId) + "\n**Funder** · " + roleStatus(settings.funderRoleId) + "\n**Voter** · " + roleStatus(settings.voterRoleId),
+      "**04 · SERVER PROFILE**\n**Display name** · " + profileName + "\n**Bio** · " + profileBio + "\n**Appearance** · " + themeLabel + " theme\nChange the server avatar with /config profile_image."
     ],
     buttons,
     footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
