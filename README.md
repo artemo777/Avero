@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Economy data remains scoped by Discord server, so each server has its own balances, cooldowns, and game records.
+Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Member-owned data is global across every server: each Discord user has one wallet, inventory, profile progression, career, title collection, cooldown set, and game history.
 
 ## Requirements
 
@@ -54,10 +54,10 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/ping` — checks interaction and gateway latency.
 - `/help` — groups the available commands by category.
 - `/profile [member]` — combines wallet, per-game Arcade Mastery tiers, themed collection progress, and unlocked set titles.
-- `/leaderboard [category]` — shows the server's top coin, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
-- `/achievements [member]` — tracks twelve server-scoped activity, game, coin, and collection milestones. No extra coin rewards are minted.
+- `/leaderboard [category]` — shows global top coin, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/achievements [member]` — tracks twelve global activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
-- `/balance` — shows your Avero coin balance in the current server.
+- `/balance` — shows your global Avero coin balance.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC. A new collectible found during `/scavenge` also counts toward the collector goal.
 - `/work` — apply for a career, then earn its 70–150 coin salary plus promotions on one shared 60-minute shift cooldown. The `/work shift` command and wallet Work button use the same career system.
@@ -71,23 +71,23 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view. Use `/collections` to track themed sets.
 
-Currency is virtual and has no cash value. Each server has a separate wallet for each user. Daily claims, work shifts, scavenge rewards, game rewards, and shop purchases are recorded in the transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
+Currency is virtual and has no cash value. Each Discord user has one global wallet shared across all servers. Daily claims, work shifts, scavenge rewards, game rewards, and shop purchases use global cooldowns and are recorded in one global transaction ledger. Free games never deduct coins to enter. Shop purchases are virtual collectibles only, cannot be bought twice, and never allow a balance to go negative. Successful game, wallet, shop, and collection responses are public by default; private replies are reserved for invalid contexts and purchase/cooldown feedback.
 
 ## Profile customization roadmap
 
-The collectible shop is the foundation for a more expressive Avero profile system. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
+The collectible shop is the foundation for a more expressive Avero profile system. Member-owned profile data and equipment are global across servers. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
 
 - **Profile cards:** evolve the compact `/profile` summary into a shareable card with avatar, coins, selected stats, badges, title, and bio.
 - **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
 - **Rendering:** games and currency panels use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
-- **Server boundaries:** balances, purchases, equipped cosmetics, and supporter perks should be scoped explicitly to a server unless a later design decision says otherwise.
+- **Server boundaries:** member balances, purchases, equipped cosmetics, careers, titles, and progression are global across servers. Guild-specific settings and role configuration remain server-scoped.
 
 These are roadmap items, not implemented features yet. Owned collectibles can be equipped as a profile badge from an item detail panel. Only items already in the member's collection can be equipped; the selected badge is persisted per server and appears as a small icon beside the username on `/profile`. The selection can be removed from the same item detail panel.
 
 ## Persistence
 
-Avero uses PostgreSQL through Prisma. `MemberProfile` stores one profile per guild/user pair, including the optional equipped badge item ID. `CurrencyAccount` stores one wallet per guild/user pair, including daily, work, scavenge, and game-reward cooldown timestamps. `CurrencyTransaction` records coin changes with the server, member, reason, and timestamp. `CurrencyPurchase` records collectible ownership per server and member. `DailyContractClaim` prevents each daily contract reward and the daily Vault reward from being claimed more than once per member, server, and UTC date. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
+Avero uses PostgreSQL through Prisma. `MemberProfile`, `CurrencyAccount`, `MemberJob`, and `MemberTitle` use a reserved global scope keyed by Discord user ID. `CurrencyAccount` stores the one global wallet and shared cooldown timestamps. `CurrencyTransaction` records the member's global history. `CurrencyPurchase` stores global collectible ownership. `DailyContractClaim` prevents daily contract and Vault rewards from being claimed more than once per member and UTC date. `GuildSettings` and `MoneyRequest` origin metadata remain guild-scoped. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
 
 ## Shared AveroUI assets
 
