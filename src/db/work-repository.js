@@ -43,7 +43,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     await tx.currencyAccount.upsert({ where: { guildId_userId: memberKey }, create: memberKey, update: {} });
     const nextShifts = current.shifts + 1;
     const nextPromotions = Math.min(3, WORK_PROMOTION_THRESHOLDS.filter((threshold) => nextShifts >= threshold).length);
-    const salary = Math.round(job.salary * (1 + current.promotions * 0.2));
+    const salary = Math.round(job.salary * (1 + current.promotions * 0.15));
     const updatedJob = await tx.memberJob.updateMany({
       where: {
         ...memberKey,
