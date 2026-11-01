@@ -108,3 +108,18 @@ model MemberTitle {
   @@unique([guildId, userId, titleId])
   @@index([guildId, userId])
 }
+
+model MemberJob {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  jobId        String
+  shifts       Int      @default(0)
+  promotions   Int      @default(0)
+  lastShiftAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, jobId])
+}
