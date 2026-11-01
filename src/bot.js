@@ -7,6 +7,7 @@ import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { handleGameComponent } from "./bot/game-ui.js";
 import { getGuildSettings } from "./db/guild-settings-repository.js";
 import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
+import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 
 let config;
 try {
@@ -18,7 +19,7 @@ try {
 
 const commandMap = createCommandMap(commands);
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
-const currencyCommandNames = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
+const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -49,6 +50,15 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
+      try {
+        await handleMoneyRequestButton(interaction, getPrismaClient());
+      } catch (error) {
+        console.error("Money request response failed:", error);
+        await interaction.reply({ content: "Avero could not process that request. Please try again.", flags: MessageFlags.Ephemeral }).catch(() => {});
+      }
+      return;
+    }
     if (interaction.isButton() && interaction.customId.startsWith("avero-config|")) {
       try {
         await handleConfigButton(interaction, getPrismaClient());
