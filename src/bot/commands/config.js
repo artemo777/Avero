@@ -3,7 +3,7 @@ import {
   PermissionFlagsBits, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { THEME } from "../../../averoui/theme.js";
-import { createGamePanel, gamePayload } from "./game-ui.js";
+import { createGamePanel, gamePayload } from "../game-ui.js";
 import { getGuildSettings, updateGuildSettings, GUILD_PROFILE_THEMES } from "../../db/guild-settings-repository.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
