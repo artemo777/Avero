@@ -213,8 +213,8 @@ test("help command groups the real commands into a compact Components V2 panel",
   const text = panelText(response);
   assert.match(text, /Avero commands/);
   assert.match(text, /collections/);
-  assert.match(text, /\\/balance/);
-  assert.match(text, /\\/leaderboard/);
+  assert.ok(text.includes("/balance"));
+  assert.ok(text.includes("/leaderboard"));
   assert.match(text, /achievements/);
   assert.match(text, /vault/);
 });
