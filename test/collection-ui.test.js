@@ -39,6 +39,8 @@ test("inventory uses the compact Components V2 layout and exposes item details",
   const itemButtons = buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|"));
   assert.equal(itemButtons.length, 2);
   assert.ok(itemButtons.some((entry) => entry.custom_id.includes("neon_badge:0")));
+  const ids = buttons(json).map((entry) => entry.custom_id);
+  assert.equal(new Set(ids).size, ids.length, "inventory must never send duplicate component custom IDs");
 });
 
 test("inventory paginates at five items and shows compact navigation", async () => {
