@@ -7,14 +7,14 @@ import { contractsCommand } from "../src/bot/commands/contracts.js";
 function createPrisma({ activity = {}, claimed = false, balance = 0 } = {}) {
   const claims = [];
   const transactions = [];
-  const account = { guildId: "guild-1", userId: "user-1", balance };
+  const account = { guildId: "__avero_global__", userId: "user-1", balance };
   const prisma = {
     claims,
     transactions,
     $transaction: (callback) => callback(prisma),
     currencyTransaction: {
       async groupBy(query) {
-        assert.equal(query.where.guildId, "guild-1");
+        assert.equal(query.where.guildId, "__avero_global__");
         assert.equal(query.where.userId, "user-1");
         assert.ok(query.where.createdAt.gte instanceof Date);
         assert.ok(query.where.createdAt.lt instanceof Date);
@@ -57,11 +57,11 @@ function createPrisma({ activity = {}, claimed = false, balance = 0 } = {}) {
   return prisma;
 }
 
-test("daily contracts derive progress from today's server-member transaction ledger", async () => {
+test("daily contracts derive progress from today's global member transaction ledger", async () => {
   const prisma = createPrisma({
     activity: { work: 1, scavenge: 2, rps_win: 1, guess_loss: 1, vault_win: 1, shop_purchase: 1 }
   });
-  const snapshot = await getDailyContracts(prisma, "guild-1", "user-1", {
+  const snapshot = await getDailyContracts(prisma, "__avero_global__", "user-1", {
     now: new Date("2026-10-30T23:59:00.000Z")
   });
 
@@ -72,7 +72,7 @@ test("daily contracts derive progress from today's server-member transaction led
 
 test("daily contracts count only activity in the UTC day", async () => {
   const prisma = createPrisma({ activity: { work: 2 } });
-  const snapshot = await getDailyContracts(prisma, "guild-1", "user-1", {
+  const snapshot = await getDailyContracts(prisma, "__avero_global__", "user-1", {
     now: new Date("2026-10-31T00:00:00.000Z")
   });
   assert.equal(snapshot.date, "2026-10-31");
@@ -82,14 +82,14 @@ test("daily contracts count only activity in the UTC day", async () => {
 test("completed daily contract pays once and records a reward transaction", async () => {
   const prisma = createPrisma({ activity: { work: 2 }, balance: 15 });
   const now = new Date("2026-10-30T12:00:00.000Z");
-  const result = await claimDailyContract(prisma, "guild-1", "user-1", "work_shift", { now });
+  const result = await claimDailyContract(prisma, "__avero_global__", "user-1", "work_shift", { now });
 
   assert.equal(result.claimed, true);
   assert.equal(result.amount, 80);
   assert.equal(result.account.balance, 95);
   assert.equal(prisma.claims.length, 1);
   assert.deepEqual(prisma.transactions, [{
-    guildId: "guild-1",
+    guildId: "__avero_global__",
     userId: "user-1",
     amount: 80,
     type: "contract_reward",
@@ -99,7 +99,7 @@ test("completed daily contract pays once and records a reward transaction", asyn
 
 test("incomplete daily contract cannot be claimed", async () => {
   const prisma = createPrisma({ activity: { work: 1 }, balance: 15 });
-  const result = await claimDailyContract(prisma, "guild-1", "user-1", "work_shift");
+  const result = await claimDailyContract(prisma, "__avero_global__", "user-1", "work_shift");
   assert.deepEqual(result, { claimed: false, reason: "incomplete", progress: 1, target: 2 });
   assert.equal(prisma.claims.length, 0);
   assert.equal(prisma.transactions.length, 0);
@@ -107,7 +107,7 @@ test("incomplete daily contract cannot be claimed", async () => {
 
 test("repeated daily contract claims return already claimed without paying again", async () => {
   const prisma = createPrisma({ activity: { work: 2 }, claimed: true, balance: 95 });
-  const result = await claimDailyContract(prisma, "guild-1", "user-1", "work_shift");
+  const result = await claimDailyContract(prisma, "__avero_global__", "user-1", "work_shift");
   assert.equal(result.claimed, false);
   assert.equal(result.reason, "already_claimed");
   assert.equal(result.account.balance, 95);
@@ -116,8 +116,8 @@ test("repeated daily contract claims return already claimed without paying again
 
 test("daily contracts reject invalid identifiers and timestamps", async () => {
   const prisma = createPrisma();
-  await assert.rejects(claimDailyContract(prisma, "guild-1", "user-1", "not-real"), /Unknown daily contract/);
-  await assert.rejects(getDailyContracts(prisma, "guild-1", "user-1", { now: new Date("invalid") }), /valid Date/);
+  await assert.rejects(claimDailyContract(prisma, "__avero_global__", "user-1", "not-real"), /Unknown daily contract/);
+  await assert.rejects(getDailyContracts(prisma, "__avero_global__", "user-1", { now: new Date("invalid") }), /valid Date/);
 });
 
 test("contracts command responds privately outside servers", async () => {
@@ -138,7 +138,7 @@ test("contracts command responds privately outside servers", async () => {
 
 test("a collectible found during scavenge advances the daily collector contract", async () => {
   const prisma = createPrisma({ activity: { scavenge: 1, scavenge_collectible: 1 } });
-  const snapshot = await getDailyContracts(prisma, "guild-1", "user-1", {
+  const snapshot = await getDailyContracts(prisma, "__avero_global__", "user-1", {
     now: new Date("2026-10-30T12:00:00.000Z")
   });
   const collector = snapshot.contracts.find((contract) => contract.id === "collector");
