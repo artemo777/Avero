@@ -8,7 +8,8 @@ function key(guildId, userId) {
 }
 
 export async function getMemberJob(prisma, guildId, userId) {
-  return prisma.memberJob.findUnique({ where: { guildId_userId: key(guildId, userId) } });
+  const current = await prisma.memberJob.findUnique({ where: { guildId_userId: key(guildId, userId) } });
+  return current?.jobId === "unemployed" ? null : current;
 }
 
 export async function applyForJob(prisma, guildId, userId, jobId) {
@@ -16,6 +17,17 @@ export async function applyForJob(prisma, guildId, userId, jobId) {
   const job = WORK_JOBS.find((entry) => entry.id === jobId);
   if (!job) throw new RangeError("Choose a job from the Avero work list.");
   const existing = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
+  if (existing?.jobId === "unemployed") {
+    const updated = await prisma.memberJob.updateMany({
+      where: { ...memberKey, jobId: "unemployed" },
+      data: { jobId, shifts: 0, promotions: 0 }
+    });
+    if (updated.count === 1) {
+      return { applied: true, current: await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } }), job };
+    }
+    const latest = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
+    return { applied: false, reason: latest?.jobId === jobId ? "already_in_job" : "employed", current: latest, job };
+  }
   if (existing) return { applied: false, reason: existing.jobId === jobId ? "already_in_job" : "employed", current: existing, job };
   const current = await prisma.memberJob.create({ data: { ...memberKey, jobId } });
   return { applied: true, current, job };
@@ -24,8 +36,11 @@ export async function applyForJob(prisma, guildId, userId, jobId) {
 export async function resignFromJob(prisma, guildId, userId) {
   const memberKey = key(guildId, userId);
   const current = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
-  if (!current) return { resigned: false, reason: "not_employed" };
-  await prisma.memberJob.delete({ where: { guildId_userId: memberKey } });
+  if (!current || current.jobId === "unemployed") return { resigned: false, reason: "not_employed" };
+  await prisma.memberJob.update({
+    where: { guildId_userId: memberKey },
+    data: { jobId: "unemployed", shifts: 0, promotions: 0 }
+  });
   return { resigned: true, current };
 }
 
@@ -33,7 +48,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
   const memberKey = key(guildId, userId);
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
   const current = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
-  if (!current) return { worked: false, reason: "not_employed" };
+  if (!current || current.jobId === "unemployed") return { worked: false, reason: "not_employed" };
   const job = WORK_JOBS.find((entry) => entry.id === current.jobId);
   if (!job) throw new Error("The saved Avero job is not in the current job list.");
   const nextAt = current.lastShiftAt ? new Date(current.lastShiftAt.getTime() + cooldownMs) : null;
