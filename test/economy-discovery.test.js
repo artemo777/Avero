@@ -82,7 +82,7 @@ test("wallet Work button renders career-shift reward and cooldown", () => {
     worked: false, reason: "cooldown", nextAt: new Date("2026-11-01T13:00:00Z")
   }, "user-1"));
   assert.match(cooldown, /off the clock/i);
-  assert.match(cooldown, /Next one opens/);
+  assert.match(cooldown, /Your next shift opens/);
 });
 
 test("scavenge responses keep discoveries, duplicate bonuses and cooldowns clear", () => {
