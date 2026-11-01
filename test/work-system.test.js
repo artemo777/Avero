@@ -42,7 +42,7 @@ function fakePrisma() {
 test("Avero work catalog contains 20 distinct realistic careers", () => {
   assert.equal(WORK_JOBS.length, 20);
   assert.equal(new Set(WORK_JOBS.map((job) => job.id)).size, 20);
-  assert.ok(WORK_JOBS.every((job) => job.salary >= 90 && job.salary <= 250));
+  assert.ok(WORK_JOBS.every((job) => job.salary >= 70 && job.salary <= 150));
 });
 
 test("members can apply for one job and cannot silently overwrite it", async () => {
@@ -62,12 +62,12 @@ test("job shifts pay salary, enforce cooldown, and grant three promotions", asyn
   await applyForJob(prisma, "guild", "member", "barista");
   const first = await runJobShift(prisma, "guild", "member", { now: start });
   assert.equal(first.worked, true);
-  assert.equal(first.salary, 90);
+  assert.equal(first.salary, 70);
   const tooSoon = await runJobShift(prisma, "guild", "member", { now: new Date(start.getTime() + 1000) });
   assert.equal(tooSoon.reason, "cooldown");
 
   for (let shift = 2; shift <= 50; shift++) {
-    const now = new Date(start.getTime() + (shift - 1) * 30 * 60 * 1000);
+    const now = new Date(start.getTime() + (shift - 1) * 60 * 60 * 1000);
     await runJobShift(prisma, "guild", "member", { now });
   }
   const final = await getMemberJob(prisma, "guild", "member");
