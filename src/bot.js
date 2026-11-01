@@ -25,6 +25,14 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (readyClient) => {
+  readyClient.user.setPresence({
+    activities: [{
+      name: "Avero",
+      type: 0,
+      state: "iℏ ∂ψ/∂t = Ĥψ"
+    }],
+    status: "online"
+  });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
 });
 
