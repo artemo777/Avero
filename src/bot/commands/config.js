@@ -2,7 +2,8 @@ import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, ModalBuilder,
   PermissionFlagsBits, TextInputBuilder, TextInputStyle
 } from "discord.js";
-import { createEmbed, THEME } from "../../../averoui/index.js";
+import { THEME } from "../../../averoui/theme.js";
+import { createGamePanel, gamePayload } from "./game-ui.js";
 import { getGuildSettings, updateGuildSettings, GUILD_PROFILE_THEMES } from "../../db/guild-settings-repository.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
@@ -47,89 +48,33 @@ export function buildConfigPanel(settings, guildName) {
   const profileBio = settings.profileBio || "No bio set.";
   const roleStatus = (id) => id ? "Configured" : "Not set";
 
-  const embed = createEmbed({
-    title: "AVERO  /  SERVER SETTINGS",
-    description: [
-      "Settings for **" + guildName + "**.",
-      "Changes here only affect this server.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    ].join("\n"),
+  const buttons = [
+    { customId: "avero-config|toggle-games", label: settings.gamesEnabled ? "Pause games" : "Enable games", style: settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
+    { customId: "avero-config|toggle-currency", label: settings.currencyEnabled ? "Pause currency" : "Enable currency", style: settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
+    { customId: "avero-config|games", label: "Edit rewards & limits", style: ButtonStyle.Primary },
+    { customId: "avero-config|roles", label: "Configure role perks", style: ButtonStyle.Secondary },
+    { customId: "avero-config|profile", label: "Edit server profile", style: ButtonStyle.Primary },
+    ...GUILD_PROFILE_THEMES.map((name) => ({
+      customId: "avero-config|theme|" + name,
+      label: (settings.profileTheme === name ? "✓ " : "") + THEME_LABELS[name],
+      style: settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary
+    }))
+  ];
+  return gamePayload(createGamePanel({
+    title: "Server settings",
+    eyebrow: "AVERO • CONFIG",
+    description: "Settings for **" + guildName + "**. Changes here only affect this server.",
     color: theme,
-    fields: [
-      {
-        name: "01  ·  SYSTEM",
-        value: [
-          "**Games**  " + (settings.gamesEnabled ? "🟢 Enabled" : "⚪ Paused"),
-          "**Currency**  " + (settings.currencyEnabled ? "🟢 Enabled" : "⚪ Paused")
-        ].join("\n"),
-        inline: false
-      },
-      {
-        name: "02  ·  ECONOMY & REWARDS",
-        value: [
-          "**Daily claim**  " + settings.dailyReward.toLocaleString("en-US") + " coins",
-          "**Work payout**  " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins"
-        ].join("\n"),
-        inline: false
-      },
-      {
-        name: "03  ·  ROLE PERKS",
-        value: [
-          "**Booster role**  " + roleStatus(settings.boosterRoleId),
-          "**Funder role**  " + roleStatus(settings.funderRoleId),
-          "**Voter role**  " + roleStatus(settings.voterRoleId)
-        ].join("\n"),
-        inline: false
-      },
-      {
-        name: "04  ·  SERVER PROFILE",
-        value: [
-          "**Display name**  " + profileName,
-          "**Bio**  " + profileBio,
-          "**Appearance**  " + themeLabel + " theme",
-          "",
-          "Change Avero's server avatar with `/config` and `profile_image`."
-        ].join("\n"),
-        inline: false
-      }
+    sections: [
+      "**01 · SYSTEM**\\n**Games** · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "\\n**Currency** · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
+      "**02 · ECONOMY & REWARDS**\\n**Daily claim** · " + settings.dailyReward.toLocaleString("en-US") + " coins\\n**Work payout** · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins",
+      "**03 · ROLE PERKS**\\n**Booster** · " + roleStatus(settings.boosterRoleId) + "\\n**Funder** · " + roleStatus(settings.funderRoleId) + "\\n**Voter** · " + roleStatus(settings.voterRoleId),
+      "**04 · SERVER PROFILE**\\n**Display name** · " + profileName + "\\n**Bio** · " + profileBio + "\\n**Appearance** · " + themeLabel + " theme\\nChange the server avatar with /config profile_image."
     ],
-    footer: "Manage Server required · Only affects this server"
-  });
-
-  // Controls are grouped by the same categories as the dashboard above.
-  const systemRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|toggle-games")
-      .setLabel(settings.gamesEnabled ? "Pause games" : "Enable games")
-      .setStyle(settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("avero-config|toggle-currency")
-      .setLabel(settings.currencyEnabled ? "Pause currency" : "Enable currency")
-      .setStyle(settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success)
-  );
-  const economyRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|games")
-      .setLabel("Edit rewards & limits").setStyle(ButtonStyle.Primary)
-  );
-  const rolesRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|roles")
-      .setLabel("Configure role perks").setStyle(ButtonStyle.Secondary)
-  );
-  const profileRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("avero-config|profile")
-      .setLabel("Edit server profile").setStyle(ButtonStyle.Primary)
-  );
-  const themesRow = new ActionRowBuilder().addComponents(
-    ...GUILD_PROFILE_THEMES.map((name) => new ButtonBuilder()
-      .setCustomId("avero-config|theme|" + name)
-      .setLabel((settings.profileTheme === name ? "✓ " : "") + THEME_LABELS[name])
-      .setStyle(settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary))
-  );
-
-  return {
-    embeds: [embed],
-    components: [systemRow, economyRow, rolesRow, profileRow, themesRow],
-    flags: MessageFlags.Ephemeral
-  };
+    buttons,
+    footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
+    separators: true
+  }));
 }
 async function loadUploadedAvatar(attachment) {
   if (!attachment) return null;
@@ -155,15 +100,14 @@ export const configCommand = Object.freeze({
       await interaction.reply({ content: "You need **Manage Server** to change these settings.", flags: MessageFlags.Ephemeral });
       return;
     }
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
     const uploaded = interaction.options.getAttachment("profile_image");
     if (uploaded) {
       const avatar = await loadUploadedAvatar(uploaded);
       await interaction.guild.members.editMe({ avatar });
     }
     const settings = await getGuildSettings(prisma, interaction.guildId);
-    const { flags: _flags, ...panel } = buildConfigPanel(settings, interaction.guild.name);
-    await interaction.editReply(panel);
+    await interaction.editReply(buildConfigPanel(settings, interaction.guild.name));
     if (uploaded) await interaction.followUp({ content: "✓ Uploaded artwork applied to Avero's avatar in this server only.", flags: MessageFlags.Ephemeral });
   }
 });
