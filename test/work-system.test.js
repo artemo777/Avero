@@ -25,6 +25,7 @@ function fakePrisma() {
             : job.lastShiftAt instanceof Date && job.lastShiftAt <= condition.lastShiftAt.lte)
           : true;
         if (!allowed) return { count: 0 };
+        if (data.jobId !== undefined) job.jobId = data.jobId;
         if (data.shifts?.increment) job.shifts += data.shifts.increment;
         if (data.promotions !== undefined) job.promotions = data.promotions;
         if (data.lastShiftAt) job.lastShiftAt = data.lastShiftAt;
