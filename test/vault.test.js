@@ -56,7 +56,7 @@ test("vault command shows daily clues before a code is submitted", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const { interaction, response } = interactionFor(null);
 
-  await vaultCommand.execute(interaction, { now });
+  await vaultCommand.execute(interaction, { now, prisma: { currencyPurchase: { findMany: async () => [] } } });
 
   assert.equal(response().flags, MessageFlags.IsComponentsV2);
   const text = response().components[0].toJSON().components[0].content;
