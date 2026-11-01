@@ -40,6 +40,25 @@ export const SCAVENGE_ROUTES = Object.freeze([
     items: Object.freeze([{ id: "moonlit_token", weight: 60 }, { id: "prism_crown", weight: 30 }, { id: "avero_relic", weight: 10 }])
   })
 ]);
+export function getScavengeDropChance(ownedTools = []) {
+  const tools = ownedTools instanceof Set ? ownedTools : new Set(ownedTools);
+  return tools.has("lucky_compass") ? 18 : 12;
+}
+export function buildScavengeSearchPool(route, ownedTools = []) {
+  if (!route || !Array.isArray(route.items)) throw new TypeError("A valid expedition route is required.");
+  const tools = ownedTools instanceof Set ? ownedTools : new Set(ownedTools);
+  const pool = route.items.map((entry) => ({ ...entry }));
+  if (tools.has("library_card")) pool.push(
+    { id: "star_pin", weight: 6 }, { id: "tiny_trophy", weight: 3 }, { id: "comet_trail", weight: 2 }
+  );
+  if (tools.has("starlight_compass")) {
+    for (const entry of pool) {
+      const found = SHOP_ITEMS.find((candidate) => candidate.id === entry.id);
+      if (["EPIC", "LEGENDARY", "MYTHIC"].includes(found?.rarity)) entry.weight = Math.ceil(entry.weight * 1.5);
+    }
+  }
+  return pool;
+}
 const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a tiny server banner", "Helped organize the event board", "Delivered a stack of digital mail", "Tidied the Avero workshop"]);
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
@@ -390,17 +409,8 @@ export async function runScavenge(prisma, guildId, userId, routeId = null) {
   const amount = randomInt(SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX + 1);
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const ownedTools = new Set(purchases.map((purchase) => purchase.itemId));
-  const dropChance = ownedTools.has("lucky_compass") ? 18 : 12;
-  const searchPool = [...route.items];
-  if (ownedTools.has("library_card")) searchPool.push(
-    { id: "star_pin", weight: 6 }, { id: "tiny_trophy", weight: 3 }, { id: "comet_trail", weight: 2 }
-  );
-  if (ownedTools.has("starlight_compass")) {
-    for (const entry of searchPool) {
-      const found = SHOP_ITEMS.find((candidate) => candidate.id === entry.id);
-      if (["EPIC", "LEGENDARY", "MYTHIC"].includes(found?.rarity)) entry.weight = Math.ceil(entry.weight * 1.5);
-    }
-  }
+  const dropChance = getScavengeDropChance(ownedTools);
+  const searchPool = buildScavengeSearchPool(route, ownedTools);
   const drop = randomInt(100) < dropChance;
   let itemId = null;
   if (drop) {
