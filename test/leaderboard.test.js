@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
+function panelText(response) { return response.components[0].toJSON().components.filter((item) => item.type === 10).map((item) => item.content).join("\n"); }
 
 test("games leaderboard adds legacy guess wins and all new wins exactly once", async () => {
   let query;
@@ -33,9 +34,9 @@ test("games leaderboard adds legacy guess wins and all new wins exactly once", a
     guildId: "guild-1",
     type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"] }
   });
-  assert.match(response.embeds[0].description, /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
-  assert.match(response.embeds[0].description, /<@user-2> — \*\*4W \/ 3L \/ 0T · 57% win rate\*\*/);
-  assert.ok(response.embeds[0].description.indexOf("<@user-1>") < response.embeds[0].description.indexOf("<@user-2>"));
+  assert.match(panelText(response), /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
+  assert.match(panelText(response), /<@user-2> — \*\*4W \/ 3L \/ 0T · 57% win rate\*\*/);
+  assert.ok(panelText(response).indexOf("<@user-1>") < panelText(response).indexOf("<@user-2>"));
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
@@ -72,6 +73,6 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
 
   assert.deepEqual(queries[0].where.type.in, ["guess_win_play", "guess_win", "guess_loss"]);
   assert.deepEqual(queries[1].where.type.in, ["rps_win", "rps_loss", "rps_tie"]);
-  assert.match(replies[0].embeds[0].description, /8W \/ 2L · 80% win rate/);
-  assert.match(replies[1].embeds[0].description, /2W \/ 1L \/ 1T · 50% win rate/);
+  assert.match(panelText(replies[0]), /8W \/ 2L · 80% win rate/);
+  assert.match(panelText(replies[1]), /2W \/ 1L \/ 1T · 50% win rate/);
 });
