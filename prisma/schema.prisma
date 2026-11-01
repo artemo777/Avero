@@ -28,6 +28,7 @@ model CurrencyAccount {
   guildId      String
   userId       String
   balance      Int      @default(0)
+  gemBalance   Int      @default(0)
   lastDailyAt  DateTime?
   dailyStreak  Int      @default(0)
   lastWorkAt   DateTime?
@@ -45,6 +46,7 @@ model CurrencyTransaction {
   guildId   String
   userId    String
   amount    Int
+  currency  String   @default("coins")
   type      String
   createdAt DateTime @default(now())
 
