@@ -9,7 +9,7 @@ import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, readComponentId, renderCollectionSets, renderGames } from "../src/bot/game-ui.js";
+import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -370,6 +370,37 @@ test("collection atlas button opens the member's set progress", async () => {
   assert.match(panelText(response), /Moonlit Curator/);
 });
 
+
+
+test("inventory renders globally unique component IDs on empty and populated pages", async () => {
+  for (const itemIds of [
+    [],
+    ["neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"]
+  ]) {
+    const response = await renderInventory({
+      currencyPurchase: {
+        findMany: async () => itemIds.map((itemId) => ({ itemId }))
+      }
+    }, "guild-1", "user-1");
+    const panel = response.components[0].toJSON();
+    const customIds = panel.components
+      .filter((component) => component.type === 1)
+      .flatMap((row) => row.components.map((component) => component.custom_id));
+    assert.equal(customIds.length, new Set(customIds).size);
+  }
+});
+
+test("shared Components V2 panel rejects duplicate custom IDs before Discord receives them", async () => {
+  const { createGamePanel } = await import("../src/bot/game-ui.js");
+  assert.throws(() => createGamePanel({
+    title: "Duplicate test",
+    description: "Test",
+    buttons: [
+      { customId: "same-id", label: "First" },
+      { customId: "same-id", label: "Second" }
+    ]
+  }), /duplicate interactive component IDs/i);
+});
 
 test("component IDs reject malformed namespaces and unexpected extra segments", () => {
   assert.equal(readComponentId("avero|user-1"), null);

@@ -48,8 +48,10 @@ test("inventory paginates at five items and shows compact navigation", async () 
   const json = panel(response);
   assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 5);
   assert.match(allText(json), /PAGE 1 OF 2/);
-  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_page|1"));
-  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_page|0"));
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_next|1"));
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_first|0"));
+  const ids = buttons(json).map((entry) => entry.custom_id);
+  assert.equal(new Set(ids).size, ids.length, "inventory must never send duplicate component custom IDs");
 });
 
 test("item detail shows owned state and does not offer a second purchase", async () => {
