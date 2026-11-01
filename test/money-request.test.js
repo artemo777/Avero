@@ -62,7 +62,7 @@ function fakePrisma() {
 
 test("coin requests transfer only virtual coins after recipient acceptance", async () => {
   const prisma = fakePrisma();
-  await prisma.currencyAccount.upsert({ where: { guildId_userId: { guildId: "__avero_global__", userId: "payer" } }, create: { guildId: "g", userId: "payer" } });
+  await prisma.currencyAccount.upsert({ where: { guildId_userId: { guildId: "__avero_global__", userId: "payer" } }, create: { guildId: "__avero_global__", userId: "payer" } });
   await prisma.currencyAccount.updateMany({ where: { guildId: "__avero_global__", userId: "payer" }, data: { balance: { increment: 500 } } });
   const request = await createMoneyRequest(prisma, "g", "requester", "payer", 125, { now: new Date("2026-11-01T12:00:00Z") });
   const result = await respondToMoneyRequest(prisma, "g", request.id, "payer", "accept", { now: new Date("2026-11-01T12:01:00Z") });
