@@ -26,6 +26,7 @@ export const ASSETS = Object.freeze({
   collectibleMoonlitToken: Object.freeze({ id: "collectible-moonlit-token", kind: "svg", path: "icons/collectible-moonlit-token.svg", description: "Original moonlit token collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
   collectiblePrismCrown: Object.freeze({ id: "collectible-prism-crown", kind: "svg", path: "icons/collectible-prism-crown.svg", description: "Original prism crown collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
   collectibleAveroRelic: Object.freeze({ id: "collectible-avero-relic", kind: "svg", path: "icons/collectible-avero-relic.svg", description: "Original Avero relic collectible artwork", uses: Object.freeze(["shop","inventory","item-details"]) }),
+  mascotProfessor: Object.freeze({ id: "mascot-professor", kind: "svg", path: "icons/mascot-professor.svg", description: "Original Avero chibi professor mascot", uses: Object.freeze(["welcome", "help", "profile", "loading"]) }),
   gamesHero: Object.freeze({ id: "games-hero", kind: "canvas", renderer: "renderAveroCanvas", description: "Generated Avero games and coins hero artwork", uses: Object.freeze(["games"]) })
 });
 
