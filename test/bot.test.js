@@ -312,9 +312,11 @@ test("leaderboard sorts server members by the requested category", async () => {
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
-  assert.equal(response.embeds[0].title, "🪙 Coin leaderboard");
-  assert.match(response.embeds[0].description, /<@user-1> — \*\*900 coins\*\*/);
-  assert.match(response.embeds[0].description, /<@user-2> — \*\*450 coins\*\*/);
+  assert.equal(response.flags, MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Coin leaderboard/);
+  assert.match(text, /<@user-1> — \\*\\*900 coins\\*\\*/);
+  assert.match(text, /<@user-2> — \\*\\*450 coins\\*\\*/);
 });
 
 
@@ -414,14 +416,15 @@ test("setup command reports channel permissions, feature status and first steps 
   }, {
     settings: { gamesEnabled: true, currencyEnabled: false }
   });
-  assert.equal(response.flags, MessageFlags.Ephemeral);
-  const embed = response.embeds[0];
-  assert.match(embed.description, /\/games/);
-  assert.match(embed.description, /\/daily/);
-  assert.match(embed.description, /Manage Server required/);
-  assert.match(embed.fields[0].value, /View Channel/);
-  assert.match(embed.fields[0].value, /Send Messages/);
-  assert.match(embed.fields[0].value, /Embed Links.*needed/);
-  assert.match(embed.fields[1].value, /Games.*Ready/);
-  assert.match(embed.fields[1].value, /Currency.*Paused/);
+  assert.equal(response.flags, MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
+  const text = panelText(response);
+  assert.match(text, /Server setup/);
+  assert.match(text, /\\/games/);
+  assert.match(text, /\\/daily/);
+  assert.match(text, /Manage Server required/);
+  assert.match(text, /View Channel/);
+  assert.match(text, /Send Messages/);
+  assert.match(text, /Embed Links.*needed/);
+  assert.match(text, /Games.*Ready/);
+  assert.match(text, /Currency.*Paused/);
 });
