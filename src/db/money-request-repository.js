@@ -28,6 +28,7 @@ export async function createMoneyRequest(prisma, guildId, requesterId, targetId,
 export async function respondToMoneyRequest(prisma, guildId, requestId, responderId, decision, { now = new Date() } = {}) {
   if (!["accept", "decline"].includes(decision)) throw new TypeError("Choose accept or decline.");
   if (typeof requestId !== "string" || !requestId.trim()) throw new TypeError("A request ID is required.");
+  requireMember(guildId, responderId);
   const serverId = guildId.trim();
   return prisma.$transaction(async (tx) => {
     const request = await tx.moneyRequest.findUnique({ where: { id: requestId } });
