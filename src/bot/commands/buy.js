@@ -26,7 +26,7 @@ export const buyCommand = Object.freeze({
       await interaction.reply({ content: "That item is not in the shop.", flags: MessageFlags.Ephemeral });
       return;
     }
-    const result = await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price);
+    const result = await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price, { currency: item.currency ?? "coins" });
     await interaction.reply(renderBuy(result, item, interaction.user.id));
   }
 });
