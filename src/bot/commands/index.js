@@ -1,4 +1,5 @@
 import { achievementsCommand } from "./achievements.js";
+import { askCommand } from "./ask.js";
 import { balanceCommand } from "./balance.js";
 import { buyCommand } from "./buy.js";
 import { configCommand } from "./config.js";
@@ -31,6 +32,7 @@ export const commands = Object.freeze([
   profileCommand,
   leaderboardCommand,
   balanceCommand,
+  askCommand,
   buyCommand,
   dailyCommand,
   contractsCommand,
