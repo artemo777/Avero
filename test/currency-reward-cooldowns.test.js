@@ -103,7 +103,7 @@ test("parallel scavenge claims award coins and collectibles only once", async ()
 test("scavenge converts duplicate collectibles into a bonus and records the full reward", async () => {
   const prisma = createPrisma();
   const now = new Date("2026-10-29T13:00:00.000Z");
-  prisma.purchases.set("guild-1:user-3:neon_badge", {
+  prisma.purchases.set("__avero_global__:user-3:neon_badge", {
     guildId: "__avero_global__",
     userId: "user-3",
     itemId: "neon_badge",
