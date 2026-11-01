@@ -83,7 +83,7 @@ test("scavenge pays coins, saves collectible drops, and records the transaction"
   assert.equal(prisma.transactions[0].type, "scavenge");
   assert.equal(prisma.transactions[0].amount, 40);
   assert.deepEqual(prisma.transactions[1], {
-    guildId: "guild-1",
+    guildId: "__avero_global__",
     userId: "user-1",
     amount: 0,
     type: "scavenge_collectible",
