@@ -207,3 +207,25 @@ test("purchases are isolated per server and invalid purchase inputs are rejected
   );
   assert.equal(prisma.transactions.length, before);
 });
+
+
+test("buy autocomplete exposes the full catalog and filters beyond Discord's 25-choice cap", async () => {
+  const { buyCommand } = await import("../src/bot/commands/buy.js");
+  const allChoices = [];
+  await buyCommand.autocomplete({
+    options: { getFocused: () => "" },
+    async respond(choices) { allChoices.push(...choices); }
+  });
+  assert.equal(allChoices.length, SHOP_ITEMS.length);
+  assert.deepEqual(new Set(allChoices.map((choice) => choice.value)), new Set(SHOP_ITEMS.map((item) => item.id)));
+  assert.ok(allChoices.every((choice) => choice.name.length <= 100));
+
+  let filteredChoices;
+  await buyCommand.autocomplete({
+    options: { getFocused: () => "gems" },
+    async respond(choices) { filteredChoices = choices; }
+  });
+  assert.ok(filteredChoices.length > 0);
+  assert.ok(filteredChoices.length <= 25);
+  assert.ok(filteredChoices.every((choice) => SHOP_ITEMS.find((item) => item.id === choice.value)?.currency === "gems"));
+});
