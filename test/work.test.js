@@ -97,7 +97,7 @@ test("work command responds privately outside servers and requires database cont
   };
   await workCommand.execute(interaction, { prisma: createPrisma() });
   assert.deepEqual(replies[0], {
-    content: "Work rewards are available inside a server.",
+    content: "Work is available inside a server.",
     flags: MessageFlags.Ephemeral
   });
   await assert.rejects(workCommand.execute({ ...interaction, guildId: "guild-1" }), /requires a database/);

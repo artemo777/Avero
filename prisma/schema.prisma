@@ -28,6 +28,7 @@ model CurrencyAccount {
   guildId      String
   userId       String
   balance      Int      @default(0)
+  gemBalance   Int      @default(0)
   lastDailyAt  DateTime?
   dailyStreak  Int      @default(0)
   lastWorkAt   DateTime?
@@ -45,6 +46,7 @@ model CurrencyTransaction {
   guildId   String
   userId    String
   amount    Int
+  currency  String   @default("coins")
   type      String
   createdAt DateTime @default(now())
 
@@ -105,4 +107,34 @@ model MemberTitle {
 
   @@unique([guildId, userId, titleId])
   @@index([guildId, userId])
+}
+
+model MemberJob {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  jobId        String
+  shifts       Int      @default(0)
+  promotions   Int      @default(0)
+  lastShiftAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, jobId])
+}
+
+model MoneyRequest {
+  id          String   @id @default(cuid())
+  guildId     String
+  requesterId String
+  targetId    String
+  amount      Int
+  status      String   @default("pending")
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  respondedAt DateTime?
+
+  @@index([guildId, targetId, status, expiresAt])
+  @@index([guildId, requesterId, createdAt])
 }

@@ -34,7 +34,8 @@ test("insufficient-funds purchase response points to all main earning commands",
     account: { balance: 20 }
   }, item, "user-1");
 
-  assert.match(panelText(response), /daily, \/work, \/scavenge, \/contracts, \/guess, \/rps or \/vault/);
+  assert.match(panelText(response), /Not enough coins/);
+  assert.match(panelText(response), /Balance: \*\*20 coins/);
 });
 
 test("help documents game-specific leaderboards and free game rules", async () => {

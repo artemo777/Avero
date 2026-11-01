@@ -74,23 +74,23 @@ function createFakePrisma(initialBalance = 0) {
 }
 
 
-test("shop paginates thumbnail item sections and keeps controls within Discord limits", async () => {
+test("shop paginates compact category sections and keeps controls within Discord limits", async () => {
   const response = await renderShop(createFakePrisma(500), "guild-1", "user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
-  const firstPageItems = SHOP_ITEMS.slice(0, 3);
+  const firstPageItems = SHOP_ITEMS.slice(0, 2);
   assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length);
-  assert.match(panelText(response), /THE DROP/);
-  assert.match(panelText(response), /COLLECTIBLES • VIRTUAL ITEMS ONLY/);
+  assert.match(panelText(response), /SHOP \/ MAKE A SELECTION/);
+  assert.match(panelText(response), /VIRTUAL ITEMS ONLY/);
   for (const item of firstPageItems) assert.match(panelText(response), new RegExp(item.name));
-  for (const item of SHOP_ITEMS.slice(3)) assert.doesNotMatch(panelText(response), new RegExp(item.name));
+  for (const item of SHOP_ITEMS.slice(2, 4)) assert.doesNotMatch(panelText(response), new RegExp(item.name));
   const rows = panel.components.filter((component) => component.type === 1);
-  assert.equal(rows.length, firstPageItems.length + 1, "one control row per item plus one navigation row");
+  assert.equal(rows.length, firstPageItems.length + 2, "item controls, category selector, and navigation");
   const countNested = (component) => 1 + (component.components ?? []).reduce((sum, child) => sum + countNested(child), 0) + (component.accessory ? countNested(component.accessory) : 0);
   assert.ok(countNested(panel) <= 40, "shop stays within Discord's 40-component limit");
-  const componentIds = rows.flatMap((row) => row.components.map((component) => component.custom_id));
+  const componentIds = rows.flatMap((row) => row.components.map((component) => component.custom_id).filter(Boolean));
   assert.equal(new Set(componentIds).size, componentIds.length, "all component custom IDs are unique");
-  assert.ok(componentIds.includes("avero|user-1|shop_page|1"));
+  assert.ok(componentIds.includes("avero|user-1|shop_page|all:1"));
   const sections = panel.components.filter((component) => component.type === 9);
   for (const [index, section] of sections.entries()) {
     assert.equal(section.accessory?.media?.url, "attachment://avero-collectible-" + index + ".png");
@@ -99,10 +99,10 @@ test("shop paginates thumbnail item sections and keeps controls within Discord l
 
   const secondResponse = await renderShop(createFakePrisma(500), "guild-1", "user-1", 1);
   const secondPanel = secondResponse.components[0].toJSON();
-  for (const item of SHOP_ITEMS.slice(3)) assert.match(panelText(secondResponse), new RegExp(item.name));
-  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, SHOP_ITEMS.length - 3);
+  for (const item of SHOP_ITEMS.slice(2, 4)) assert.match(panelText(secondResponse), new RegExp(item.name));
+  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 1);
   assert.ok(secondPanel.components.length <= 10, "second shop page stays within Discord's container component limit");
-  assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|0")));
+  assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|all:0")));
 });
 
 

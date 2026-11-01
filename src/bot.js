@@ -7,6 +7,7 @@ import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { handleGameComponent } from "./bot/game-ui.js";
 import { getGuildSettings } from "./db/guild-settings-repository.js";
 import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
+import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 
 let config;
 try {
@@ -18,7 +19,7 @@ try {
 
 const commandMap = createCommandMap(commands);
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
-const currencyCommandNames = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
+const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
@@ -48,8 +49,17 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton()) {
-    if (interaction.customId.startsWith("avero-config|")) {
+  if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
+      try {
+        await handleMoneyRequestButton(interaction, getPrismaClient());
+      } catch (error) {
+        console.error("Money request response failed:", error);
+        await interaction.reply({ content: "Avero could not process that request. Please try again.", flags: MessageFlags.Ephemeral }).catch(() => {});
+      }
+      return;
+    }
+    if (interaction.isButton() && interaction.customId.startsWith("avero-config|")) {
       try {
         await handleConfigButton(interaction, getPrismaClient());
       } catch (error) {
@@ -69,7 +79,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
       const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "collections", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;

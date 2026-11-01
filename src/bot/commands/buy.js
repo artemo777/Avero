@@ -12,7 +12,7 @@ export const buyCommand = Object.freeze({
       name: "item",
       description: "Choose a shop item.",
       required: true,
-      choices: SHOP_ITEMS.map((item) => ({ name: item.name + " — " + item.price + " coins", value: item.id }))
+      choices: SHOP_ITEMS.slice(0, 25).map((item) => ({ name: item.name + " — " + item.price + " " + (item.currency === "gems" ? "gems" : "coins"), value: item.id }))
     }]
   }),
   async execute(interaction, { prisma } = {}) {
@@ -26,7 +26,7 @@ export const buyCommand = Object.freeze({
       await interaction.reply({ content: "That item is not in the shop.", flags: MessageFlags.Ephemeral });
       return;
     }
-    const result = await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price);
+    const result = await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price, { currency: item.currency ?? "coins" });
     await interaction.reply(renderBuy(result, item, interaction.user.id));
   }
 });

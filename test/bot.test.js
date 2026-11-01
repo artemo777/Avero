@@ -176,6 +176,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
   assert.ok(names.includes("work"));
+  assert.ok(names.includes("ask"));
   assert.ok(names.includes("contracts"));
   assert.ok(names.includes("achievements"));
   assert.ok(names.includes("vault"));
@@ -183,9 +184,39 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("config"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 23);
+  assert.equal(names.length, 24);
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
+});
+
+test("shop category select and pagination preserve the selected category", async () => {
+  const prisma = {
+    currencyPurchase: { findMany: async () => [] },
+    currencyAccount: { findUnique: async () => ({ balance: 1200, gemBalance: 7 }) }
+  };
+  let updated;
+  const interaction = {
+    customId: "avero|user-1|shop_category",
+    user: { id: "user-1" },
+    guildId: "guild-1",
+    values: ["gems"],
+    isStringSelectMenu: () => true,
+    reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); },
+    update: async (payload) => { updated = payload; }
+  };
+  await handleGameComponent(interaction, { prisma });
+  let panel = updated.components[0].toJSON();
+  let text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
+  assert.match(text, /Aurora Frame/);
+  assert.doesNotMatch(text, /Glitch Gremlin/);
+  assert.ok(panel.components.some((component) => component.type === 1 && component.components.some((child) => child.type === 3 && child.options.some((option) => option.value === "gems" && option.default))));
+
+  interaction.customId = "avero|user-1|shop_page|all:1";
+  interaction.isStringSelectMenu = () => false;
+  await handleGameComponent(interaction, { prisma });
+  panel = updated.components[0].toJSON();
+  const pageButtons = panel.components.filter((component) => component.type === 1).flatMap((row) => row.components);
+  assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
 });
 
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
@@ -239,7 +270,7 @@ test("profile command combines wallet and collection data", async () => {
   const text = panelText(response);
   assert.match(text, /Ada/);
   assert.match(text, /1,250 coins/);
-  assert.match(text, /1 \/ 6/);
+  assert.match(text, /1 \/ 26/);
   assert.match(text, /Rookie Guess · 0 wins/);
   assert.equal(response.files, undefined);
 });

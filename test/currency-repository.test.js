@@ -13,7 +13,7 @@ function createFakePrisma() {
     currencyAccount: {
       async upsert({ where, create }) {
         const key = keyOf(where.guildId_userId);
-        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, lastDailyAt: null, dailyStreak: 0, lastGameRewardAt: null });
+        if (!accounts.has(key)) accounts.set(key, { ...create, balance: 0, gemBalance: 0, lastDailyAt: null, dailyStreak: 0, lastGameRewardAt: null });
         return accounts.get(key);
       },
       async findUnique({ where }) {
@@ -34,6 +34,7 @@ function createFakePrisma() {
           if (!eligible) return { count: 0 };
         }
         if (data.balance?.increment !== undefined) account.balance += data.balance.increment;
+        if (data.gemBalance?.increment !== undefined) account.gemBalance += data.gemBalance.increment;
         for (const [field, value] of Object.entries(data)) {
           if ((field.startsWith("last") || field === "dailyStreak") && value !== undefined) account[field] = value;
         }
@@ -160,4 +161,19 @@ test("currency repository rejects invalid identifiers, cooldowns, and dates", as
     /valid Date/
   );
   assert.equal(prisma.transactions.length, 0);
+});
+
+test("a seven-day daily streak grants one gem without mixing coin and gem ledgers", async () => {
+  const prisma = createFakePrisma();
+  let result;
+  for (let day = 1; day <= 7; day++) {
+    result = await claimDailyReward(prisma, "guild-gems", "streak-user", {
+      now: new Date(Date.UTC(2026, 9, day, 12))
+    });
+  }
+  assert.equal(result.dailyStreak, 7);
+  assert.equal(result.gemsAwarded, 1);
+  assert.equal(result.account.balance, 700);
+  assert.equal(result.account.gemBalance, 1);
+  assert.equal(prisma.transactions.filter((entry) => entry.currency === "gems").length, 1);
 });
