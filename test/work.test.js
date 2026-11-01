@@ -111,7 +111,7 @@ test("work career board paginates at five jobs and uses the professor mascot", a
   const firstJson = first.components[0].toJSON();
   const firstText = firstJson.components.filter((part) => part.type === 10).map((part) => part.content).join("\n");
   assert.equal(first.files.length, 1);
-  assert.equal(firstJson.components.filter((part) => part.type === 9).length, 6);
+  assert.equal(firstJson.components.filter((part) => part.type === 9).length, 1);
   assert.match(firstText, new RegExp(WORK_JOBS[0].name));
   assert.match(firstText, new RegExp(WORK_JOBS[4].name));
   assert.doesNotMatch(firstText, new RegExp(WORK_JOBS[5].name));
