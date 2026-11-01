@@ -8,12 +8,9 @@ function requireIdentifier(value, name) {
 }
 
 function currencyKey(guildId, userId) {
-  return {
-    guildId: GLOBAL_SCOPE_ID,
-    // Validate the calling context, but never partition member data by guild.
-    ...(() => { requireIdentifier(guildId, "guildId"); return {}; })(),
-    userId: requireIdentifier(userId, "userId")
-  };
+  // Validate the calling context, but never partition member data by guild.
+  requireIdentifier(guildId, "guildId");
+  return { guildId: GLOBAL_SCOPE_ID, userId: requireIdentifier(userId, "userId") };
 }
 
 function requirePositiveInteger(value, name, max = 1_000_000) {
