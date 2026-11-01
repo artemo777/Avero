@@ -18,13 +18,14 @@ export const perksCommand = Object.freeze({
       settings.funderRoleId ? "✦ **Funder** · +15 daily coins" : null,
       settings.voterRoleId ? "▣ **Voter** · +10 daily coins" : null
     ].filter(Boolean);
-    await interaction.reply(gamePayload(createGamePanel({
+    const payload = gamePayload(createGamePanel({
       title: "Your perks",
       eyebrow: "ROLE PERKS",
       description: perk.id === "member" ? "No role perk active right now." : "**" + perk.flair + "** is active · +" + perk.dailyBonus + " daily coins.",
       sections: ["**Available in this server**\n" + (configured.length ? configured.join("\n") : "No role perks have been set up here yet.")],
       footer: "HIGHEST ROLE PERK APPLIES • VIRTUAL COINS ONLY",
       separators: true
-    })), { flags: MessageFlags.Ephemeral });
+    }));
+    await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
   }
 });
