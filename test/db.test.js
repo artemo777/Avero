@@ -6,7 +6,7 @@ import {
 } from "../src/db/member-repository.js";
 
 test("member repository looks up a profile by guild and user", async () => {
-  const expected = { guildId: "guild-1", userId: "user-1", xp: 20 };
+  const expected = { guildId: "__avero_global__", userId: "user-1", xp: 20 };
   let received;
   const prisma = {
     memberProfile: {
@@ -19,13 +19,13 @@ test("member repository looks up a profile by guild and user", async () => {
 
   assert.equal(await getMemberProfile(prisma, " guild-1 ", " user-1 "), expected);
   assert.deepEqual(received, {
-    where: { guildId_userId: { guildId: "guild-1", userId: "user-1" } }
+    where: { guildId_userId: { guildId: "__avero_global__", userId: "user-1" } }
   });
 });
 
 test("ensure member profile creates missing profiles without resetting existing data", async () => {
   let received;
-  const profile = { guildId: "guild-1", userId: "user-1", xp: 40 };
+  const profile = { guildId: "__avero_global__", userId: "user-1", xp: 40 };
   const prisma = {
     memberProfile: {
       upsert: async (args) => {
@@ -37,8 +37,8 @@ test("ensure member profile creates missing profiles without resetting existing 
 
   assert.equal(await ensureMemberProfile(prisma, "guild-1", "user-1"), profile);
   assert.deepEqual(received, {
-    where: { guildId_userId: { guildId: "guild-1", userId: "user-1" } },
-    create: { guildId: "guild-1", userId: "user-1" },
+    where: { guildId_userId: { guildId: "__avero_global__", userId: "user-1" } },
+    create: { guildId: "__avero_global__", userId: "user-1" },
     update: {}
   });
 });
