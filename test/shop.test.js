@@ -207,3 +207,35 @@ test("purchases are isolated per server and invalid purchase inputs are rejected
   );
   assert.equal(prisma.transactions.length, before);
 });
+
+
+test("buy autocomplete exposes the full catalog and filters beyond Discord's 25-choice cap", async () => {
+  const { buyCommand } = await import("../src/bot/commands/buy.js");
+  const allChoices = [];
+  await buyCommand.autocomplete({
+    options: { getFocused: () => "" },
+    async respond(choices) { allChoices.push(...choices); }
+  });
+  assert.equal(allChoices.length, Math.min(25, SHOP_ITEMS.length));
+  assert.ok(allChoices.every((choice) => SHOP_ITEMS.some((item) => item.id === choice.value)));
+  const remainingItems = SHOP_ITEMS.filter((item) => !allChoices.some((choice) => choice.value === item.id));
+  assert.ok(remainingItems.length <= 1, "at most one catalog item is outside the initial 25 suggestions");
+  for (const item of remainingItems) {
+    let exactMatches;
+    await buyCommand.autocomplete({
+      options: { getFocused: () => item.name },
+      async respond(choices) { exactMatches = choices; }
+    });
+    assert.ok(exactMatches.some((choice) => choice.value === item.id), item.name + " remains discoverable by search");
+  }
+  assert.ok(allChoices.every((choice) => choice.name.length <= 100));
+
+  let filteredChoices;
+  await buyCommand.autocomplete({
+    options: { getFocused: () => "gems" },
+    async respond(choices) { filteredChoices = choices; }
+  });
+  assert.ok(filteredChoices.length > 0);
+  assert.ok(filteredChoices.length <= 25);
+  assert.ok(filteredChoices.every((choice) => SHOP_ITEMS.find((item) => item.id === choice.value)?.currency === "gems"));
+});

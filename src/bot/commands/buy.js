@@ -12,9 +12,20 @@ export const buyCommand = Object.freeze({
       name: "item",
       description: "Choose a shop item.",
       required: true,
-      choices: SHOP_ITEMS.slice(0, 25).map((item) => ({ name: item.name + " — " + item.price + " " + (item.currency === "gems" ? "gems" : "coins"), value: item.id }))
+      autocomplete: true
     }]
   }),
+  async autocomplete(interaction) {
+    const query = interaction.options.getFocused().trim().toLocaleLowerCase();
+    const matches = SHOP_ITEMS.filter((item) => {
+      const searchable = [item.name, item.id, item.category, item.currency].join(" ").toLocaleLowerCase();
+      return !query || searchable.includes(query);
+    }).slice(0, 25);
+    await interaction.respond(matches.map((item) => ({
+      name: (item.name + " — " + item.price + " " + (item.currency === "gems" ? "gems" : "coins")).slice(0, 100),
+      value: item.id
+    })));
+  },
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Buy command requires a database client.");
     if (!interaction.guildId) {
