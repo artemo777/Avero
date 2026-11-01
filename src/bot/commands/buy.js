@@ -12,7 +12,7 @@ export const buyCommand = Object.freeze({
       name: "item",
       description: "Choose a shop item.",
       required: true,
-      choices: SHOP_ITEMS.map((item) => ({ name: item.name + " — " + item.price + " coins", value: item.id }))
+      choices: SHOP_ITEMS.slice(0, 25).map((item) => ({ name: item.name + " — " + item.price + " " + (item.currency === "gems" ? "gems" : "coins"), value: item.id }))
     }]
   }),
   async execute(interaction, { prisma } = {}) {
