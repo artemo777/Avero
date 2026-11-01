@@ -102,7 +102,7 @@ test("shop paginates compact category sections and keeps controls within Discord
   const secondResponse = await renderShop(createFakePrisma(500), "guild-1", "user-1", 1);
   const secondPanel = secondResponse.components[0].toJSON();
   for (const item of SHOP_ITEMS.slice(2, 4)) assert.match(panelText(secondResponse), new RegExp(item.name));
-  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 1);
+  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 2);
   assert.ok(secondPanel.components.length <= 10, "second shop page stays within Discord's container component limit");
   assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|all:0")));
 });
