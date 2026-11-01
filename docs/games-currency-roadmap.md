@@ -24,7 +24,7 @@ Current earning rules:
 | Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |
 | The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
 
-The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
+Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`. The `/work shift` command and wallet Work button call this same transaction and share the same per-member 60-minute cooldown. The older random-reward Work button path is retired. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
 ## Finish order
 
