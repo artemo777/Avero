@@ -1,4 +1,4 @@
-import { ButtonBuilder, ButtonStyle, ActionRowBuilder, MessageFlags } from "discord.js";
+import { MessageFlags } from "discord.js";
 import { createGamePanel, gamePayload } from "./game-ui.js";
 import { respondToMoneyRequest } from "../db/money-request-repository.js";
 
@@ -29,6 +29,7 @@ export async function handleMoneyRequestButton(interaction, prisma) {
   const description = result.accepted
     ? "Transferred **" + result.request.amount.toLocaleString("en-US") + " coins**.\nYour wallet: **" + result.payer.balance.toLocaleString("en-US") + "**."
     : "The request was declined. No coins were moved.";
-  await interaction.update(resultPanel(result.accepted ? "Request accepted" : "Request declined", description));
+  const payload = resultPanel(result.accepted ? "Request accepted" : "Request declined", description);
+  await interaction.update({ components: payload.components, attachments: [] });
   return true;
 }
