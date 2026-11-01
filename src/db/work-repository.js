@@ -46,9 +46,10 @@ export async function resignFromJob(prisma, guildId, userId) {
   return { resigned: true, current };
 }
 
-export async function runJobShift(prisma, guildId, userId, { now = new Date(), cooldownMs = WORK_SHIFT_COOLDOWN_MS } = {}) {
+export async function runJobShift(prisma, guildId, userId, { now = new Date(), cooldownMs = WORK_SHIFT_COOLDOWN_MS, bonusCoins = 0 } = {}) {
   const memberKey = key(guildId, userId);
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
+  if (!Number.isSafeInteger(bonusCoins) || bonusCoins < 0 || bonusCoins > 100) throw new TypeError("Work bonus must be an integer from 0 to 100.");
   const current = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
   if (!current || current.jobId === "unemployed") return { worked: false, reason: "not_employed" };
   const job = WORK_JOBS.find((entry) => entry.id === current.jobId);
@@ -60,7 +61,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     await tx.currencyAccount.upsert({ where: { guildId_userId: memberKey }, create: memberKey, update: {} });
     const nextShifts = current.shifts + 1;
     const nextPromotions = Math.min(3, WORK_PROMOTION_THRESHOLDS.filter((threshold) => nextShifts >= threshold).length);
-    const salary = Math.round(job.salary * (1 + current.promotions * 0.15));
+    const salary = Math.round(job.salary * (1 + current.promotions * 0.15)) + bonusCoins;
     const updatedJob = await tx.memberJob.updateMany({
       where: {
         ...memberKey,
