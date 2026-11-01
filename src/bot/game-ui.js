@@ -166,7 +166,7 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n-# Server wallet · virtual currency only",
-    sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 30m\\n🧭 /scavenge · every 10m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
+    sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 60m\\n🧭 /scavenge · every 20m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
     footer: "SERVER WALLET",
     buttons: navButtons(userId, true),
     separators: true
@@ -343,7 +343,7 @@ export function renderScavenge(result, userId, route, item) {
   return gamePayload(createGamePanel({
     title: result.itemId ? "New find!" : "Run complete.",
     description: "### 🧭 " + route.name + "\n" + route.description + "\n\n✦ **+" + result.amount + " coins**" + dropText +
-      "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 10 minutes.",
+      "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 20 minutes.",
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "REWARDS SAVED • FREE TO PLAY",
@@ -387,7 +387,7 @@ export function renderWork(result, userId, task) {
   }
   return gamePayload(createGamePanel({
     title: "Shift done.",
-    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nBack in 30 minutes.",
+    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nBack in 60 minutes.",
     eyebrow: "WORKSHOP",
     color: THEME.colors.success,
     footer: "REWARD ADDED TO YOUR SERVER WALLET",
