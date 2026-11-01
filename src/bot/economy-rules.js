@@ -7,7 +7,7 @@ export const WORK_COOLDOWN_MS = 1_800_000;
 
 export const SCAVENGE_REWARD_MIN = 25;
 export const SCAVENGE_REWARD_MAX = 55;
-export const SCAVENGE_COOLDOWN_MS = 600_000;
+export const SCAVENGE_COOLDOWN_MS = 1_200_000;
 
 export const GUESS_REWARD = 25;
 export const GUESS_REWARD_COOLDOWN_MS = 600_000;

@@ -60,8 +60,8 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/balance` — shows your Avero coin balance in the current server.
 - `/daily` — claims 100 coins once per 24-hour cooldown.
 - `/contracts [claim]` — view four daily goals and claim each completed reward once; progress resets at 00:00 UTC. A new collectible found during `/scavenge` also counts toward the collector goal.
-- `/work` — complete a community-themed shift for 60–120 coins every 30 minutes.
-- `/scavenge [route]` — choose the Old Server Archive, Neon Plaza, or Moonlit Garden every 10 minutes for 25–55 coins and a route-specific collectible drop; duplicate finds grant a coin bonus. Leave the route blank for a random expedition.
+- `/work` — apply for a career, then earn its 70–150 coin salary plus promotions on one shared 60-minute shift cooldown. The `/work shift` command and wallet Work button use the same career system.
+- `/scavenge [route]` — choose the Old Server Archive, Neon Plaza, or Moonlit Garden every 20 minutes for 25–55 coins and a route-specific collectible drop; duplicate finds grant a coin bonus. Leave the route blank for a random expedition.
 - `/coinflip call` — call heads or tails for a free round; a win can earn 25 coins under the shared 10-minute game-reward cooldown. No wagers or entry fees.
 - `/guess number` — guess a number from 1 to 5 to earn 25 coins on a win, with one 25-coin reward every 10 minutes to limit coin farming. Playing is free.
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.

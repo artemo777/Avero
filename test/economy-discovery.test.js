@@ -19,8 +19,8 @@ test("wallet explains every available coin earning route and cooldown", async ()
   const text = panelText(response);
   assert.match(text, /420/);
   assert.ok(text.includes("/daily · every 24h"));
-  assert.ok(text.includes("/work · every 30m"));
-  assert.ok(text.includes("/scavenge · every 10m"));
+  assert.ok(text.includes("/work · every 60m"));
+  assert.ok(text.includes("/scavenge · every 20m"));
   assert.ok(text.includes("/contracts · daily goals"));
   assert.ok(text.includes("/games · free mini-games"));
   assert.doesNotMatch(text, /canvas|attachment:\/\//i);
@@ -68,23 +68,21 @@ test("daily responses stay compact and preserve streak, perk and cooldown detail
   assert.match(cooldown, /Next drop/);
 });
 
-test("work responses keep reward and 30-minute cooldown clear", () => {
+test("wallet Work button renders career-shift reward and cooldown", () => {
   const complete = panelText(renderWork({
-    claimed: true,
-    amount: 80,
-    account: { balance: 500 }
-  }, "user-1", "Sorted the community archive"));
+    worked: true, salary: 70, job: { name: "Barista" },
+    current: { shifts: 1, promotions: 0 }, account: { balance: 500 }
+  }, "user-1"));
   assert.match(complete, /Shift done/);
-  assert.match(complete, /\+80 coins/);
+  assert.match(complete, /\+70 coins/);
   assert.match(complete, /500 coins/);
-  assert.match(complete, /Back in 30 minutes/);
+  assert.match(complete, /Back in 60 minutes/);
 
   const cooldown = panelText(renderWork({
-    claimed: false,
-    account: { lastWorkAt: new Date("2026-10-31T12:00:00Z") }
-  }, "user-1", "Sorted the community archive"));
+    worked: false, reason: "cooldown", nextAt: new Date("2026-11-01T13:00:00Z")
+  }, "user-1"));
   assert.match(cooldown, /off the clock/i);
-  assert.match(cooldown, /Next one opens/);
+  assert.match(cooldown, /Your next shift opens/);
 });
 
 test("scavenge responses keep discoveries, duplicate bonuses and cooldowns clear", () => {
@@ -97,7 +95,7 @@ test("scavenge responses keep discoveries, duplicate bonuses and cooldowns clear
   assert.match(complete, /Run complete/);
   assert.match(complete, /\+75 coins/);
   assert.match(complete, /575 coins/);
-  assert.match(complete, /Next run in 10 minutes/);
+  assert.match(complete, /Next run in 20 minutes/);
 
   const discovery = panelText(renderScavenge({
     claimed: true,

@@ -4,7 +4,7 @@ import { runScavenge, SCAVENGE_ROUTES } from "../game-ui.js";
 export const scavengeCommand = Object.freeze({
   data: Object.freeze({
     name: "scavenge",
-    description: "Pick a route, find coins and collectibles · 10 min cooldown.",
+    description: "Pick a route, find coins and collectibles · 20 min cooldown.",
     options: [{
       type: 3,
       name: "route",

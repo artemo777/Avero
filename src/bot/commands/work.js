@@ -49,7 +49,7 @@ export const workCommand = Object.freeze({
       const job = WORK_JOBS.find((entry) => entry.id === current.jobId);
       const next = WORK_PROMOTION_THRESHOLDS[current.promotions] ?? null;
       const stars = "★".repeat(current.promotions) + "☆".repeat(3 - current.promotions);
-      return interaction.reply(panel(job.name + " " + stars, current.shifts + " shifts completed · " + current.promotions + "/3 promotions\nSalary: " + Math.round(job.salary * (1 + current.promotions * 0.2)) + " coins/shift\n" + (next ? (next - current.shifts) + " shifts to next promotion." : "Top rank reached.")));
+      return interaction.reply(panel(job.name + " " + stars, current.shifts + " shifts completed · " + current.promotions + "/3 promotions\nSalary: " + Math.round(job.salary * (1 + current.promotions * 0.15)) + " coins/shift\n" + (next ? (next - current.shifts) + " shifts to next promotion." : "Top rank reached.")));
     }
     if (action === "resign") {
       const result = await resignFromJob(prisma, interaction.guildId, interaction.user.id);

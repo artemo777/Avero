@@ -1,5 +1,5 @@
 export const SHOP_CATEGORIES = Object.freeze([
-  Object.freeze({ id: "all", label: "Make a selection", description: "Browse the full Avero store." }),
+  Object.freeze({ id: "all", label: "All items", description: "Browse every collectible in one list." }),
   Object.freeze({ id: "cosmetics", label: "Cosmetics", description: "Profile styles and visual customizations." }),
   Object.freeze({ id: "badges", label: "Badges", description: "Collectible profile badges." }),
   Object.freeze({ id: "tools", label: "Tools", description: "Utility collectibles for future Avero features." }),

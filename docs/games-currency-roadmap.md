@@ -17,14 +17,14 @@ Current earning rules:
 | Activity | Reward | Cooldown |
 | --- | ---: | ---: |
 | Daily claim | 100 coins | 24 hours |
-| Work shift | 60–120 coins | 30 minutes |
-| Scavenge | 25–55 coins, with a collectible drop chance | 10 minutes |
+| Work shift | 70–150 coins, with up to three +15% promotions | 60 minutes |
+| Scavenge | 25–55 coins, with a collectible drop chance | 20 minutes |
 | Correct guess | 25 coins | One reward every 10 minutes |
 | Rock, paper, scissors | +25 coins on a win when the shared game-reward cooldown is ready | Free replay; 10-minute shared cooldown with Guess and Vault |
 | Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |
 | The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
 
-The reward rules live in `src/bot/economy-rules.js`. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
+Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`. The `/work shift` command and wallet Work button call this same transaction and share the same per-member 60-minute cooldown. The older random-reward Work button path is retired. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
 
 ## Finish order
 

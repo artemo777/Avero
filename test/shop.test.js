@@ -80,7 +80,7 @@ test("shop paginates compact category sections and keeps controls within Discord
   const panel = response.components[0].toJSON();
   const firstPageItems = SHOP_ITEMS.slice(0, 2);
   assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length);
-  assert.match(panelText(response), /SHOP \/ MAKE A SELECTION/);
+  assert.match(panelText(response), /SHOP \/ ALL ITEMS/);
   assert.match(panelText(response), /VIRTUAL ITEMS ONLY/);
   for (const item of firstPageItems) assert.match(panelText(response), new RegExp(item.name));
   for (const item of SHOP_ITEMS.slice(2, 4)) assert.doesNotMatch(panelText(response), new RegExp(item.name));

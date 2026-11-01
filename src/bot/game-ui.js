@@ -6,16 +6,17 @@ import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
-import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
+import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
+import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import { renderAchievementsPage } from "./commands/achievements.js";
 import { renderTitlesPage } from "./commands/titles.js";
 import {
-  DAILY_REWARD, DAILY_COOLDOWN_MS, WORK_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
-  WORK_REWARD_MIN, WORK_REWARD_MAX, SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX,
+  DAILY_REWARD, DAILY_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
+  SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX,
   GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS
 } from "./economy-rules.js";
 export const SCAVENGE_ROUTES = Object.freeze([
@@ -166,7 +167,7 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n-# Server wallet · virtual currency only",
-    sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 30m\\n🧭 /scavenge · every 10m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
+    sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 60m\\n🧭 /scavenge · every 20m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
     footer: "SERVER WALLET",
     buttons: navButtons(userId, true),
     separators: true
@@ -343,7 +344,7 @@ export function renderScavenge(result, userId, route, item) {
   return gamePayload(createGamePanel({
     title: result.itemId ? "New find!" : "Run complete.",
     description: "### 🧭 " + route.name + "\n" + route.description + "\n\n✦ **+" + result.amount + " coins**" + dropText +
-      "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 10 minutes.",
+      "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 20 minutes.",
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "REWARDS SAVED • FREE TO PLAY",
@@ -373,38 +374,26 @@ export async function runScavenge(prisma, guildId, userId, routeId = null) {
   });
   return renderScavenge(result, userId, route, itemId ? SHOP_ITEMS.find((candidate) => candidate.id === itemId) : null);
 }
-export function renderWork(result, userId, task) {
-  if (!result.claimed) {
-    const nextWork = new Date(result.account.lastWorkAt.getTime() + WORK_COOLDOWN_MS);
+export function renderWork(result, userId) {
+  if (!result.worked) {
+    const description = result.reason === "not_employed"
+      ? "Choose a career with **/work list**, apply, then return here for your next shift."
+      : "Your next shift opens " + (result.nextAt ? "<t:" + Math.floor(result.nextAt.getTime() / 1000) + ":R>." : "soon.");
     return gamePayload(createGamePanel({
-      title: "You're off the clock.",
-      description: "You've already finished a shift. Next one opens <t:" + Math.floor(nextWork.getTime() / 1000) + ":R>.",
-      eyebrow: "WORKSHOP",
-      color: THEME.colors.warning,
-      footer: "ONE SHIFT EVERY 30 MINUTES",
-      buttons: navButtons(userId, true)
+      title: result.reason === "not_employed" ? "Choose a career first." : "You're off the clock.",
+      description, eyebrow: "WORKSHOP", color: THEME.colors.warning,
+      footer: "ONE CAREER SHIFT EVERY 60 MINUTES", buttons: navButtons(userId, true)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Shift done.",
-    description: "### 🧰 " + task + "\n\n✦ **+" + result.amount + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n\nBack in 30 minutes.",
-    eyebrow: "WORKSHOP",
-    color: THEME.colors.success,
-    footer: "REWARD ADDED TO YOUR SERVER WALLET",
-    buttons: navButtons(userId, true)
+    description: "### 🧰 " + result.job.name + "\n\n✦ **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in 60 minutes.",
+    eyebrow: "WORKSHOP", color: THEME.colors.success,
+    footer: "CAREER SHIFT • REWARD ADDED TO YOUR SERVER WALLET", buttons: navButtons(userId, true)
   }));
 }
-export async function runWork(prisma, guildId, userId, { minReward = WORK_REWARD_MIN, maxReward = WORK_REWARD_MAX } = {}) {
-  if (!Number.isSafeInteger(minReward) || !Number.isSafeInteger(maxReward) || minReward < 1 || maxReward < minReward || maxReward > 100000) {
-    throw new RangeError("Work reward range is invalid.");
-  }
-  const task = WORK_TASKS[randomInt(WORK_TASKS.length)];
-  const amount = randomInt(minReward, maxReward + 1);
-  const result = await claimWorkReward(prisma, guildId, userId, {
-    amount,
-    cooldownMs: WORK_COOLDOWN_MS
-  });
-  return renderWork(result, userId, task);
+export async function runWork(prisma, guildId, userId) {
+  return renderWork(await runJobShift(prisma, guildId, userId), userId);
 }
 export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null } = {}) {
   const perkLine = perk?.dailyBonus ? "\n\n" + perk.flair + " perk: **+" + perk.dailyBonus + " coins**." : "";
@@ -658,7 +647,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       break;
     }
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
-    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id, { minReward: settings?.workMinReward ?? WORK_REWARD_MIN, maxReward: settings?.workMaxReward ?? WORK_REWARD_MAX }); break;
+    case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id, parsed.arg || null); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);

@@ -13,7 +13,7 @@ test("economy reward rules stay explicit and internally consistent", () => {
   assert.deepEqual([WORK_REWARD_MIN, WORK_REWARD_MAX], [60, 120]);
   assert.equal(WORK_COOLDOWN_MS, 30 * 60 * 1000);
   assert.deepEqual([SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX], [25, 55]);
-  assert.equal(SCAVENGE_COOLDOWN_MS, 10 * 60 * 1000);
+  assert.equal(SCAVENGE_COOLDOWN_MS, 20 * 60 * 1000);
   assert.equal(GUESS_REWARD, 25);
   assert.equal(GUESS_REWARD_COOLDOWN_MS, 10 * 60 * 1000);
 });
