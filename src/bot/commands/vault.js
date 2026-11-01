@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { submitDailyVaultAttempt } from "../../db/currency-repository.js";
+import { submitDailyVaultAttempt, getCurrencyPurchases } from "../../db/currency-repository.js";
 import { renderVault, renderVaultChallenge } from "../game-ui.js";
 import { createVaultChallenge } from "../vault-puzzle.js";
 import { GUESS_REWARD, GUESS_REWARD_COOLDOWN_MS } from "../economy-rules.js";
@@ -24,7 +24,9 @@ export const vaultCommand = Object.freeze({
     }
     const guess = interaction.options.getString("code");
     if (guess === null || guess === undefined) {
-      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id));
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
+      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook }));
       return;
     }
     if (!prisma) throw new Error("Vault command requires a database client.");
