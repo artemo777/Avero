@@ -25,13 +25,13 @@ test("games leaderboard adds legacy guess wins and all new wins exactly once", a
     }
   };
   await leaderboardCommand.execute({
-    guildId: "guild-1",
+    guildId: "__avero_global__",
     options: { getString: () => "games" },
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
   assert.deepEqual(query.where, {
-    guildId: "guild-1",
+    guildId: "__avero_global__",
     type: { in: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"] }
   });
   assert.match(panelText(response), /<@user-1> — \*\*12W \/ 5L \/ 1T · 67% win rate\*\*/);
@@ -65,7 +65,7 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
   };
   for (const category of ["guess", "rps"]) {
     await leaderboardCommand.execute({
-      guildId: "guild-1",
+      guildId: "__avero_global__",
       options: { getString: () => category },
       reply: async (payload) => { replies.push(payload); }
     }, { prisma });

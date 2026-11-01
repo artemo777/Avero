@@ -59,7 +59,7 @@ test("work rewards atomically credit coins and record the shift", async () => {
   assert.equal(result.account.balance, 105);
   assert.equal(result.account.lastWorkAt.getTime(), now.getTime());
   assert.deepEqual(prisma.transactions, [{
-    guildId: "guild-1",
+    guildId: "__avero_global__",
     userId: "user-1",
     amount: 95,
     type: "work",

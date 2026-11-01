@@ -1,3 +1,5 @@
+const GLOBAL_SCOPE_ID = "__avero_global__";
+
 function requireIdentifier(value, name) {
   if (typeof value !== "string" || value.trim() === "") {
     throw new TypeError(name + " must be a non-empty string.");
@@ -6,10 +8,9 @@ function requireIdentifier(value, name) {
 }
 
 function currencyKey(guildId, userId) {
-  return {
-    guildId: requireIdentifier(guildId, "guildId"),
-    userId: requireIdentifier(userId, "userId")
-  };
+  // Validate the calling context, but never partition member data by guild.
+  requireIdentifier(guildId, "guildId");
+  return { guildId: GLOBAL_SCOPE_ID, userId: requireIdentifier(userId, "userId") };
 }
 
 function requirePositiveInteger(value, name, max = 1_000_000) {

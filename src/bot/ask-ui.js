@@ -4,7 +4,7 @@ import { respondToMoneyRequest } from "../db/money-request-repository.js";
 
 function resultPanel(title, description) {
   return gamePayload(createGamePanel({
-    title, description, eyebrow: "AVERO / WALLET", footer: "SERVER COINS ONLY"
+    title, description, eyebrow: "AVERO / WALLET", footer: "GLOBAL COINS"
   }));
 }
 

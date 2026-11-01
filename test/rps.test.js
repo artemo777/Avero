@@ -51,7 +51,7 @@ test("rock paper scissors records game results and rewards wins without wagers",
   assert.match(text, /no wagers/i);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 1));
   assert.ok(records.length === 1 || records.length === 2);
-  assert.equal(records[0].guildId, "guild-1");
+  assert.equal(records[0].guildId, "__avero_global__");
   assert.equal(records[0].userId, "user-1");
   assert.equal(records[0].amount, 0);
   assert.match(records[0].type, /^rps_(win|loss|tie)$/);

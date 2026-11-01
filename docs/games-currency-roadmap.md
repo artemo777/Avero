@@ -42,11 +42,11 @@ Implemented on the feature branch as `/contracts` with four daily goals: complet
 
 ### 3. The Vault
 
-Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date, with one recorded code submission per member per UTC day to prevent replay farming. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
+Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date, with one recorded code submission globally per member per UTC day to prevent replay farming. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
 
 ### 4. Achievements and titles
 
-Implemented as `/achievements` with server-scoped progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, Big Spender, Archive Keeper, Circuit Breaker, and Moonlit Curator. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins. `/profile` also shows independent Rookie, Contender, Specialist, and Champion mastery tiers for Guess, Duel Deck, Coinflip, and The Vault, calculated from recorded wins without adding a new database table or changing coin payouts.
+Implemented as `/achievements` with global progress for First Shift, Field Finder, Game Regular, Duelist, First Collectible, Curator, Full Set, Coin Maker, Big Spender, Archive Keeper, Circuit Breaker, and Moonlit Curator. The command can inspect your own or another member’s milestones. Achievements are cosmetic progress only and do not mint extra coins. `/profile` also shows independent Rookie, Contender, Specialist, and Champion mastery tiers for Guess, Duel Deck, Coinflip, and The Vault, calculated from recorded wins without adding a new database table or changing coin payouts.
 
 ### 5. Expand the adventure loop without command sprawl
 
@@ -79,6 +79,6 @@ Do not run production migrations, register global commands, deploy, or merge sta
 
 ## Server controls and supporter perks
 
-The finish branch adds a server-scoped GuildSettings record and a compact /config panel. Admins with Manage Server can pause games or currency, set the daily reward and work reward range, and assign Booster, Funder and Voter roles. Only the highest matching role perk applies: Funder +15 daily coins; Booster or Voter +10. These are modest virtual-currency bonuses, not wagers or paid advantages.
+The finish branch adds a global GuildSettings record and a compact /config panel. Admins with Manage Server can pause games or currency, set the daily reward and work reward range, and assign Booster, Funder and Voter roles. Only the highest matching role perk applies: Funder +15 daily coins; Booster or Voter +10. These are modest virtual-currency bonuses, not wagers or paid advantages.
 
 The /perks command explains configured roles. Mentioning @Avero triggers a compact Components V2 intro with a Support link. The Server Profile page updates Avero's guild-specific bio, avatar and banner through Discord's current-member profile API; image links are restricted to Discord's CDN and files under 8 MB.

@@ -1,3 +1,4 @@
+const GLOBAL_SCOPE_ID = "__avero_global__";
 const MAX_ASK_AMOUNT = 10_000;
 const REQUEST_LIFETIME_MS = 10 * 60 * 1000;
 
@@ -5,7 +6,7 @@ function requireMember(guildId, userId) {
   if (typeof guildId !== "string" || !guildId.trim() || typeof userId !== "string" || !userId.trim()) {
     throw new TypeError("A server and member are required.");
   }
-  return { guildId: guildId.trim(), userId: userId.trim() };
+  return { guildId: GLOBAL_SCOPE_ID, userId: userId.trim() };
 }
 
 export async function createMoneyRequest(prisma, guildId, requesterId, targetId, amount, { now = new Date() } = {}) {
@@ -18,7 +19,7 @@ export async function createMoneyRequest(prisma, guildId, requesterId, targetId,
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
   return prisma.moneyRequest.create({
     data: {
-      guildId: requester.guildId, requesterId: requester.userId, targetId: targetId.trim(),
+      guildId: guildId.trim(), requesterId: requester.userId, targetId: targetId.trim(),
       amount, expiresAt: new Date(now.getTime() + REQUEST_LIFETIME_MS), createdAt: now
     }
   });
@@ -27,7 +28,8 @@ export async function createMoneyRequest(prisma, guildId, requesterId, targetId,
 export async function respondToMoneyRequest(prisma, guildId, requestId, responderId, decision, { now = new Date() } = {}) {
   if (!["accept", "decline"].includes(decision)) throw new TypeError("Choose accept or decline.");
   if (typeof requestId !== "string" || !requestId.trim()) throw new TypeError("A request ID is required.");
-  const serverId = requireMember(guildId, responderId).guildId;
+  requireMember(guildId, responderId);
+  const serverId = guildId.trim();
   return prisma.$transaction(async (tx) => {
     const request = await tx.moneyRequest.findUnique({ where: { id: requestId } });
     if (!request || request.guildId !== serverId) return { completed: false, reason: "missing" };
@@ -48,8 +50,8 @@ export async function respondToMoneyRequest(prisma, guildId, requestId, responde
       if (declined.count !== 1) return { completed: false, reason: "handled" };
       return { completed: true, accepted: false, request };
     }
-    const payerKey = { guildId: serverId, userId: responderId };
-    const receiverKey = { guildId: serverId, userId: request.requesterId };
+    const payerKey = { guildId: GLOBAL_SCOPE_ID, userId: responderId };
+    const receiverKey = { guildId: GLOBAL_SCOPE_ID, userId: request.requesterId };
     await tx.currencyAccount.upsert({ where: { guildId_userId: payerKey }, create: payerKey, update: {} });
     await tx.currencyAccount.upsert({ where: { guildId_userId: receiverKey }, create: receiverKey, update: {} });
     const debit = await tx.currencyAccount.updateMany({

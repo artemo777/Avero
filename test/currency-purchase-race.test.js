@@ -7,8 +7,8 @@ function uniqueConstraintError() {
 }
 
 test("concurrent duplicate purchase resolves as already owned", async () => {
-  const account = { guildId: "guild-1", userId: "user-1", balance: 75 };
-  const purchase = { guildId: "guild-1", userId: "user-1", itemId: "neon_badge" };
+  const account = { guildId: "__avero_global__", userId: "user-1", balance: 75 };
+  const purchase = { guildId: "__avero_global__", userId: "user-1", itemId: "neon_badge" };
   const prisma = {
     // The transaction's unique constraint can fail after the first ownership
     // check; Prisma rolls back the losing transaction before rejecting.
@@ -68,7 +68,7 @@ test("a unique constraint error without an existing purchase is rethrown", async
 
 function createPurchasePrisma(initialBalance) {
   const account = {
-    guildId: "guild-2",
+    guildId: "__avero_global__",
     userId: "user-2",
     balance: initialBalance
   };
@@ -123,9 +123,9 @@ test("parallel purchases of different items cannot overspend the same balance", 
 
 
 test("purchase rechecks ownership when a concurrent debit makes the balance update lose", async () => {
-  const account = { guildId: "guild-3", userId: "user-3", balance: 0 };
+  const account = { guildId: "__avero_global__", userId: "user-3", balance: 0 };
   let accountReads = 0;
-  const purchase = { guildId: "guild-3", userId: "user-3", itemId: "neon_badge" };
+  const purchase = { guildId: "__avero_global__", userId: "user-3", itemId: "neon_badge" };
   let ownershipChecks = 0;
   const prisma = {
     $transaction: async (callback) => callback({

@@ -5,6 +5,9 @@ import { PrismaClient } from "@prisma/client";
 import {
   awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem, submitDailyVaultAttempt
 } from "../src/db/currency-repository.js";
+import { applyForJob, getMemberJob, runJobShift } from "../src/db/work-repository.js";
+import { getMemberProfile, ensureMemberProfile } from "../src/db/member-repository.js";
+import { getMemberTitles, unlockMemberTitle } from "../src/db/title-repository.js";
 
 const enabled = Boolean(process.env.DATABASE_URL);
 const prisma = enabled ? new PrismaClient() : null;
@@ -14,22 +17,22 @@ after(async () => {
 });
 
 async function createAccount(balance = 0) {
-  const guildId = "integration-" + randomUUID();
+  const guildId = "__avero_global__";
   const userId = "user-" + randomUUID();
   await prisma.currencyAccount.create({ data: { guildId, userId, balance } });
   return { guildId, userId };
 }
 
-async function cleanGuild(guildId) {
-  await prisma.dailyContractClaim.deleteMany({ where: { guildId } });
-  await prisma.currencyTransaction.deleteMany({ where: { guildId } });
-  await prisma.currencyPurchase.deleteMany({ where: { guildId } });
-  await prisma.currencyAccount.deleteMany({ where: { guildId } });
+async function cleanGuild(guildId, userId) {
+  await prisma.dailyContractClaim.deleteMany({ where: { guildId, userId } });
+  await prisma.currencyTransaction.deleteMany({ where: { guildId, userId } });
+  await prisma.currencyPurchase.deleteMany({ where: { guildId, userId } });
+  await prisma.currencyAccount.deleteMany({ where: { guildId, userId } });
 }
 
 test("PostgreSQL allows only one concurrent daily claim", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount();
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T12:00:00.000Z");
 
   const results = await Promise.all([
@@ -166,4 +169,58 @@ test("PostgreSQL allows only one concurrent claim for a completed daily contract
   assert.equal(account.balance, 90);
   assert.equal(await prisma.dailyContractClaim.count({ where: { guildId, userId, contractDate: "2026-10-30", contractId: "work_shift" } }), 1);
   assert.equal(await prisma.currencyTransaction.count({ where: { guildId, userId, type: "contract_reward" } }), 1);
+});
+
+test("PostgreSQL shares wallet, cooldowns, and item ownership across guild contexts", { skip: !enabled }, async (t) => {
+  const { guildId, userId } = await createAccount(250);
+  t.after(() => cleanGuild(guildId, userId));
+  const now = new Date("2026-10-30T20:00:00.000Z");
+
+  const firstPurchase = await purchaseCurrencyItem(prisma, "guild-a", userId, "global_test_badge", 100, { now });
+  const duplicatePurchase = await purchaseCurrencyItem(prisma, "guild-b", userId, "global_test_badge", 100, { now });
+  assert.equal(firstPurchase.purchased, true);
+  assert.equal(duplicatePurchase.purchased, false);
+  assert.equal(duplicatePurchase.reason, "owned");
+
+  const firstDaily = await claimDailyReward(prisma, "guild-a", userId, { now });
+  const secondDaily = await claimDailyReward(prisma, "guild-b", userId, { now });
+  assert.equal(firstDaily.claimed, true);
+  assert.equal(secondDaily.claimed, false);
+
+  const account = await prisma.currencyAccount.findUnique({
+    where: { guildId_userId: { guildId: "__avero_global__", userId } }
+  });
+  assert.equal(account.balance, 250 - 100 + 100);
+  assert.equal(await prisma.currencyPurchase.count({ where: { guildId: "__avero_global__", userId, itemId: "global_test_badge" } }), 1);
+});
+
+test("PostgreSQL shares profiles, titles, and careers across guild contexts", { skip: !enabled }, async (t) => {
+  const userId = "user-" + randomUUID();
+  const globalGuildId = "__avero_global__";
+  t.after(async () => {
+    await prisma.memberTitle.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.memberJob.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.memberProfile.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.currencyAccount.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.currencyTransaction.deleteMany({ where: { guildId: globalGuildId, userId } });
+  });
+
+  await ensureMemberProfile(prisma, "guild-a", userId);
+  const fromOtherGuild = await getMemberProfile(prisma, "guild-b", userId);
+  assert.ok(fromOtherGuild);
+  assert.equal(fromOtherGuild.guildId, globalGuildId);
+
+  const firstTitle = await unlockMemberTitle(prisma, "guild-a", userId, "global_test_title");
+  const duplicateTitle = await unlockMemberTitle(prisma, "guild-b", userId, "global_test_title");
+  assert.equal(firstTitle.unlocked, true);
+  assert.equal(duplicateTitle.unlocked, false);
+  assert.equal((await getMemberTitles(prisma, "guild-b", userId)).length, 1);
+
+  const applied = await applyForJob(prisma, "guild-a", userId, "barista");
+  const visibleElsewhere = await getMemberJob(prisma, "guild-b", userId);
+  assert.equal(applied.applied, true);
+  assert.equal(visibleElsewhere.jobId, "barista");
+  const shift = await runJobShift(prisma, "guild-b", userId, { now: new Date("2026-10-30T21:00:00.000Z") });
+  assert.equal(shift.worked, true);
+  assert.equal((await getMemberJob(prisma, "guild-a", userId)).shifts, 1);
 });

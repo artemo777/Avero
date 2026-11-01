@@ -168,7 +168,7 @@ export async function renderBalance(prisma, guildId, userId) {
     eyebrow: "WALLET",
     description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n-# Server wallet · virtual currency only",
     sections: ["**Earn coins**\\n✨ /daily · every 24h\\n🧰 /work · every 60m\\n🧭 /scavenge · every 20m\\n📜 /contracts · daily goals\\n🎮 /games · free mini-games"],
-    footer: "SERVER WALLET",
+    footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
   }));
@@ -290,7 +290,7 @@ export async function renderCollectionSets(prisma, guildId, userId, controlUserI
       button(controlUserId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
       button(controlUserId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
     ],
-    footer: "COLLECTION ATLAS • SERVER-SCOPED PROGRESS",
+    footer: "COLLECTION ATLAS • GLOBAL PROGRESS",
   }));
 }
 export async function renderItemDetails(prisma, guildId, userId, itemId, page = 0, source = "inventory") {
@@ -389,7 +389,7 @@ export function renderWork(result, userId) {
     title: "Shift done.",
     description: "### 🧰 " + result.job.name + "\n\n✦ **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in 60 minutes.",
     eyebrow: "WORKSHOP", color: THEME.colors.success,
-    footer: "CAREER SHIFT • REWARD ADDED TO YOUR SERVER WALLET", buttons: navButtons(userId, true)
+    footer: "CAREER SHIFT • REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId, true)
   }));
 }
 export async function runWork(prisma, guildId, userId) {
@@ -415,7 +415,7 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
       (result.gemsAwarded ? "\n◆ **+" + result.gemsAwarded + " gem** · 7-day streak reward." : "") + perkLine +
       "\n\nSee you tomorrow.",
     eyebrow: "DAILY DROP", color: THEME.colors.success,
-    footer: "REWARD ADDED TO YOUR SERVER WALLET", buttons: navButtons(userId)
+    footer: "REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId)
   }));
 }
 export function renderGuess(guess, answer, result, userId) {

@@ -1,3 +1,5 @@
+const GLOBAL_SCOPE_ID = "__avero_global__";
+
 function requireIdentifier(value, name) {
   if (typeof value !== "string" || value.trim() === "") {
     throw new TypeError(name + " must be a non-empty string.");
@@ -6,17 +8,19 @@ function requireIdentifier(value, name) {
 }
 
 function titleKey(guildId, userId, titleId) {
+  requireIdentifier(guildId, "guildId");
   return {
-    guildId: requireIdentifier(guildId, "guildId"),
+    guildId: GLOBAL_SCOPE_ID,
     userId: requireIdentifier(userId, "userId"),
     titleId: requireIdentifier(titleId, "titleId")
   };
 }
 
 export async function getMemberTitles(prisma, guildId, userId) {
+  requireIdentifier(guildId, "guildId");
   return prisma.memberTitle.findMany({
     where: {
-      guildId: requireIdentifier(guildId, "guildId"),
+      guildId: GLOBAL_SCOPE_ID,
       userId: requireIdentifier(userId, "userId")
     },
     orderBy: { acquiredAt: "asc" }
@@ -45,8 +49,9 @@ export async function unlockMemberTitle(prisma, guildId, userId, titleId, source
 }
 
 export async function equipMemberTitle(prisma, guildId, userId, titleId) {
+  requireIdentifier(guildId, "guildId");
   const key = {
-    guildId: requireIdentifier(guildId, "guildId"),
+    guildId: GLOBAL_SCOPE_ID,
     userId: requireIdentifier(userId, "userId")
   };
   if (titleId !== null) {

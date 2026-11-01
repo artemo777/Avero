@@ -1,10 +1,12 @@
 import { WORK_JOBS, WORK_PROMOTION_THRESHOLDS, WORK_SHIFT_COOLDOWN_MS } from "../bot/work-catalog.js";
 
+const GLOBAL_SCOPE_ID = "__avero_global__";
+
 function key(guildId, userId) {
   if (typeof guildId !== "string" || !guildId.trim() || typeof userId !== "string" || !userId.trim()) {
     throw new TypeError("A guild and member are required.");
   }
-  return { guildId: guildId.trim(), userId: userId.trim() };
+  return { guildId: GLOBAL_SCOPE_ID, userId: userId.trim() };
 }
 
 export async function getMemberJob(prisma, guildId, userId) {

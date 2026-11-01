@@ -5,7 +5,7 @@ import { achievementsCommand, renderAchievementsPage } from "../src/bot/commands
 function panelText(response) { return response.components[0].toJSON().components.filter((item) => item.type === 10).map((item) => item.content).join("\n"); }
 function panelRows(response) { return response.components[0].toJSON().components.filter((item) => item.type === 1); }
 
-test("achievements show server-scoped milestone progress and unique collection counts", async () => {
+test("achievements show global milestone progress and unique collection counts", async () => {
   let response;
   const rows = [
     { type: "work", _count: { _all: 1 }, _sum: { amount: 80 } },
@@ -17,7 +17,7 @@ test("achievements show server-scoped milestone progress and unique collection c
   ];
   const prisma = {
     currencyTransaction: { groupBy: async ({ where }) => {
-      assert.deepEqual(where, { guildId: "guild-1", userId: "user-1" });
+      assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1" });
       return rows;
     } },
     currencyPurchase: { findMany: async () => [

@@ -327,7 +327,7 @@ test("leaderboard sorts server members by the requested category", async () => {
   const prisma = {
     currencyAccount: {
       findMany: async (query) => {
-        assert.equal(query.where.guildId, "guild-1");
+        assert.equal(query.where.guildId, "__avero_global__");
         assert.deepEqual(query.orderBy, { balance: "desc" });
         return [
           { userId: "user-1", balance: 900 },

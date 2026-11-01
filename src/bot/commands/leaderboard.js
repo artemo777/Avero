@@ -1,12 +1,13 @@
 import { MessageFlags } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
 
+const GLOBAL_SCOPE_ID = "__avero_global__";
 const CATEGORIES = Object.freeze(["coins", "games", "coinflip", "guess", "rps", "vault"]);
 
 export const leaderboardCommand = Object.freeze({
   data: Object.freeze({
     name: "leaderboard",
-    description: "See who's leading in coins and games.",
+    description: "See the global leaders in coins and games.",
     options: [{
       type: 3,
       name: "category",
@@ -37,7 +38,7 @@ export const leaderboardCommand = Object.freeze({
 
     let rows;
     if (category === "coins") {
-      rows = await prisma.currencyAccount.findMany({ where: { guildId: interaction.guildId }, orderBy: { balance: "desc" }, take: 10 });
+      rows = await prisma.currencyAccount.findMany({ where: { guildId: GLOBAL_SCOPE_ID }, orderBy: { balance: "desc" }, take: 10 });
     } else {
       const gameTypes = category === "guess"
         ? ["guess_win_play", "guess_win", "guess_loss"]
@@ -50,7 +51,7 @@ export const leaderboardCommand = Object.freeze({
               : ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"];
       const grouped = await prisma.currencyTransaction.groupBy({
         by: ["userId", "type"],
-        where: { guildId: interaction.guildId, type: { in: gameTypes } },
+        where: { guildId: GLOBAL_SCOPE_ID, type: { in: gameTypes } },
         _count: { _all: true }
       });
       const scores = new Map();
@@ -91,9 +92,9 @@ export const leaderboardCommand = Object.freeze({
     await interaction.reply({
       ...gamePayload(createGamePanel({
         title,
-        eyebrow: "SERVER RANKINGS",
+        eyebrow: "GLOBAL RANKINGS",
         description,
-        footer: "TOP 10 • SERVER-SCOPED STATS",
+        footer: "TOP 10 • GLOBAL STATS",
         separators: true
       })),
       allowedMentions: { parse: [] }
