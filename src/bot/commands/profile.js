@@ -52,11 +52,11 @@ export const profileCommand = Object.freeze({
       badgeFiles = [new AttachmentBuilder(asset, { name: badgeFilename })];
     }
     const sections = [
-      "**🪙 Wallet** · " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\\n**🎒 Collection** · " + rarityCount + " / " + SHOP_ITEMS.length + "\\n**🗺️ Sets** · " + completedSets + " / 3 complete",
-      "**🏷️ Set titles**\\n" + (collectionTitles.length ? collectionTitles.join(", ") : "None unlocked") + "\\n**Profile title** · " + (equippedTitle?.name ?? "None") + "\\n**Equipped badge** · " + (equippedBadge?.name ?? "None"),
-      "**🎮 Games record** · " + (stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet") + "\\n**🎯 Games played** · " + stats.gamesPlayed + "\\n**🏅 Arcade mastery**\\n" + (arcadeMastery || "No mastery progress yet"),
-      "**🪙 Coins earned** · " + stats.lifetimeEarned.toLocaleString("en-US") + "\\n**🛍️ Items bought** · " + stats.itemsPurchased + "\\n**📆 Daily claims** · " + stats.dailyClaims + "\\n**🧰 Work shifts** · " + stats.workShifts + "\\n**🔎 Scavenges** · " + stats.scavenges + "\\n**Coins spent** · " + stats.lifetimeSpent.toLocaleString("en-US"),
-      "**Badges**\\n" + (badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None")
+      "**🪙 Wallet** · " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\n**🎒 Collection** · " + rarityCount + " / " + SHOP_ITEMS.length + "\n**🗺️ Sets** · " + completedSets + " / 3 complete",
+      "**🏷️ Set titles**\n" + (collectionTitles.length ? collectionTitles.join(", ") : "None unlocked") + "\n**Profile title** · " + (equippedTitle?.name ?? "None") + "\n**Equipped badge** · " + (equippedBadge?.name ?? "None"),
+      "**🎮 Games record** · " + (stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet") + "\n**🎯 Games played** · " + stats.gamesPlayed + "\n**🏅 Arcade mastery**\n" + (arcadeMastery || "No mastery progress yet"),
+      "**🪙 Coins earned** · " + stats.lifetimeEarned.toLocaleString("en-US") + "\n**🛍️ Items bought** · " + stats.itemsPurchased + "\n**📆 Daily claims** · " + stats.dailyClaims + "\n**🧰 Work shifts** · " + stats.workShifts + "\n**🔎 Scavenges** · " + stats.scavenges + "\n**Coins spent** · " + stats.lifetimeSpent.toLocaleString("en-US"),
+      "**Badges**\n" + (badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None")
     ];
     await interaction.reply({
       ...gamePayload(createGamePanel({
