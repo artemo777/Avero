@@ -105,7 +105,7 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|shop_page|all:1"));
 
   const secondPage = panel(await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1", 1));
-  assert.equal(secondPage.components.filter((component) => component.type === 9).length, 1);
+  assert.equal(secondPage.components.filter((component) => component.type === 9).length, 2);
   assert.equal(buttons(secondPage).filter((entry) => entry.custom_id.startsWith("avero|user-1|buy|")).length, 2);
   assert.ok(buttons(secondPage).some((entry) => entry.custom_id === "avero|user-1|item|starlight_badge:1:shop"));
   assert.ok(secondPage.components.length <= 10);
