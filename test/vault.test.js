@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { vaultCommand } from "../src/bot/commands/vault.js";
 import { createVaultChallenge } from "../src/bot/vault-puzzle.js";
+import { renderVaultChallenge } from "../src/bot/game-ui.js";
 
 function makePrisma() {
   const account = { balance: 0, lastGameRewardAt: null };
@@ -195,4 +196,13 @@ test("vault rejects invalid codes and direct messages without database writes", 
     content: "The Vault is available inside a server.",
     flags: MessageFlags.Ephemeral
   });
+});
+
+
+test("Field Notebook reveals a useful digit-sum hint without changing the Vault answer", () => {
+  const challenge = createVaultChallenge("guild-1", new Date("2026-11-01T12:00:00.000Z"));
+  const response = renderVaultChallenge(challenge, "user-1", { hasNotebook: true });
+  const text = response.components[0].toJSON().components.filter((part) => part.type === 10).map((part) => part.content).join("\n");
+  const sum = challenge.code.split("").reduce((total, digit) => total + Number(digit), 0);
+  assert.match(text, new RegExp("digits add up to \\*\\*" + sum + "\\*\\*"));
 });
