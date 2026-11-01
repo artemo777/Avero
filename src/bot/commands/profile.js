@@ -65,7 +65,7 @@ export const profileCommand = Object.freeze({
         description: "Server profile and activity",
         sections,
         sectionThumbnails: equippedBadge ? [badgeFilename] : [],
-        footer: "PROFILE • SERVER-SCOPED STATS",
+        footer: "PROFILE • GLOBAL STATS",
         separators: true
       }), badgeFiles),
       allowedMentions: { parse: [] }
