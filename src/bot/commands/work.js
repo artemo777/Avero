@@ -1,5 +1,6 @@
 import { MessageFlags } from "discord.js";
-import { createGamePanel, gamePayload } from "../game-ui.js";
+import { createGamePanel, gamePayload, renderWorkJobsPage } from "../game-ui.js";
+import { getCurrencyPurchases } from "../../db/currency-repository.js";
 import { WORK_JOBS, WORK_PROMOTION_THRESHOLDS } from "../work-catalog.js";
 import { applyForJob, getMemberJob, resignFromJob, runJobShift } from "../../db/work-repository.js";
 
@@ -9,17 +10,13 @@ function panel(title, description) {
   }));
 }
 
-function jobList() {
-  const lines = WORK_JOBS.map((job) => "**" + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift").join("\n");
-  return panel("Available jobs", lines + "\n\nApply with /work apply and choose a role.");
-}
 
 export const workCommand = Object.freeze({
   data: Object.freeze({
     name: "work",
     description: "Browse careers, apply, and earn coins from shifts.",
     options: [
-      { type: 1, name: "list", description: "Browse all 20 careers." },
+      { type: 1, name: "list", description: "Browse careers in pages of five." },
       { type: 1, name: "apply", description: "Apply for a career.", options: [{ type: 3, name: "job", description: "Choose a career.", required: true, choices: WORK_JOBS.map((job) => ({ name: job.name, value: job.id })) }] },
       { type: 1, name: "shift", description: "Complete a shift and earn your salary." },
       { type: 1, name: "info", description: "View your job, shifts, and promotions." },
@@ -33,7 +30,7 @@ export const workCommand = Object.freeze({
       return;
     }
     const action = interaction.options.getSubcommand();
-    if (action === "list") return interaction.reply(jobList());
+    if (action === "list") return interaction.reply(await renderWorkJobsPage(interaction.user.id, 0));
     if (action === "apply") {
       const jobId = interaction.options.getString("job", true);
       const result = await applyForJob(prisma, interaction.guildId, interaction.user.id, jobId);
@@ -56,7 +53,12 @@ export const workCommand = Object.freeze({
       return interaction.reply(panel(result.resigned ? "Career ended" : "No active job", result.resigned ? "You left your role. Your completed-shift history ends here." : "You don't have a job to resign from."));
     }
     if (action === "shift") {
-      const result = await runJobShift(prisma, interaction.guildId, interaction.user.id);
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const ownedTools = new Set(purchases.map((purchase) => purchase.itemId));
+      const result = await runJobShift(prisma, interaction.guildId, interaction.user.id, {
+        cooldownMs: ownedTools.has("hourglass") ? 55 * 60 * 1000 : undefined,
+        bonusCoins: ownedTools.has("repair_kit") ? 5 : 0
+      });
       const description = result.worked
         ? "**+" + result.salary.toLocaleString("en-US") + " coins** · " + result.job.name + "\nWallet: **" + result.account.balance.toLocaleString("en-US") + "**\n" + result.current.shifts + " shifts · " + "★".repeat(result.current.promotions) + "☆".repeat(3 - result.current.promotions) +
           (result.promoted ? "\n\n★ Promotion earned! Your next shift pays more." : "")
