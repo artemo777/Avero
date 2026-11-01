@@ -10,6 +10,7 @@ import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAcco
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
 import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
+import { WORK_JOBS } from "./work-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import { renderAchievementsPage } from "./commands/achievements.js";
@@ -116,6 +117,11 @@ export function gamePayload(panel, files = []) {
     ...(files.length ? { files } : {})
   };
 }
+async function professorArtwork(size = 80) {
+  const filename = "avero-professor.png";
+  const image = await renderRegisteredAsset("mascot-professor", size);
+  return { filename, file: new AttachmentBuilder(image, { name: filename }) };
+}
 async function collectibleArtwork(items, size = 192) {
   const files = [];
   const filenames = [];
@@ -189,14 +195,16 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = filteredItems.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const badgeItems = pageItems.filter((item) => item.category === "badges");
-  const artwork = await collectibleArtwork(badgeItems, 96);
+  const artwork = await collectibleArtwork(badgeItems, 72);
+  const professor = await professorArtwork(72);
   let artworkIndex = 0;
   const sections = pageItems.map((item) => {
     const status = owned.has(item.id) ? "✓ Owned" : "Available";
     const unit = item.currency === "gems" ? "gems" : "coins";
     return "**" + item.icon + " " + item.name + "** · " + item.rarity + "\n" +
-      "**" + item.price.toLocaleString("en-US") + " " + unit + "** · " + status;
+      "**Price:** " + item.price.toLocaleString("en-US") + " " + unit + " · " + status + "\n" + item.description;
   });
+  sections.push("**Professor’s note** · Tools now have practical effects in Scavenge, Vault, and Work.");
   const sectionButtons = pageItems.map((item) => {
     const ownedItem = owned.has(item.id);
     return [
@@ -212,13 +220,15 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
         label: entry.label, value: entry.id, description: entry.description, default: entry.id === activeCategory
       })))
   );
+  const shopThumbnails = pageItems.map((item) => item.category === "badges" ? artwork.filenames[artworkIndex++] : null);
+  shopThumbnails.push(professor.filename);
   return gamePayload(createGamePanel({
     title: "Avero shop",
     description: "◉ **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  ◆ **" +
       (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems  ·  " + filteredItems.length + " items",
     sections,
     sectionButtons,
-    sectionThumbnails: pageItems.map((item) => item.category === "badges" ? artwork.filenames[artworkIndex++] : null),
+    sectionThumbnails: shopThumbnails,
     selectMenus: [selectMenu],
     eyebrow: "SHOP / " + (SHOP_CATEGORIES.find((entry) => entry.id === activeCategory)?.label.toUpperCase() ?? "ALL"),
     footer: "VIRTUAL ITEMS ONLY",
@@ -226,7 +236,28 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
       { ...button(userId, "shop_page", "‹", activeCategory + ":" + Math.max(0, currentPage - 1)), disabled: currentPage === 0 },
       { ...button(userId, "shop_page", "›", activeCategory + ":" + Math.min(pageCount - 1, currentPage + 1)), disabled: currentPage === pageCount - 1 }
     ] : []
-  }), artwork.files);
+  }), [...artwork.files, professor.file]);
+}
+export async function renderWorkJobsPage(userId, page = 0) {
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(WORK_JOBS.length / pageSize));
+  const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
+  const jobs = WORK_JOBS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const professor = await professorArtwork(72);
+  const sections = jobs.map((job, index) =>
+    "**" + (currentPage * pageSize + index + 1) + ". " + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift\n" + job.description
+  );
+  sections.push("**Professor’s tip** · Apply with `/work apply`, then complete a shift. The Repair Kit and Pocket Hourglass improve your routine.");
+  const buttons = pageCount > 1 ? [
+    { ...button(userId, "work_page", "‹ Previous", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
+    { ...button(userId, "work_page", "Next ›", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 }
+  ] : [];
+  return gamePayload(createGamePanel({
+    title: "Available careers", eyebrow: "AVERO WORK · CAREER BOARD",
+    description: "Browse five roles at a time. Apply with `/work apply` and select a career.",
+    sections, sectionThumbnails: [null, null, null, null, null, professor.filename],
+    buttons, footer: "PAGE " + (currentPage + 1) + " OF " + pageCount + " · " + WORK_JOBS.length + " CAREERS"
+  }), [professor.file]);
 }
 export async function renderInventory(prisma, guildId, userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
@@ -357,12 +388,25 @@ export async function runScavenge(prisma, guildId, userId, routeId = null) {
     : SCAVENGE_ROUTES[randomInt(SCAVENGE_ROUTES.length)];
   if (!route) throw new RangeError("Choose a valid scavenge route.");
   const amount = randomInt(SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX + 1);
-  const drop = randomInt(100) < 12;
+  const purchases = await getCurrencyPurchases(prisma, guildId, userId);
+  const ownedTools = new Set(purchases.map((purchase) => purchase.itemId));
+  const dropChance = ownedTools.has("lucky_compass") ? 18 : 12;
+  const searchPool = [...route.items];
+  if (ownedTools.has("library_card")) searchPool.push(
+    { id: "star_pin", weight: 6 }, { id: "tiny_trophy", weight: 3 }, { id: "comet_trail", weight: 2 }
+  );
+  if (ownedTools.has("starlight_compass")) {
+    for (const entry of searchPool) {
+      const found = SHOP_ITEMS.find((candidate) => candidate.id === entry.id);
+      if (["EPIC", "LEGENDARY", "MYTHIC"].includes(found?.rarity)) entry.weight = Math.ceil(entry.weight * 1.5);
+    }
+  }
+  const drop = randomInt(100) < dropChance;
   let itemId = null;
   if (drop) {
-    const totalWeight = route.items.reduce((sum, candidate) => sum + candidate.weight, 0);
+    const totalWeight = searchPool.reduce((sum, candidate) => sum + candidate.weight, 0);
     let ticket = randomInt(totalWeight);
-    for (const candidate of route.items) {
+    for (const candidate of searchPool) {
       ticket -= candidate.weight;
       if (ticket < 0) { itemId = candidate.id; break; }
     }
@@ -393,7 +437,13 @@ export function renderWork(result, userId) {
   }));
 }
 export async function runWork(prisma, guildId, userId) {
-  return renderWork(await runJobShift(prisma, guildId, userId), userId);
+  const purchases = await getCurrencyPurchases(prisma, guildId, userId);
+  const ownedTools = new Set(purchases.map((purchase) => purchase.itemId));
+  const result = await runJobShift(prisma, guildId, userId, {
+    cooldownMs: ownedTools.has("hourglass") ? 55 * 60 * 1000 : undefined,
+    bonusCoins: ownedTools.has("repair_kit") ? 5 : 0
+  });
+  return renderWork(result, userId);
 }
 export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null } = {}) {
   const perkLine = perk?.dailyBonus ? "\n\n" + perk.flair + " perk: **+" + perk.dailyBonus + " coins**." : "";
@@ -441,7 +491,7 @@ export function renderGuess(guess, answer, result, userId) {
       .concat(navButtons(userId).slice(0, 2))
   }));
 }
-export function renderVaultChallenge(challenge, userId) {
+export function renderVaultChallenge(challenge, userId, { hasNotebook = false } = {}) {
   return gamePayload(createGamePanel({
     title: "Today's vault is ready",
     eyebrow: "THE VAULT • " + challenge.date,
@@ -648,6 +698,12 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     }
     case "balance": payload = await renderBalance(prisma, interaction.guildId, interaction.user.id); break;
     case "work": payload = await runWork(prisma, interaction.guildId, interaction.user.id); break;
+    case "work_page": {
+      const page = Number(parsed.arg);
+      if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
+      payload = await renderWorkJobsPage(interaction.user.id, page);
+      break;
+    }
     case "scavenge": payload = await runScavenge(prisma, interaction.guildId, interaction.user.id, parsed.arg || null); break;
     case "daily":
       payload = renderDaily(await claimDailyReward(prisma, interaction.guildId, interaction.user.id, { amount: DAILY_REWARD, cooldownMs: DAILY_COOLDOWN_MS }), interaction.user.id);
@@ -696,9 +752,12 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       }
       payload = await runCoinflip(prisma, interaction.guildId, parsed.arg, interaction.user.id);
       break;
-    case "vault":
-      payload = renderVaultChallenge(createVaultChallenge(interaction.guildId), interaction.user.id);
+    case "vault": {
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
+      payload = renderVaultChallenge(createVaultChallenge(interaction.guildId), interaction.user.id, { hasNotebook });
       break;
+    }
     case "rps":
       if (!CHOICES.includes(parsed.arg)) {
         await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
