@@ -48,7 +48,7 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
     ...gamePayload(createGamePanel({
       title: target.username + "'s achievements",
       eyebrow: "MILESTONES",
-      description: "**" + unlocked + " / " + achievements.length + " unlocked** · Server milestones\\nCosmetic progress only · virtual coins have no cash value.",
+      description: "**" + unlocked + " / " + achievements.length + " unlocked** · Server milestones\nCosmetic progress only · virtual coins have no cash value.",
       sections,
       buttons,
       color: unlocked === achievements.length ? 0x2DD4BF : undefined,
