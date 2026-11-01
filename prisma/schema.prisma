@@ -123,3 +123,18 @@ model MemberJob {
   @@unique([guildId, userId])
   @@index([guildId, jobId])
 }
+
+model MoneyRequest {
+  id          String   @id @default(cuid())
+  guildId     String
+  requesterId String
+  targetId    String
+  amount      Int
+  status      String   @default("pending")
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  respondedAt DateTime?
+
+  @@index([guildId, targetId, status, expiresAt])
+  @@index([guildId, requesterId, createdAt])
+}
