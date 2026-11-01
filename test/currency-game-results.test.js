@@ -18,7 +18,7 @@ test("records each guess win and loss without changing the coin balance", async 
     { type: "guess_win_play", amount: 0 },
     { type: "guess_loss", amount: 0 }
   ]);
-  assert.ok(records.every((record) => record.guildId === "guild-1" && record.userId === "user-1"));
+  assert.ok(records.every((record) => record.guildId === "__avero_global__" && record.userId === "user-1"));
 });
 
 test("guess result recorder rejects non-boolean outcomes", async () => {
