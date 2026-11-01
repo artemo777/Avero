@@ -1,8 +1,37 @@
+export const SHOP_CATEGORIES = Object.freeze([
+  Object.freeze({ id: "all", label: "Make a selection", description: "Browse the full Avero store." }),
+  Object.freeze({ id: "cosmetics", label: "Cosmetics", description: "Profile styles and visual customizations." }),
+  Object.freeze({ id: "badges", label: "Badges", description: "Collectible profile badges." }),
+  Object.freeze({ id: "tools", label: "Tools", description: "Utility collectibles for future Avero features." }),
+  Object.freeze({ id: "coins", label: "Coins Shop", description: "Items priced in virtual coins." }),
+  Object.freeze({ id: "gems", label: "Gems Shop", description: "Premium-style virtual collectibles priced in earned gems." })
+]);
+
 export const SHOP_ITEMS = Object.freeze([
-  Object.freeze({ id: "neon_badge", name: "Glitch Gremlin", price: 150, icon: "👾", rarity: "UNCOMMON", description: "A tiny chaos engine with a permanent spot in your collection." }),
-  Object.freeze({ id: "vault_badge", name: "Vault Rat", price: 300, icon: "🐀", rarity: "RARE", description: "Knows where the good stuff is. Says absolutely nothing." }),
-  Object.freeze({ id: "starlight_badge", name: "Lag Spike", price: 500, icon: "📡", rarity: "EPIC", description: "A signal from somewhere the servers swear does not exist." }),
-  Object.freeze({ id: "moonlit_token", name: "Moonwalk Menace", price: 750, icon: "🛸", rarity: "EPIC", description: "Leaves the lobby. Somehow still gets the last word." }),
-  Object.freeze({ id: "prism_crown", name: "Prism Goblin", price: 1_000, icon: "🧪", rarity: "LEGENDARY", description: "Collects shiny things. Including things that are probably cursed." }),
-  Object.freeze({ id: "avero_relic", name: "Avero OG", price: 1_500, icon: "🪩", rarity: "MYTHIC", description: "A weird little piece of Avero history. You had to be there." })
+  Object.freeze({ id: "neon_badge", name: "Glitch Gremlin", category: "badges", price: 150, currency: "coins", icon: "👾", rarity: "UNCOMMON", description: "A tiny chaos engine with a permanent spot in your collection." }),
+  Object.freeze({ id: "vault_badge", name: "Vault Rat", category: "badges", price: 300, currency: "coins", icon: "🐀", rarity: "RARE", description: "Knows where the good stuff is. Says absolutely nothing." }),
+  Object.freeze({ id: "starlight_badge", name: "Lag Spike", category: "badges", price: 500, currency: "coins", icon: "📡", rarity: "EPIC", description: "A signal from somewhere the servers swear does not exist." }),
+  Object.freeze({ id: "moonlit_token", name: "Moonwalk Menace", category: "cosmetics", price: 750, currency: "coins", icon: "🛸", rarity: "EPIC", description: "Leaves the lobby. Somehow still gets the last word." }),
+  Object.freeze({ id: "prism_crown", name: "Prism Goblin", category: "cosmetics", price: 1000, currency: "coins", icon: "🧪", rarity: "LEGENDARY", description: "Collects shiny things. Including things that are probably cursed." }),
+  Object.freeze({ id: "avero_relic", name: "Avero OG", category: "badges", price: 1500, currency: "coins", icon: "🪩", rarity: "MYTHIC", description: "A weird little piece of Avero history. You had to be there." }),
+  Object.freeze({ id: "pixel_cape", name: "Pixel Cape", category: "cosmetics", price: 900, currency: "coins", icon: "🧥", rarity: "RARE", description: "A tiny cape for a very important pixel person." }),
+  Object.freeze({ id: "cloud_specs", name: "Cloud Specs", category: "cosmetics", price: 650, currency: "coins", icon: "🕶️", rarity: "UNCOMMON", description: "The world looks 12% more dramatic through these." }),
+  Object.freeze({ id: "star_pin", name: "Star Pin", category: "badges", price: 420, currency: "coins", icon: "🌟", rarity: "RARE", description: "A bright little mark for your Avero profile." }),
+  Object.freeze({ id: "mossy_mug", name: "Mossy Mug", category: "cosmetics", price: 280, currency: "coins", icon: "🍵", rarity: "COMMON", description: "Tea, tiny leaves, and absolutely no deadlines." }),
+  Object.freeze({ id: "paper_crown", name: "Paper Crown", category: "cosmetics", price: 180, currency: "coins", icon: "👑", rarity: "COMMON", description: "Royal status, questionable materials." }),
+  Object.freeze({ id: "comet_trail", name: "Comet Trail", category: "cosmetics", price: 1250, currency: "coins", icon: "☄️", rarity: "EPIC", description: "A bright streak for your profile identity." }),
+  Object.freeze({ id: "tiny_trophy", name: "Tiny Trophy", category: "badges", price: 1100, currency: "coins", icon: "🏆", rarity: "EPIC", description: "A very small award for a very big achievement." }),
+  Object.freeze({ id: "library_card", name: "Library Card", category: "tools", price: 350, currency: "coins", icon: "📚", rarity: "COMMON", description: "A collectible pass from the Avero archive." }),
+  Object.freeze({ id: "lucky_compass", name: "Lucky Compass", category: "tools", price: 850, currency: "coins", icon: "🧭", rarity: "RARE", description: "Points toward your next little adventure." }),
+  Object.freeze({ id: "repair_kit", name: "Repair Kit", category: "tools", price: 700, currency: "coins", icon: "🧰", rarity: "UNCOMMON", description: "A tidy toolkit collectible for your inventory." }),
+  Object.freeze({ id: "field_notebook", name: "Field Notebook", category: "tools", price: 500, currency: "coins", icon: "📓", rarity: "COMMON", description: "For plans, discoveries, and suspicious doodles." }),
+  Object.freeze({ id: "hourglass", name: "Pocket Hourglass", category: "tools", price: 1400, currency: "coins", icon: "⌛", rarity: "EPIC", description: "A collectible reminder that every shift counts." }),
+  Object.freeze({ id: "aurora_frame", name: "Aurora Frame", category: "cosmetics", price: 8, currency: "gems", icon: "🌌", rarity: "EPIC", description: "An original Avero profile-frame collectible." }),
+  Object.freeze({ id: "crystal_badge", name: "Crystal Scholar", category: "badges", price: 12, currency: "gems", icon: "💎", rarity: "LEGENDARY", description: "A luminous badge for dedicated collectors." }),
+  Object.freeze({ id: "starlight_compass", name: "Starlight Compass", category: "tools", price: 10, currency: "gems", icon: "🧭", rarity: "EPIC", description: "A celestial archive collectible." }),
+  Object.freeze({ id: "nebula_cape", name: "Nebula Cape", category: "cosmetics", price: 18, currency: "gems", icon: "🪐", rarity: "MYTHIC", description: "A rare cosmic look for your profile." }),
+  Object.freeze({ id: "golden_owl", name: "Golden Owl", category: "badges", price: 25, currency: "gems", icon: "🦉", rarity: "MYTHIC", description: "A tiny symbol of Avero wisdom." }),
+  Object.freeze({ id: "archive_key", name: "Archive Key", category: "tools", price: 6, currency: "gems", icon: "🗝️", rarity: "RARE", description: "A collectible key from the old server archive." }),
+  Object.freeze({ id: "coin_pouch", name: "Coin Pouch", category: "coins", price: 250, currency: "coins", icon: "👛", rarity: "COMMON", description: "A compact coin-themed collectible." }),
+  Object.freeze({ id: "mint_token", name: "Mint Token", category: "coins", price: 600, currency: "coins", icon: "🪙", rarity: "UNCOMMON", description: "A polished token for your collection." })
 ]);
