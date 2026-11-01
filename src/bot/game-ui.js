@@ -426,12 +426,12 @@ export function renderWork(result, userId) {
     return gamePayload(createGamePanel({
       title: result.reason === "not_employed" ? "Choose a career first." : "You're off the clock.",
       description, eyebrow: "WORKSHOP", color: THEME.colors.warning,
-      footer: "ONE CAREER SHIFT EVERY 60 MINUTES", buttons: navButtons(userId, true)
+      footer: "CAREER SHIFT • " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " MINUTE COOLDOWN", buttons: navButtons(userId, true)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Shift done.",
-    description: "### 🧰 " + result.job.name + "\n\n✦ **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in 60 minutes.",
+    description: "### 🧰 " + result.job.name + "\n\n✦ **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " minutes.",
     eyebrow: "WORKSHOP", color: THEME.colors.success,
     footer: "CAREER SHIFT • REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId, true)
   }));
@@ -496,6 +496,7 @@ export function renderVaultChallenge(challenge, userId, { hasNotebook = false } 
     title: "Today's vault is ready",
     eyebrow: "THE VAULT • " + challenge.date,
     description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
+      (hasNotebook ? "\n\n**Field Notebook hint:** the three digits add up to **" + challenge.code.split("").reduce((sum, digit) => sum + Number(digit), 0) + "**." : "") +
       "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. A correct solve earns 25 coins when the shared 10-minute Guess/RPS cooldown is ready. Free play · No wagers.",
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
