@@ -18,9 +18,12 @@ function fakePrisma() {
       async update({ data }) { job = { ...job, ...data }; return { ...job }; },
       async updateMany({ where, data }) {
         if (!job) return { count: 0 };
-        const allowed = where.OR.some((condition) => condition.lastShiftAt === null
-          ? job.lastShiftAt === null
-          : job.lastShiftAt instanceof Date && job.lastShiftAt <= condition.lastShiftAt.lte);
+        if (where.jobId && job.jobId !== where.jobId) return { count: 0 };
+        const allowed = where.OR
+          ? where.OR.some((condition) => condition.lastShiftAt === null
+            ? job.lastShiftAt === null
+            : job.lastShiftAt instanceof Date && job.lastShiftAt <= condition.lastShiftAt.lte)
+          : true;
         if (!allowed) return { count: 0 };
         if (data.shifts?.increment) job.shifts += data.shifts.increment;
         if (data.promotions !== undefined) job.promotions = data.promotions;
