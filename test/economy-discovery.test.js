@@ -41,7 +41,7 @@ test("help documents game-specific leaderboards and free game rules", async () =
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
   const text = panelText(response);
-  assert.match(text, /free mini-games/);
+  assert.match(text, /free games/);
   assert.match(text, /leaderboard/);
   assert.match(text, /achievements/);
 });
