@@ -315,8 +315,8 @@ test("leaderboard sorts server members by the requested category", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Coin leaderboard/);
-  assert.match(text, /<@user-1> — \\*\\*900 coins\\*\\*/);
-  assert.match(text, /<@user-2> — \\*\\*450 coins\\*\\*/);
+  assert.ok(text.includes("<@user-1> — **900 coins**"));
+  assert.ok(text.includes("<@user-2> — **450 coins**"));
 });
 
 
@@ -419,8 +419,8 @@ test("setup command reports channel permissions, feature status and first steps 
   assert.equal(response.flags, MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Server setup/);
-  assert.match(text, /\\/games/);
-  assert.match(text, /\\/daily/);
+  assert.ok(text.includes("/games"));
+  assert.ok(text.includes("/daily"));
   assert.match(text, /Manage Server required/);
   assert.match(text, /View Channel/);
   assert.match(text, /Send Messages/);
