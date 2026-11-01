@@ -9,7 +9,9 @@ function requireIdentifier(value, name) {
 
 function currencyKey(guildId, userId) {
   return {
-    guildId: (requireIdentifier(guildId, "guildId"), GLOBAL_SCOPE_ID),
+    guildId: GLOBAL_SCOPE_ID,
+    // Validate the calling context, but never partition member data by guild.
+    ...(() => { requireIdentifier(guildId, "guildId"); return {}; })(),
     userId: requireIdentifier(userId, "userId")
   };
 }
