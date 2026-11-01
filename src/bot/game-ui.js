@@ -1,6 +1,6 @@
 import {
   ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags,
-  SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder, ThumbnailBuilder
+  SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder
 } from "discord.js";
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
@@ -8,7 +8,7 @@ import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../a
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, claimWorkReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
-import { SHOP_ITEMS } from "./shop-catalog.js";
+import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import { renderAchievementsPage } from "./commands/achievements.js";
@@ -62,8 +62,9 @@ export function readComponentId(customId) {
   if (namespace !== "avero" || !userId || !action) return null;
   return { userId, action, arg };
 }
-export function createGamePanel({ title, description, sections = [], sectionButtons = [], sectionThumbnails = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], separators = false }) {
-  const customIds = [...sectionButtons.flat(), ...buttons].map((entry) => entry.customId).filter(Boolean);
+export function createGamePanel({ title, description, sections = [], sectionButtons = [], sectionThumbnails = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], selectMenus = [], separators = false }) {
+  const customIds = [...sectionButtons.flat(), ...buttons].map((entry) => entry.customId).filter(Boolean)
+    .concat(selectMenus.flatMap((row) => row.components.map((component) => component.data.custom_id).filter(Boolean)));
   if (new Set(customIds).size !== customIds.length) {
     throw new RangeError("Avero panel contains duplicate interactive component IDs.");
   }
@@ -91,6 +92,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     }
   }
 
+  if (selectMenus.length) container.addActionRowComponents(...selectMenus);
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(button.style ?? ButtonStyle.Secondary);
@@ -170,45 +172,58 @@ export async function renderBalance(prisma, guildId, userId) {
     separators: true
   }));
 }
-export async function renderShop(prisma, guildId, userId, page = 0) {
+export async function renderShop(prisma, guildId, userId, page = 0, category = "all") {
   const [purchases, account] = await Promise.all([
     getCurrencyPurchases(prisma, guildId, userId),
     getCurrencyAccount(prisma, guildId, userId)
   ]);
+  const activeCategory = SHOP_CATEGORIES.some((entry) => entry.id === category) ? category : "all";
+  const filteredItems = activeCategory === "all" ? SHOP_ITEMS : SHOP_ITEMS.filter((item) =>
+    activeCategory === "coins" ? item.currency === "coins" :
+    activeCategory === "gems" ? item.currency === "gems" : item.category === activeCategory
+  );
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const pageSize = 3;
-  const pageCount = Math.max(1, Math.ceil(SHOP_ITEMS.length / pageSize));
+  const pageSize = 2;
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
-  const pageItems = SHOP_ITEMS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-  const artwork = await collectibleArtwork(pageItems, 96);
+  const pageItems = filteredItems.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const badgeItems = pageItems.filter((item) => item.category === "badges");
+  const artwork = await collectibleArtwork(badgeItems, 96);
+  let artworkIndex = 0;
   const sections = pageItems.map((item) => {
     const status = owned.has(item.id) ? "✓ Owned" : "Available";
-    return "**" + item.name + "** · " + item.rarity + "\n" +
-      "**" + item.price.toLocaleString("en-US") + " coins** · " + status;
+    const unit = item.currency === "gems" ? "gems" : "coins";
+    return "**" + item.icon + " " + item.name + "** · " + item.rarity + "\n" +
+      "**" + item.price.toLocaleString("en-US") + " " + unit + "** · " + status;
   });
   const sectionButtons = pageItems.map((item) => {
     const ownedItem = owned.has(item.id);
     return [
-      button(userId, "item", "Details", item.id + ":" + currentPage + ":shop", ButtonStyle.Secondary, "ℹ️"),
-      {
-        ...button(userId, "buy", ownedItem ? "Owned" : "Buy " + item.price.toLocaleString("en-US"),
-          item.id, ownedItem ? ButtonStyle.Secondary : ButtonStyle.Success, ownedItem ? "☑️" : "🛒"),
-        disabled: ownedItem
-      }
+      button(userId, "item", "Details", item.id + ":" + currentPage + ":shop", ButtonStyle.Secondary),
+      { ...button(userId, "buy", ownedItem ? "Owned" : "Buy", item.id, ownedItem ? ButtonStyle.Secondary : ButtonStyle.Success), disabled: ownedItem }
     ];
   });
+  const selectMenu = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(componentId(userId, "shop_category"))
+      .setPlaceholder("Make a selection")
+      .addOptions(SHOP_CATEGORIES.map((entry) => ({
+        label: entry.label, value: entry.id, description: entry.description, default: entry.id === activeCategory
+      })))
+  );
   return gamePayload(createGamePanel({
-    title: "Collectible shop",
-    description: "### " + COIN_ICON + " " + (account?.balance ?? 0).toLocaleString("en-US") +
-      " coins\n-# Six server collectibles · cosmetic only",
+    title: "Avero shop",
+    description: "◉ **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  ◆ **" +
+      (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems  ·  " + filteredItems.length + " items",
     sections,
     sectionButtons,
-    sectionThumbnails: artwork.filenames,
-    eyebrow: "THE DROP",
-    footer: "COLLECTIBLES • VIRTUAL ITEMS ONLY",
+    sectionThumbnails: pageItems.map((item) => item.category === "badges" ? artwork.filenames[artworkIndex++] : null),
+    selectMenus: [selectMenu],
+    eyebrow: "SHOP / " + (SHOP_CATEGORIES.find((entry) => entry.id === activeCategory)?.label.toUpperCase() ?? "ALL"),
+    footer: "VIRTUAL ITEMS ONLY",
     buttons: pageCount > 1 ? [
-      { ...button(userId, "shop_page", "← Previous", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
-      { ...button(userId, "shop_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 }
+      { ...button(userId, "shop_page", "‹", activeCategory + ":" + Math.max(0, currentPage - 1)), disabled: currentPage === 0 },
+      { ...button(userId, "shop_page", "›", activeCategory + ":" + Math.min(pageCount - 1, currentPage + 1)), disabled: currentPage === pageCount - 1 }
     ] : []
   }), artwork.files);
 }
@@ -297,13 +312,13 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
       (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped on your profile**" : "") +
-      "\nCatalog price: **" + item.price.toLocaleString("en-US") + " coins**" +
-      "\nYour balance: **" + (account?.balance ?? 0).toLocaleString("en-US") + " coins**",
+      "\nCatalog price: **" + item.price.toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**" +
+      "\nYour balance: **" + (item.currency === "gems" ? (account?.gemBalance ?? 0) : (account?.balance ?? 0)).toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**",
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
       button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
-      ...(owned ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary, "➖") : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success, "🏅")] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary, "🛒")]),
+      ...(owned && item.category === "badges" ? [equipped ? button(userId, "unequip_badge", "Unequip", item.id, ButtonStyle.Secondary) : button(userId, "equip_badge", "Equip", item.id, ButtonStyle.Success)] : owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
     ]
   }));
@@ -664,7 +679,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         await interaction.reply({ content: "That collectible is no longer available.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price), item, interaction.user.id);
+      payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price, { currency: item.currency ?? "coins" }), item, interaction.user.id);
       break;
     }
     case "guess": {
