@@ -68,21 +68,19 @@ test("daily responses stay compact and preserve streak, perk and cooldown detail
   assert.match(cooldown, /Next drop/);
 });
 
-test("work responses keep reward and 30-minute cooldown clear", () => {
+test("wallet Work button renders career-shift reward and cooldown", () => {
   const complete = panelText(renderWork({
-    claimed: true,
-    amount: 80,
-    account: { balance: 500 }
-  }, "user-1", "Sorted the community archive"));
+    worked: true, salary: 70, job: { name: "Barista" },
+    current: { shifts: 1, promotions: 0 }, account: { balance: 500 }
+  }, "user-1"));
   assert.match(complete, /Shift done/);
   assert.match(complete, /\+80 coins/);
   assert.match(complete, /500 coins/);
   assert.match(complete, /Back in 60 minutes/);
 
   const cooldown = panelText(renderWork({
-    claimed: false,
-    account: { lastWorkAt: new Date("2026-10-31T12:00:00Z") }
-  }, "user-1", "Sorted the community archive"));
+    worked: false, reason: "cooldown", nextAt: new Date("2026-11-01T13:00:00Z")
+  }, "user-1"));
   assert.match(cooldown, /off the clock/i);
   assert.match(cooldown, /Next one opens/);
 });
