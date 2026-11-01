@@ -176,6 +176,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
   assert.ok(names.includes("work"));
+  assert.ok(names.includes("ask"));
   assert.ok(names.includes("contracts"));
   assert.ok(names.includes("achievements"));
   assert.ok(names.includes("vault"));
@@ -183,7 +184,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("config"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 23);
+  assert.equal(names.length, 24);
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
 });
@@ -239,7 +240,7 @@ test("profile command combines wallet and collection data", async () => {
   const text = panelText(response);
   assert.match(text, /Ada/);
   assert.match(text, /1,250 coins/);
-  assert.match(text, /1 \/ 6/);
+  assert.match(text, /1 \/ 26/);
   assert.match(text, /Rookie Guess · 0 wins/);
   assert.equal(response.files, undefined);
 });
