@@ -95,7 +95,7 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.ok(categoryRow, "shop must show a category selection menu");
   assert.equal(categoryRow.components[0].placeholder, "Make a selection");
   assert.deepEqual(categoryRow.components[0].options.map((option) => option.value), ["all", "cosmetics", "badges", "tools", "coins", "gems"]);
-  assert.ok(response.files.every((file) => file.name.startsWith("avero-collectible-") && file.name.endsWith(".png")));
+  assert.ok(response.files.every((file) => file.name === "avero-professor.png" || (file.name.startsWith("avero-collectible-") && file.name.endsWith(".png"))));
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
   assert.ok(buttons(json).find((entry) => entry.custom_id === "avero|user-1|buy|neon_badge").disabled);
   assert.equal(new Set(componentIds).size, componentIds.length, "shop must never send duplicate component custom IDs");
