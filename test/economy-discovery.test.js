@@ -23,7 +23,8 @@ test("wallet explains every available coin earning route and cooldown", async ()
   assert.ok(text.includes("/scavenge · every 20m"));
   assert.ok(text.includes("/contracts · daily goals"));
   assert.ok(text.includes("/games · free mini-games"));
-  assert.doesNotMatch(text, /canvas|attachment:\/\//i);
+  assert.match(text, /Global wallet · virtual currency only/);
+  assert.doesNotMatch(text, /Server wallet|\\\\n|canvas|attachment:\/\//i);
 });
 
 test("insufficient-funds purchase response points to all main earning commands", () => {
