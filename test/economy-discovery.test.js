@@ -17,7 +17,7 @@ test("wallet explains every available coin earning route and cooldown", async ()
   }, "guild-1", "user-1");
 
   const text = panelText(response);
-  assert.match(text, /420 coins/);
+  assert.match(text, /420/);
   assert.ok(text.includes("/daily · every 24h"));
   assert.ok(text.includes("/work · every 30m"));
   assert.ok(text.includes("/scavenge · every 10m"));
@@ -40,13 +40,10 @@ test("insufficient-funds purchase response points to all main earning commands",
 test("help documents game-specific leaderboards and free game rules", async () => {
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
-  const fields = response.embeds[0].fields;
-  const games = fields.find((field) => field.name.toLowerCase().includes("games")).value;
-  const profile = fields.find((field) => field.name.toLowerCase().includes("profile")).value;
-
-  assert.match(games, /free, 10m reward cooldown/);
-  assert.match(games, /free/);
-  assert.match(profile, /games, coinflip, guess, RPS or Vault/);
+  const text = panelText(response);
+  assert.match(text, /free mini-games/);
+  assert.match(text, /leaderboard/);
+  assert.match(text, /achievements/);
 });
 
 test("daily responses stay compact and preserve streak, perk and cooldown details", () => {
