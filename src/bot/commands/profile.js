@@ -62,7 +62,7 @@ export const profileCommand = Object.freeze({
       ...gamePayload(createGamePanel({
         title: target.username,
         eyebrow: "AVERO • PROFILE",
-        description: "Server profile and activity",
+        description: "Global profile and activity",
         sections,
         sectionThumbnails: equippedBadge ? [badgeFilename] : [],
         footer: "PROFILE • GLOBAL STATS",
