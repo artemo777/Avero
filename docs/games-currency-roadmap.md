@@ -42,7 +42,7 @@ Implemented on the feature branch as `/contracts` with four daily goals: complet
 
 ### 3. The Vault
 
-Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date, with one recorded code submission per member per UTC day to prevent replay farming. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
+Implemented as `/vault` (view clues) and `/vault code` (submit): a server-specific daily three-dial arithmetic puzzle. Clues are stable for the server and UTC date, with one recorded code submission globally per member per UTC day to prevent replay farming. Wins and losses are recorded in the existing transaction ledger; a correct solution can earn 25 coins under the same atomic 10-minute cooldown as Guess and RPS. It has no entry fee or wager and requires no additional database migration.
 
 ### 4. Achievements and titles
 
