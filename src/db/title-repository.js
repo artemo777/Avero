@@ -8,6 +8,7 @@ function requireIdentifier(value, name) {
 }
 
 function titleKey(guildId, userId, titleId) {
+  requireIdentifier(guildId, "guildId");
   return {
     guildId: GLOBAL_SCOPE_ID,
     userId: requireIdentifier(userId, "userId"),
@@ -47,6 +48,7 @@ export async function unlockMemberTitle(prisma, guildId, userId, titleId, source
 }
 
 export async function equipMemberTitle(prisma, guildId, userId, titleId) {
+  requireIdentifier(guildId, "guildId");
   const key = {
     guildId: GLOBAL_SCOPE_ID,
     userId: requireIdentifier(userId, "userId")
