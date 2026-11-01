@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { collectionsCommand } from "../src/bot/commands/collections.js";
 
-test("collections command renders route-linked set progress for a server member", async () => {
+test("collections command renders route-linked set progress for a global member", async () => {
   let response;
   const prisma = {
     currencyPurchase: {
       findMany: async ({ where }) => {
-        assert.deepEqual(where, { guildId: "guild-1", userId: "user-1" });
+        assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1" });
         return [{ itemId: "neon_badge" }, { itemId: "vault_badge" }, { itemId: "avero_relic" }];
       }
     }
