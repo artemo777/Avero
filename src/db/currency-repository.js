@@ -65,6 +65,7 @@ export async function claimDailyReward(
       },
       data: {
         balance: { increment: amount },
+        ...(dailyStreak % 7 === 0 ? { gemBalance: { increment: 1 } } : {}),
         lastDailyAt: now,
         dailyStreak
       }
@@ -78,9 +79,18 @@ export async function claimDailyReward(
     }
 
     await tx.currencyTransaction.create({
-      data: { ...key, amount, type: "daily", createdAt: now }
+      data: { ...key, amount, currency: "coins", type: "daily", createdAt: now }
     });
-    return { claimed: true, amount, account, dailyStreak };
+    const gemsAwarded = dailyStreak > 0 && dailyStreak % 7 === 0 ? 1 : 0;
+    if (gemsAwarded) {
+      await tx.currencyTransaction.create({
+        data: { ...key, amount: gemsAwarded, currency: "gems", type: "weekly_streak_gem", createdAt: now }
+      });
+    }
+    const finalAccount = gemsAwarded
+      ? await tx.currencyAccount.findUnique({ where: { guildId_userId: key } })
+      : account;
+    return { claimed: true, amount, account: finalAccount, dailyStreak, gemsAwarded };
   });
 }
 
