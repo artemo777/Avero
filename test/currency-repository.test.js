@@ -51,7 +51,7 @@ function createFakePrisma() {
   return prisma;
 }
 
-test("daily reward is granted once per cooldown and scoped to each server", async () => {
+test("daily reward cooldown and balance are shared across servers", async () => {
   const prisma = createFakePrisma();
   const now = new Date("2026-10-28T12:00:00.000Z");
 
@@ -64,9 +64,9 @@ test("daily reward is granted once per cooldown and scoped to each server", asyn
   assert.equal(second.account.balance, 100);
 
   const otherServer = await claimDailyReward(prisma, "test-server", "user-1", { amount: 100, now });
-  assert.equal(otherServer.claimed, true);
+  assert.equal(otherServer.claimed, false);
   assert.equal(otherServer.account.balance, 100);
-  assert.equal(prisma.transactions.length, 2);
+  assert.equal(prisma.transactions.length, 1);
 });
 
 test("parallel daily claims award coins only once", async () => {
@@ -83,7 +83,7 @@ test("parallel daily claims award coins only once", async () => {
   assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 1);
 });
 
-test("game rewards update the server-scoped balance and create a ledger entry", async () => {
+test("game rewards update the global balance and create a ledger entry", async () => {
   const prisma = createFakePrisma();
   const now = new Date("2026-10-28T12:00:00.000Z");
 
@@ -96,7 +96,7 @@ test("game rewards update the server-scoped balance and create a ledger entry", 
   assert.equal(result.amount, 25);
   assert.equal(result.account.balance, 25);
   assert.deepEqual(prisma.transactions, [{
-    guildId: "lightx",
+    guildId: "__avero_global__",
     userId: "winner-1",
     amount: 25,
     type: "guess_win",
@@ -104,7 +104,7 @@ test("game rewards update the server-scoped balance and create a ledger entry", 
   }]);
 
   const otherServer = await getCurrencyAccount(prisma, "test-server", "winner-1");
-  assert.equal(otherServer, null);
+  assert.equal(otherServer.balance, 25);
 });
 
 test("game reward rejects invalid amounts and ledger types", async () => {
