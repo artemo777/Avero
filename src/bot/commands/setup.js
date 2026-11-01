@@ -21,7 +21,7 @@ export const setupCommand = Object.freeze({
       "**Games** · " + (settings.gamesEnabled ? "Ready" : "Paused by a server admin"),
       "**Currency** · " + (settings.currencyEnabled ? "Ready" : "Paused by a server admin")
     ];
-    await interaction.reply(gamePayload(createGamePanel({
+    const payload = gamePayload(createGamePanel({
       title: "Server setup",
       eyebrow: "AVERO • SETUP",
       description: missing
@@ -36,6 +36,7 @@ export const setupCommand = Object.freeze({
       color: missing ? 0xFBBF24 : undefined,
       footer: "RUN /HELP FOR THE FULL COMMAND LIST",
       separators: true
-    })), { flags: MessageFlags.Ephemeral });
+    }));
+    await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
   }
 });
