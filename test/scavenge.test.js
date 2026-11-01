@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { claimScavengeReward } from "../src/db/currency-repository.js";
-import { runScavenge, SCAVENGE_ROUTES } from "../src/bot/game-ui.js";
+import { runScavenge, SCAVENGE_ROUTES, getScavengeDropChance, buildScavengeSearchPool } from "../src/bot/game-ui.js";
 import { scavengeCommand } from "../src/bot/commands/scavenge.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
@@ -178,4 +178,17 @@ test("scavenge slash command exposes route choices and rejects invalid values", 
     reply: async (payload) => { response = payload; }
   }, { prisma: {} });
   assert.equal(response.content, "Choose one of the listed expedition routes.");
+});
+
+
+test("search tools improve the finding pool without mutating shared route odds", () => {
+  const route = SCAVENGE_ROUTES.find((entry) => entry.id === "plaza");
+  const base = buildScavengeSearchPool(route);
+  const expanded = buildScavengeSearchPool(route, ["library_card", "starlight_compass"]);
+  assert.equal(getScavengeDropChance([]), 12);
+  assert.equal(getScavengeDropChance(["lucky_compass"]), 18);
+  assert.equal(expanded.length, base.length + 3);
+  assert.ok(expanded.some((entry) => entry.id === "star_pin"));
+  assert.ok(expanded.find((entry) => entry.id === "prism_crown").weight > base.find((entry) => entry.id === "prism_crown").weight);
+  assert.deepEqual(route.items.map((entry) => entry.weight), base.map((entry) => entry.weight));
 });
