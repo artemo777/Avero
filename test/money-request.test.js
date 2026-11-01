@@ -27,7 +27,9 @@ function fakePrisma() {
       },
       async updateMany({ where, data }) {
         const row = requests.get(where.id);
-        if (!row || row.status !== where.status || (where.expiresAt?.gt && row.expiresAt <= where.expiresAt.gt)) return { count: 0 };
+        if (!row || row.status !== where.status ||
+          (where.expiresAt?.gt && row.expiresAt <= where.expiresAt.gt) ||
+          (where.expiresAt?.lte && row.expiresAt > where.expiresAt.lte)) return { count: 0 };
         Object.assign(row, data);
         return { count: 1 };
       }
@@ -96,4 +98,25 @@ test("coin requests validate recipient, self-requests, and amount limits", async
   await assert.rejects(createMoneyRequest(prisma, "g", "same", "same", 10), /yourself/);
   await assert.rejects(createMoneyRequest(prisma, "g", "a", "b", 0), /between 1/);
   await assert.rejects(createMoneyRequest(prisma, "g", "a", "b", 10001), /between 1/);
+});
+
+test("decline reports already handled when its conditional update loses a race", async () => {
+  const prisma = fakePrisma();
+  const request = await createMoneyRequest(prisma, "g", "requester", "target", 50);
+  prisma.moneyRequest.updateMany = async () => ({ count: 0 });
+  const result = await respondToMoneyRequest(prisma, "g", request.id, "target", "decline");
+  assert.equal(result.completed, false);
+  assert.equal(result.reason, "handled");
+});
+
+test("expiry never overwrites a request that another response already handled", async () => {
+  const prisma = fakePrisma();
+  const createdAt = new Date("2026-11-01T12:00:00Z");
+  const request = await createMoneyRequest(prisma, "g", "requester", "target", 50, { now: createdAt });
+  prisma.moneyRequest.updateMany = async () => ({ count: 0 });
+  const result = await respondToMoneyRequest(prisma, "g", request.id, "target", "accept", {
+    now: new Date(createdAt.getTime() + 11 * 60 * 1000)
+  });
+  assert.equal(result.completed, false);
+  assert.equal(result.reason, "handled");
 });
