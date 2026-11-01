@@ -367,9 +367,10 @@ export async function purchaseCurrencyItem(
   userId,
   itemId,
   price,
-  { now = new Date() } = {}
+  { now = new Date(), currency = "coins" } = {}
 ) {
   const key = currencyKey(guildId, userId);
+  if (!["coins", "gems"].includes(currency)) throw new TypeError("Shop currency must be coins or gems.");
   if (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId)) {
     throw new TypeError("Shop item ID must be a simple lowercase identifier.");
   }
@@ -393,13 +394,14 @@ export async function purchaseCurrencyItem(
         where: { guildId_userId: key }
       });
       if (existing) return { purchased: false, reason: "owned", account: accountBefore };
-      if (accountBefore.balance < price) {
-        return { purchased: false, reason: "insufficient_funds", account: accountBefore };
+      const balanceField = currency === "gems" ? "gemBalance" : "balance";
+      if ((accountBefore[balanceField] ?? 0) < price) {
+        return { purchased: false, reason: "insufficient_funds", account: accountBefore, currency };
       }
 
       const updated = await tx.currencyAccount.updateMany({
-        where: { ...key, balance: { gte: price } },
-        data: { balance: { decrement: price } }
+        where: { ...key, [balanceField]: { gte: price } },
+        data: { [balanceField]: { decrement: price } }
       });
       if (updated.count !== 1) {
         const [existingAfterRace, account] = await Promise.all([
@@ -418,12 +420,12 @@ export async function purchaseCurrencyItem(
         data: { ...key, itemId, purchasedAt: now }
       });
       await tx.currencyTransaction.create({
-        data: { ...key, amount: -price, type: "shop_purchase", createdAt: now }
+        data: { ...key, amount: -price, currency, type: "shop_purchase", createdAt: now }
       });
       const account = await tx.currencyAccount.findUnique({
         where: { guildId_userId: key }
       });
-      return { purchased: true, itemId, price, account };
+      return { purchased: true, itemId, price, currency, account };
     });
   } catch (error) {
     // A concurrent purchase of the same unique item can win after our initial
