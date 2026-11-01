@@ -124,8 +124,13 @@ export const titlesCommand = Object.freeze({
           ? "You already own **" + selected.name + "**."
           : "You need **" + selected.price.toLocaleString("en-US") + " coins**. Your balance is **" + (result.account?.balance ?? 0).toLocaleString("en-US") + "**.";
       await interaction.reply({
-        embeds: [createEmbed({ title: "Title shop", description: message, color: result.purchased ? THEME.colors.success : THEME.colors.primary, footer: "Virtual coins only · no cash value" })],
-        flags: MessageFlags.Ephemeral
+        ...gamePayload(createGamePanel({
+          title: "Title shop",
+          eyebrow: "PROFILE TITLES",
+          description: message,
+          footer: "VIRTUAL COINS ONLY · NO CASH VALUE"
+        })),
+        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2
       });
       return;
     }
