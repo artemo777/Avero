@@ -48,8 +48,8 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton()) {
-    if (interaction.customId.startsWith("avero-config|")) {
+  if (interaction.isButton() || interaction.isStringSelectMenu()) {
+    if (interaction.isButton() && interaction.customId.startsWith("avero-config|")) {
       try {
         await handleConfigButton(interaction, getPrismaClient());
       } catch (error) {
