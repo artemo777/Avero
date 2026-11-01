@@ -30,7 +30,7 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
   const [owned, profile] = await Promise.all([
     getMemberTitles(prisma, guildId, user.id),
     prisma.memberProfile.findUnique({
-      where: { guildId_userId: { guildId: guildId, userId: user.id } }
+      where: { guildId_userId: { guildId: "__avero_global__", userId: user.id } }
     })
   ]);
   const ownedIds = new Set(owned.map((entry) => entry.titleId));
@@ -66,7 +66,7 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     eyebrow: "PROFILE TITLES",
     description,
     buttons,
-    footer: "USE /TITLES TO BUY OR EQUIP • SERVER-SPECIFIC • PAGE " + (currentPage + 1) + "/" + pageCount,
+    footer: "USE /TITLES TO BUY OR EQUIP • GLOBAL PROFILE • PAGE " + (currentPage + 1) + "/" + pageCount,
     separators: true
   }));
 }
