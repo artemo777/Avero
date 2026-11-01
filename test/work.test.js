@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { claimWorkReward } from "../src/db/currency-repository.js";
 import { workCommand } from "../src/bot/commands/work.js";
+import { renderWorkJobsPage } from "../src/bot/game-ui.js";
+import { WORK_JOBS } from "../src/bot/work-catalog.js";
 import { MessageFlags } from "discord.js";
 
 function createPrisma(initialBalance = 0) {
@@ -101,4 +103,24 @@ test("work command responds privately outside servers and requires database cont
     flags: MessageFlags.Ephemeral
   });
   await assert.rejects(workCommand.execute({ ...interaction, guildId: "guild-1" }), /requires a database/);
+});
+
+
+test("work career board paginates at five jobs and uses the professor mascot", async () => {
+  const first = await renderWorkJobsPage("user-1", 0);
+  const firstJson = first.components[0].toJSON();
+  const firstText = firstJson.components.filter((part) => part.type === 10).map((part) => part.content).join("\n");
+  assert.equal(first.files.length, 1);
+  assert.equal(firstJson.components.filter((part) => part.type === 9).length, 1);
+  assert.match(firstText, new RegExp(WORK_JOBS[0].name));
+  assert.match(firstText, new RegExp(WORK_JOBS[4].name));
+  assert.doesNotMatch(firstText, new RegExp(WORK_JOBS[5].name));
+  assert.match(firstText, /PAGE 1 OF 4/);
+  const firstButtons = firstJson.components.filter((part) => part.type === 1).flatMap((row) => row.components);
+  assert.ok(firstButtons.some((button) => button.custom_id === "avero|user-1|work_page|1"));
+  assert.equal(firstJson.components.filter((part) => part.type === 9).at(-1).accessory.media.url, "attachment://avero-professor.png");
+  const second = await renderWorkJobsPage("user-1", 1);
+  const secondText = second.components[0].toJSON().components.filter((part) => part.type === 10).map((part) => part.content).join("\n");
+  assert.match(secondText, new RegExp(WORK_JOBS[5].name));
+  assert.match(secondText, /PAGE 2 OF 4/);
 });

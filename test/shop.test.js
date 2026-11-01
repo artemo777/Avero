@@ -79,7 +79,7 @@ test("shop paginates compact category sections and keeps controls within Discord
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
   const firstPageItems = SHOP_ITEMS.slice(0, 2);
-  assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length);
+  assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length + 1);
   assert.match(panelText(response), /SHOP \/ ALL ITEMS/);
   assert.match(panelText(response), /VIRTUAL ITEMS ONLY/);
   for (const item of firstPageItems) assert.match(panelText(response), new RegExp(item.name));
@@ -92,15 +92,17 @@ test("shop paginates compact category sections and keeps controls within Discord
   assert.equal(new Set(componentIds).size, componentIds.length, "all component custom IDs are unique");
   assert.ok(componentIds.includes("avero|user-1|shop_page|all:1"));
   const sections = panel.components.filter((component) => component.type === 9);
-  for (const [index, section] of sections.entries()) {
+  for (const [index, section] of sections.slice(0, firstPageItems.length).entries()) {
     assert.equal(section.accessory?.media?.url, "attachment://avero-collectible-" + index + ".png");
     assert.equal(panel.components[panel.components.indexOf(section) + 1]?.type, 1, "item controls immediately follow its thumbnail listing");
   }
+  assert.equal(sections.at(-1).accessory?.media?.url, "attachment://avero-professor.png");
+  assert.match(panelText(response), /Professor’s note/);
 
   const secondResponse = await renderShop(createFakePrisma(500), "guild-1", "user-1", 1);
   const secondPanel = secondResponse.components[0].toJSON();
   for (const item of SHOP_ITEMS.slice(2, 4)) assert.match(panelText(secondResponse), new RegExp(item.name));
-  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 1);
+  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 2);
   assert.ok(secondPanel.components.length <= 10, "second shop page stays within Discord's container component limit");
   assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|all:0")));
 });

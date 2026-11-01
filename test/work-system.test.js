@@ -97,3 +97,17 @@ test("resigning removes the active career and allows a new application", async (
   assert.equal(afterCooldown.worked, true);
   assert.equal(afterCooldown.salary, 140);
 });
+
+
+test("owned work tools add a small shift bonus and shorten cooldown without changing promotion rules", async () => {
+  const prisma = fakePrisma();
+  const start = new Date("2026-11-01T12:00:00.000Z");
+  await applyForJob(prisma, "guild", "member", "barista");
+  const first = await runJobShift(prisma, "guild", "member", { now: start, bonusCoins: 5, cooldownMs: 55 * 60 * 1000 });
+  assert.equal(first.salary, 75);
+  assert.equal(first.cooldownMs, 55 * 60 * 1000);
+  const tooSoon = await runJobShift(prisma, "guild", "member", { now: new Date(start.getTime() + 54 * 60 * 1000), cooldownMs: 55 * 60 * 1000 });
+  assert.equal(tooSoon.reason, "cooldown");
+  const ready = await runJobShift(prisma, "guild", "member", { now: new Date(start.getTime() + 55 * 60 * 1000), cooldownMs: 55 * 60 * 1000 });
+  assert.equal(ready.worked, true);
+});

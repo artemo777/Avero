@@ -89,13 +89,13 @@ test("shop stays within Discord container limits across paginated item cards", a
   const componentIds = buttons(json).map((entry) => entry.custom_id);
   assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|item|")).length, 2);
   assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|buy|")).length, 2);
-  assert.equal(json.components.filter((component) => component.type === 9).length, 2);
-  assert.equal(response.files.length, 2);
+  assert.equal(json.components.filter((component) => component.type === 9).length, 3);
+  assert.equal(response.files.length, 3);
   const categoryRow = json.components.find((component) => component.type === 1 && component.components.some((child) => child.type === 3));
   assert.ok(categoryRow, "shop must show a category selection menu");
   assert.equal(categoryRow.components[0].placeholder, "Make a selection");
   assert.deepEqual(categoryRow.components[0].options.map((option) => option.value), ["all", "cosmetics", "badges", "tools", "coins", "gems"]);
-  assert.ok(response.files.every((file) => file.name.startsWith("avero-collectible-") && file.name.endsWith(".png")));
+  assert.ok(response.files.every((file) => file.name === "avero-professor.png" || (file.name.startsWith("avero-collectible-") && file.name.endsWith(".png"))));
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
   assert.ok(buttons(json).find((entry) => entry.custom_id === "avero|user-1|buy|neon_badge").disabled);
   assert.equal(new Set(componentIds).size, componentIds.length, "shop must never send duplicate component custom IDs");
@@ -105,7 +105,7 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|shop_page|all:1"));
 
   const secondPage = panel(await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1", 1));
-  assert.equal(secondPage.components.filter((component) => component.type === 9).length, 1);
+  assert.equal(secondPage.components.filter((component) => component.type === 9).length, 2);
   assert.equal(buttons(secondPage).filter((entry) => entry.custom_id.startsWith("avero|user-1|buy|")).length, 2);
   assert.ok(buttons(secondPage).some((entry) => entry.custom_id === "avero|user-1|item|starlight_badge:1:shop"));
   assert.ok(secondPage.components.length <= 10);

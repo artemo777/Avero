@@ -46,21 +46,22 @@ export async function resignFromJob(prisma, guildId, userId) {
   return { resigned: true, current };
 }
 
-export async function runJobShift(prisma, guildId, userId, { now = new Date(), cooldownMs = WORK_SHIFT_COOLDOWN_MS } = {}) {
+export async function runJobShift(prisma, guildId, userId, { now = new Date(), cooldownMs = WORK_SHIFT_COOLDOWN_MS, bonusCoins = 0 } = {}) {
   const memberKey = key(guildId, userId);
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("now must be a valid Date.");
+  if (!Number.isSafeInteger(bonusCoins) || bonusCoins < 0 || bonusCoins > 100) throw new TypeError("Work bonus must be an integer from 0 to 100.");
   const current = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
   if (!current || current.jobId === "unemployed") return { worked: false, reason: "not_employed" };
   const job = WORK_JOBS.find((entry) => entry.id === current.jobId);
   if (!job) throw new Error("The saved Avero job is not in the current job list.");
   const nextAt = current.lastShiftAt ? new Date(current.lastShiftAt.getTime() + cooldownMs) : null;
-  if (nextAt && nextAt > now) return { worked: false, reason: "cooldown", nextAt, current, job };
+  if (nextAt && nextAt > now) return { worked: false, reason: "cooldown", nextAt, current, job, cooldownMs };
 
   return prisma.$transaction(async (tx) => {
     await tx.currencyAccount.upsert({ where: { guildId_userId: memberKey }, create: memberKey, update: {} });
     const nextShifts = current.shifts + 1;
     const nextPromotions = Math.min(3, WORK_PROMOTION_THRESHOLDS.filter((threshold) => nextShifts >= threshold).length);
-    const salary = Math.round(job.salary * (1 + current.promotions * 0.15));
+    const salary = Math.round(job.salary * (1 + current.promotions * 0.15)) + bonusCoins;
     const updatedJob = await tx.memberJob.updateMany({
       where: {
         ...memberKey,
@@ -73,7 +74,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     });
     if (updatedJob.count !== 1) {
       const latest = await tx.memberJob.findUnique({ where: { guildId_userId: memberKey } });
-      return { worked: false, reason: "cooldown", nextAt: latest?.lastShiftAt ? new Date(latest.lastShiftAt.getTime() + cooldownMs) : null, current: latest, job };
+      return { worked: false, reason: "cooldown", nextAt: latest?.lastShiftAt ? new Date(latest.lastShiftAt.getTime() + cooldownMs) : null, current: latest, job, cooldownMs };
     }
     await tx.currencyAccount.updateMany({ where: memberKey, data: { balance: { increment: salary } } });
     await tx.currencyTransaction.create({ data: { ...memberKey, amount: salary, currency: "coins", type: "work_shift", createdAt: now } });
@@ -82,7 +83,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
       tx.memberJob.findUnique({ where: { guildId_userId: memberKey } })
     ]);
     return {
-      worked: true, salary, account, current: updated, job,
+      worked: true, salary, account, current: updated, job, cooldownMs,
       promoted: nextPromotions > current.promotions,
       promotion: nextPromotions,
       nextPromotionAt: WORK_PROMOTION_THRESHOLDS[nextPromotions] ?? null
