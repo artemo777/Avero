@@ -34,11 +34,18 @@ export async function respondToMoneyRequest(prisma, guildId, requestId, responde
     if (request.targetId !== responderId) return { completed: false, reason: "not_target" };
     if (request.status !== "pending") return { completed: false, reason: "handled" };
     if (request.expiresAt <= now) {
-      await tx.moneyRequest.update({ where: { id: requestId }, data: { status: "expired", respondedAt: now } });
-      return { completed: false, reason: "expired" };
+      const expired = await tx.moneyRequest.updateMany({
+        where: { id: requestId, status: "pending", expiresAt: { lte: now } },
+        data: { status: "expired", respondedAt: now }
+      });
+      return { completed: false, reason: expired.count === 1 ? "expired" : "handled" };
     }
     if (decision === "decline") {
-      await tx.moneyRequest.updateMany({ where: { id: requestId, status: "pending" }, data: { status: "declined", respondedAt: now } });
+      const declined = await tx.moneyRequest.updateMany({
+        where: { id: requestId, status: "pending", expiresAt: { gt: now } },
+        data: { status: "declined", respondedAt: now }
+      });
+      if (declined.count !== 1) return { completed: false, reason: "handled" };
       return { completed: true, accepted: false, request };
     }
     const payerKey = { guildId: serverId, userId: responderId };
