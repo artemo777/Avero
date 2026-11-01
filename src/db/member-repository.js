@@ -8,6 +8,7 @@ function requireIdentifier(value, name) {
 }
 
 function memberWhere(guildId, userId) {
+  requireIdentifier(guildId, "guildId");
   return {
     guildId_userId: {
       guildId: GLOBAL_SCOPE_ID,
