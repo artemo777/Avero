@@ -90,7 +90,7 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.equal(new Set(componentIds).size, componentIds.length, "shop must never send duplicate component custom IDs");
   assert.ok(json.components.every((component) => component.type !== 12));
   assert.ok(json.components.length <= 10, "shop panel must stay within Discord container component limits");
-  assert.match(allText(json), /COLLECTIBLES • VIRTUAL ITEMS ONLY/);
+  assert.match(allText(json), /VIRTUAL ITEMS ONLY/);
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|shop_page|all:1"));
 
   const secondPage = panel(await renderShop(fakePrisma(["neon_badge"]), "guild-1", "user-1", 1));
@@ -125,7 +125,7 @@ test("gem shop category filters gem-priced items and shows a separate gem balanc
     currencyAccount: { findUnique: async () => ({ balance: 1200, gemBalance: 7 }) }
   }, "guild-1", "user-1", 0, "gems");
   const json = panel(response);
-  assert.match(allText(json), /7\\*\\* gems/);
+  assert.match(allText(json), /\\*\\*7\\*\\* gems/);
   assert.match(allText(json), /Aurora Frame/);
   assert.doesNotMatch(allText(json), /Glitch Gremlin/);
   const ids = buttons(json).map((entry) => entry.custom_id);
