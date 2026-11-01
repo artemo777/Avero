@@ -1,3 +1,10 @@
+BEGIN;
+
+-- Keep account writes from racing the one-time consolidation.
+LOCK TABLE "CurrencyAccount", "MemberProfile", "CurrencyPurchase", "MemberTitle",
+           "MemberJob", "DailyContractClaim", "CurrencyTransaction"
+IN ACCESS EXCLUSIVE MODE;
+
 -- Consolidate all member-owned records into one reserved global scope.
 -- Discord guild IDs are numeric snowflakes, so this namespace cannot collide with a real guild.
 -- GuildSettings and MoneyRequest origin metadata intentionally remain guild-scoped.
@@ -126,3 +133,5 @@ UPDATE "DailyContractClaim" SET "guildId" = '__avero_global__';
 -- Preserve the full ledger (including same-day actions in different servers),
 -- but make it queryable as one account history.
 UPDATE "CurrencyTransaction" SET "guildId" = '__avero_global__';
+
+COMMIT;
