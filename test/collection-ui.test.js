@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { listAssets } from "../averoui/assets.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
   return {
@@ -54,6 +55,14 @@ test("inventory paginates at five items and shows compact navigation", async () 
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_first|0"));
   const ids = buttons(json).map((entry) => entry.custom_id);
   assert.equal(new Set(ids).size, ids.length, "inventory must never send duplicate component custom IDs");
+
+  const laterPage = panel(await renderInventory(fakePrisma([
+    "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
+  ]), "guild-1", "user-1", 1));
+  assert.match(allText(laterPage), /PAGE 2 OF 2/);
+  const laterIds = buttons(laterPage).map((entry) => entry.custom_id);
+  assert.equal(laterIds.filter((id) => id.startsWith("avero|user-1|item|")).length, 1);
+  assert.equal(new Set(laterIds).size, laterIds.length, "later inventory pages must never send duplicate component custom IDs");
 });
 
 test("item detail shows owned state and does not offer a second purchase", async () => {
@@ -132,4 +141,9 @@ test("gem shop category filters gem-priced items and shows a separate gem balanc
   assert.doesNotMatch(allText(json), /Glitch Gremlin/);
   const ids = buttons(json).map((entry) => entry.custom_id);
   assert.equal(new Set(ids).size, ids.length);
+});
+
+test("registered asset IDs are unique", () => {
+  const ids = listAssets().map((asset) => asset.id);
+  assert.equal(new Set(ids).size, ids.length, "each registered asset must have a unique ID");
 });
