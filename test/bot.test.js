@@ -428,3 +428,43 @@ test("setup command reports channel permissions, feature status and first steps 
   assert.match(text, /Games.*Ready/);
   assert.match(text, /Currency.*Paused/);
 });
+
+
+test("title purchases return a compact ephemeral Components V2 panel", async () => {
+  const { titlesCommand } = await import("../src/bot/commands/titles.js");
+  let response;
+  const account = { balance: 10000 };
+  const tx = {
+    currencyAccount: {
+      upsert: async () => account,
+      findUnique: async () => ({ ...account }),
+      updateMany: async ({ data }) => {
+        account.balance -= data.balance.decrement;
+        return { count: 1 };
+      }
+    },
+    memberTitle: {
+      findUnique: async () => null,
+      create: async ({ data }) => data
+    },
+    currencyTransaction: { create: async () => ({}) }
+  };
+  const prisma = { $transaction: async (callback) => callback(tx) };
+  await titlesCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: {
+      getString: (name) => name === "action" ? "buy" : "main_character"
+    },
+    reply: async (payload) => { response = payload; }
+  }, { prisma });
+
+  assert.equal(response.flags, MessageFlags.Ephemeral | MessageFlags.IsComponentsV2);
+  const panel = response.components[0].toJSON();
+  assert.equal(panel.type, 17);
+  const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
+  assert.match(text, /Title shop/);
+  assert.match(text, /Main Character/);
+  assert.match(text, /2,500 coins/);
+  assert.equal(response.embeds, undefined);
+});
