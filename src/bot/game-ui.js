@@ -764,7 +764,9 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = await runCoinflip(prisma, interaction.guildId, parsed.arg, interaction.user.id);
       break;
     case "vault": {
-      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const purchases = prisma.currencyPurchase?.findMany
+        ? await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id)
+        : [];
       const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
       payload = renderVaultChallenge(createVaultChallenge(interaction.guildId), interaction.user.id, { hasNotebook });
       break;
