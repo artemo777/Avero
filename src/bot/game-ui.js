@@ -173,7 +173,7 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
-    sections: ["**Earn coins**\n✨ /daily · every 24h\n🧰 /work · every 60m\n🧭 /scavenge · every 20m\n📜 /contracts · daily goals\n🎮 /games · free mini-games"],
+    sections: ["**Earn coins**\n✨ /daily · every 24h\n🧰 /work · every 60m\n🧭 /scavenge · every 20m\n📜 /contracts · daily goals\n🎮 /games · free mini-games", "**Earn gems**\n◆ Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
     footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
