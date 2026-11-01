@@ -125,7 +125,7 @@ test("gem shop category filters gem-priced items and shows a separate gem balanc
     currencyAccount: { findUnique: async () => ({ balance: 1200, gemBalance: 7 }) }
   }, "guild-1", "user-1", 0, "gems");
   const json = panel(response);
-  assert.match(allText(json), /\\*\\*7\\*\\* gems/);
+  assert.match(allText(json), /\*\*7\*\* gems/);
   assert.match(allText(json), /Aurora Frame/);
   assert.doesNotMatch(allText(json), /Glitch Gremlin/);
   const ids = buttons(json).map((entry) => entry.custom_id);
