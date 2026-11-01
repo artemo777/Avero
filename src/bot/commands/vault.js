@@ -24,7 +24,7 @@ export const vaultCommand = Object.freeze({
     }
     const guess = interaction.options.getString("code");
     if (guess === null || guess === undefined) {
-      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const purchases = prisma ? await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id) : [];
       const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
       await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook }));
       return;
