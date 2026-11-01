@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getCurrencyStats } from "../src/db/currency-repository.js";
 
-test("currency statistics summarize wins, earnings, spending, and activity by server and member", async () => {
+test("currency statistics summarize wins, earnings, spending, and activity globally by member", async () => {
   let query;
   const rows = [
     { type: "guess_win", _count: { _all: 5 }, _sum: { amount: 125 } },
@@ -45,6 +45,6 @@ test("currency statistics summarize wins, earnings, spending, and activity by se
     scavenges: 1,
     itemsPurchased: 2
   });
-  assert.deepEqual(query.where, { guildId: "guild-1", userId: "user-1" });
+  assert.deepEqual(query.where, { guildId: "__avero_global__", userId: "user-1" });
   assert.deepEqual(query.by, ["type"]);
 });
