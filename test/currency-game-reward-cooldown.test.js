@@ -60,7 +60,7 @@ test("concurrent game wins award coins only once inside the reward cooldown", as
   assert.equal(results.filter((result) => result.awarded).length, 1);
   assert.equal(results.filter((result) => result.reason === "cooldown").length, 1);
   assert.equal((await prisma.currencyAccount.findUnique({
-    where: { guildId_userId: { guildId: "guild-1", userId: "user-1" } }
+    where: { guildId_userId: { guildId: "__avero_global__", userId: "user-1" } }
   })).balance, 25);
   assert.equal(prisma.transactions.length, 1);
   assert.equal(prisma.transactions[0].amount, 25);
