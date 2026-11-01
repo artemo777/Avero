@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
   return {
@@ -29,26 +29,27 @@ function buttons(json) {
   return json.components.filter((component) => component.type === 1).flatMap((row) => row.components);
 }
 
-test("inventory exposes item detail buttons and collection progress", async () => {
+test("inventory uses the compact Components V2 layout and exposes item details", async () => {
   const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
   const json = panel(response);
-  assert.match(allText(json), /2 \/ 6 collectibles/);
-  assert.equal(json.components.some((component) => component.type === 12), false);
-  assert.equal(response.files, undefined);
-  assert.match(allText(json), /Select an item below for its details/);
+  assert.match(allText(json), /Total Market Value/);
+  assert.match(allText(json), /Page Market Value/);
+  assert.match(allText(json), /2\/6/);
+  assert.equal(json.components.filter((component) => component.type === 14).length, 2);
   const itemButtons = buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|"));
   assert.equal(itemButtons.length, 2);
   assert.ok(itemButtons.some((entry) => entry.custom_id.includes("neon_badge:0")));
 });
 
-test("inventory keeps up to seven collectibles on one compact page", async () => {
+test("inventory paginates at five items and shows compact navigation", async () => {
   const response = await renderInventory(fakePrisma([
     "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
   ]), "guild-1", "user-1");
   const json = panel(response);
-  assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 6);
-  assert.doesNotMatch(allText(json), /page 1 of 2/i);
-  assert.ok(!buttons(json).some((entry) => entry.custom_id.startsWith("avero|user-1|collection_page|")));
+  assert.equal(buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|")).length, 5);
+  assert.match(allText(json), /PAGE 1 OF 2/);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_page|1"));
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|collection_page|0"));
 });
 
 test("item detail shows owned state and does not offer a second purchase", async () => {
@@ -97,17 +98,18 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.ok(!detail.components.some((component) => component.type === 12));
 });
 
-test("collection shows earned and next milestones", async () => {
-  const one = panel(await renderInventory(fakePrisma(["neon_badge"]), "guild-1", "user-1"));
-  assert.match(allText(one), /First Find/);
-  assert.match(allText(one), /Next: \*\*Curator\*\* — 1\/3 items/);
+test("inventory displays catalog values and compact separators", async () => {
+  const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
+  const json = panel(response);
+  assert.match(allText(json), /Total Market Value: 800/);
+  assert.match(allText(json), /Page Market Value: 800/);
+  assert.ok(json.components.some((component) => component.type === 14));
+});
 
-  const three = panel(await renderInventory(fakePrisma(["neon_badge", "vault_badge", "starlight_badge"]), "guild-1", "user-1"));
-  assert.match(allText(three), /Curator/);
-  assert.match(allText(three), /Next:.*Full Set.*3\/6 items/);
-
-  const full = panel(await renderInventory(fakePrisma([
-    "neon_badge", "vault_badge", "starlight_badge", "moonlit_token", "prism_crown", "avero_relic"
-  ]), "guild-1", "user-1"));
-  assert.match(allText(full), /All collection milestones complete/);
+test("balance uses the same compact V2 container style", async () => {
+  const response = await renderBalance(fakePrisma([], 117355), "guild-1", "user-1");
+  const json = panel(response);
+  assert.match(allText(json), /117,355/);
+  assert.match(allText(json), /Earn coins/);
+  assert.equal(json.components.filter((component) => component.type === 14).length, 2);
 });
