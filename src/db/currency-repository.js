@@ -1,3 +1,5 @@
+const GLOBAL_SCOPE_ID = "__avero_global__";
+
 function requireIdentifier(value, name) {
   if (typeof value !== "string" || value.trim() === "") {
     throw new TypeError(name + " must be a non-empty string.");
@@ -7,7 +9,7 @@ function requireIdentifier(value, name) {
 
 function currencyKey(guildId, userId) {
   return {
-    guildId: requireIdentifier(guildId, "guildId"),
+    guildId: GLOBAL_SCOPE_ID,
     userId: requireIdentifier(userId, "userId")
   };
 }
