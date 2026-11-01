@@ -55,7 +55,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
   const job = WORK_JOBS.find((entry) => entry.id === current.jobId);
   if (!job) throw new Error("The saved Avero job is not in the current job list.");
   const nextAt = current.lastShiftAt ? new Date(current.lastShiftAt.getTime() + cooldownMs) : null;
-  if (nextAt && nextAt > now) return { worked: false, reason: "cooldown", nextAt, current, job };
+  if (nextAt && nextAt > now) return { worked: false, reason: "cooldown", nextAt, current, job, cooldownMs };
 
   return prisma.$transaction(async (tx) => {
     await tx.currencyAccount.upsert({ where: { guildId_userId: memberKey }, create: memberKey, update: {} });
@@ -74,7 +74,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     });
     if (updatedJob.count !== 1) {
       const latest = await tx.memberJob.findUnique({ where: { guildId_userId: memberKey } });
-      return { worked: false, reason: "cooldown", nextAt: latest?.lastShiftAt ? new Date(latest.lastShiftAt.getTime() + cooldownMs) : null, current: latest, job };
+      return { worked: false, reason: "cooldown", nextAt: latest?.lastShiftAt ? new Date(latest.lastShiftAt.getTime() + cooldownMs) : null, current: latest, job, cooldownMs };
     }
     await tx.currencyAccount.updateMany({ where: memberKey, data: { balance: { increment: salary } } });
     await tx.currencyTransaction.create({ data: { ...memberKey, amount: salary, currency: "coins", type: "work_shift", createdAt: now } });
