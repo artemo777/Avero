@@ -69,7 +69,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
       const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "collections", "collection_page", "item", "equip_badge", "unequip_badge"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "collections", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;
