@@ -49,6 +49,10 @@ function fakePrisma() {
       }
     },
     currencyPurchase: {
+      async findMany({ where }) {
+        const prefix = accountKey(where.guildId, where.userId) + ":";
+        return [...purchases.entries()].filter(([key]) => key.startsWith(prefix)).map(([, value]) => value);
+      },
       async findUnique({ where }) {
         const key = where.guildId_userId_itemId;
         return purchases.get(purchaseKey(key.guildId, key.userId, key.itemId)) ?? null;
