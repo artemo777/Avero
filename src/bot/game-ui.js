@@ -63,6 +63,10 @@ export function readComponentId(customId) {
   return { userId, action, arg };
 }
 export function createGamePanel({ title, description, sections = [], sectionButtons = [], sectionThumbnails = [], footer = "AVERO • GAMES & COINS", eyebrow = "GAMES & COINS", color = THEME.colors.primary, buttons = [], separators = false }) {
+  const customIds = [...sectionButtons.flat(), ...buttons].map((entry) => entry.customId).filter(Boolean);
+  if (new Set(customIds).size !== customIds.length) {
+    throw new RangeError("Avero panel contains duplicate interactive component IDs.");
+  }
   const container = new ContainerBuilder().setAccentColor(color);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + eyebrow + "\n## " + title + "\n" + description));
   if (separators && (sections.length || buttons.length)) container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
@@ -224,11 +228,11 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   const completedSets = buildCollectionSetProgress(items.map((item) => item.id)).filter((set) => set.complete).length;
   const pageButtons = [
-    { ...button(userId, "collection_page", "≪", "0"), disabled: currentPage === 0 },
-    { ...button(userId, "collection_page", "‹", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
+    { ...button(userId, "collection_first", "≪", "0"), disabled: currentPage === 0 },
+    { ...button(userId, "collection_prev", "‹", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
     button(userId, "inventory", "↻", String(currentPage)),
-    { ...button(userId, "collection_page", "›", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 },
-    { ...button(userId, "collection_page", "≫", String(pageCount - 1)), disabled: currentPage === pageCount - 1 }
+    { ...button(userId, "collection_next", "›", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 },
+    { ...button(userId, "collection_last", "≫", String(pageCount - 1)), disabled: currentPage === pageCount - 1 }
   ];
   const itemButtons = pageItems.map((item) => button(userId, "item", item.name, item.id + ":" + currentPage + ":inventory", ButtonStyle.Secondary, collectibleButtonEmoji(item.id)));
   return gamePayload(createGamePanel({
@@ -608,7 +612,11 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = await renderInventory(prisma, interaction.guildId, interaction.user.id, page);
       break;
     }
-    case "collection_page": {
+    case "collection_page":
+    case "collection_first":
+    case "collection_prev":
+    case "collection_next":
+    case "collection_last": {
       const page = Number(parsed.arg);
       if (!Number.isInteger(page) || page < 0 || page > 100) {
         await interaction.reply({ content: "That collection page is invalid.", flags: MessageFlags.Ephemeral });
