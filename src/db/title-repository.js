@@ -17,6 +17,7 @@ function titleKey(guildId, userId, titleId) {
 }
 
 export async function getMemberTitles(prisma, guildId, userId) {
+  requireIdentifier(guildId, "guildId");
   return prisma.memberTitle.findMany({
     where: {
       guildId: GLOBAL_SCOPE_ID,
