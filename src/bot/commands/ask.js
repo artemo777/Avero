@@ -24,7 +24,7 @@ export const askCommand = Object.freeze({
         title: "Coin request",
         eyebrow: "AVERO / WALLET",
         description: "<@" + target.id + "> · **" + request.amount.toLocaleString("en-US") + " virtual coins**\n\nThis request expires in 10 minutes. The recipient can accept or decline.",
-        footer: "SERVER COINS ONLY · NO REAL-MONEY VALUE",
+        footer: "GLOBAL COINS · NO REAL-MONEY VALUE",
         buttons: [
           { customId: "avero-ask|" + request.id + "|accept", label: "Accept", style: 3 },
           { customId: "avero-ask|" + request.id + "|decline", label: "Decline", style: 2 }
