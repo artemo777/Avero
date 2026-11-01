@@ -120,7 +120,7 @@ test("purchase deducts coins once and writes both inventory and ledger entries",
   assert.equal(result.purchased, true);
   assert.equal(result.account.balance, 500 - item.price);
   assert.deepEqual(await getCurrencyPurchases(prisma, "lightx", "user-1"), [{
-    guildId: "lightx", userId: "user-1", itemId: item.id, purchasedAt: now
+    guildId: "__avero_global__", userId: "user-1", itemId: item.id, purchasedAt: now
   }]);
   assert.equal(prisma.transactions.length, 1);
   assert.equal(prisma.transactions[0].amount, -item.price);
@@ -187,14 +187,15 @@ test("inventory displays owned collectibles and handles an empty collection", as
 });
 
 
-test("purchases are isolated per server and invalid purchase inputs are rejected", async () => {
+test("purchases are shared across servers and invalid purchase inputs are rejected", async () => {
   const prisma = createFakePrisma(500);
   const item = SHOP_ITEMS[0];
   const first = await purchaseCurrencyItem(prisma, "lightx", "same-user", item.id, item.price);
   const otherServer = await purchaseCurrencyItem(prisma, "test-server", "same-user", item.id, item.price);
 
   assert.equal(first.purchased, true);
-  assert.equal(otherServer.purchased, true);
+  assert.equal(otherServer.purchased, false);
+  assert.equal(otherServer.reason, "owned");
   assert.equal((await getCurrencyPurchases(prisma, "lightx", "same-user")).length, 1);
   assert.equal((await getCurrencyPurchases(prisma, "test-server", "same-user")).length, 1);
 
