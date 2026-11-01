@@ -596,9 +596,15 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     case "games": payload = renderGames(interaction.user.id); break;
     case "shop": payload = await renderShop(prisma, interaction.guildId, interaction.user.id); break;
     case "shop_page": {
-      const page = Number(parsed.arg);
+      const [category, pageText] = String(parsed.arg ?? "").split(":");
+      const page = Number(pageText);
       if (!Number.isInteger(page) || page < 0 || page > 100) return unavailable();
-      payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page);
+      payload = await renderShop(prisma, interaction.guildId, interaction.user.id, page, category);
+      break;
+    }
+    case "shop_category": {
+      if (!interaction.isStringSelectMenu() || !interaction.values?.[0]) return unavailable();
+      payload = await renderShop(prisma, interaction.guildId, interaction.user.id, 0, interaction.values[0]);
       break;
     }
     case "collections": payload = await renderCollectionSets(prisma, interaction.guildId, interaction.user.id); break;
