@@ -89,8 +89,8 @@ test("shop stays within Discord container limits across paginated item cards", a
   const componentIds = buttons(json).map((entry) => entry.custom_id);
   assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|item|")).length, 2);
   assert.equal(componentIds.filter((id) => id.startsWith("avero|user-1|buy|")).length, 2);
-  assert.equal(json.components.filter((component) => component.type === 9).length, 2);
-  assert.equal(response.files.length, 2);
+  assert.equal(json.components.filter((component) => component.type === 9).length, 3);
+  assert.equal(response.files.length, 3);
   const categoryRow = json.components.find((component) => component.type === 1 && component.components.some((child) => child.type === 3));
   assert.ok(categoryRow, "shop must show a category selection menu");
   assert.equal(categoryRow.components[0].placeholder, "Make a selection");
