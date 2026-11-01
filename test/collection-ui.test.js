@@ -101,8 +101,8 @@ test("shop stays within Discord container limits across paginated item cards", a
 test("inventory displays catalog values and compact separators", async () => {
   const response = await renderInventory(fakePrisma(["neon_badge", "vault_badge"]), "guild-1", "user-1");
   const json = panel(response);
-  assert.match(allText(json), /Total Market Value:\\*\\* 450/);
-  assert.match(allText(json), /Page Market Value:\\*\\* 450/);
+  assert.match(allText(json), /Total Market Value:\*\* 450/);
+  assert.match(allText(json), /Page Market Value:\*\* 450/);
   assert.ok(json.components.some((component) => component.type === 14));
 });
 
