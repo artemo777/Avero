@@ -10,6 +10,9 @@ export async function handleAutoReactionMessage(message, prisma) {
   const settings = await getAutoReactionSettings(prisma, message.guildId);
   if (!settings.enabled || !settings.emoji || settings.ignoredChannelIds.includes(message.channelId)) return false;
 
+  if (!message.reactions?.cache || typeof message.react !== "function" || typeof message.channel?.permissionsFor !== "function") return false;
+  if (message.reactions.cache.some((reaction) => reaction.me && reaction.emoji.toString() === settings.emoji)) return false;
+
   const botMember = message.guild.members.me;
   const permissions = botMember ? message.channel.permissionsFor(botMember) : null;
   if (!permissions?.has(PermissionFlagsBits.AddReactions)) {
