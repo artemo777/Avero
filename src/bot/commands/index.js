@@ -22,7 +22,6 @@ import { setupCommand } from "./setup.js";
 import { workCommand } from "./work.js";
 import { vaultCommand } from "./vault.js";
 import { titlesCommand } from "./titles.js";
-import { autoreactCommand } from "./autoreact.js";
 
 export const commands = Object.freeze([
   pingCommand,
@@ -48,6 +47,5 @@ export const commands = Object.freeze([
   scavengeCommand,
   vaultCommand,
   titlesCommand,
-  autoreactCommand,
   setupCommand
 ]);
