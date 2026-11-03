@@ -8,6 +8,7 @@ import { handleGameComponent } from "./bot/game-ui.js";
 import { getGuildSettings } from "./db/guild-settings-repository.js";
 import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
 import { handleMoneyRequestButton } from "./bot/ask-ui.js";
+import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 
 let config;
 try {
@@ -37,7 +38,13 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (!message.guildId || message.author.bot || !message.member) return;
+  if (!message.guildId || message.author.bot || message.webhookId) return;
+
+  try {
+    await handleAutoReactionMessage(message, getPrismaClient());
+  } catch (error) {
+    console.error("Auto-reaction message handler failed:", error);
+  }
 
   if (client.user && message.mentions.users.has(client.user.id)) {
     const intro = new ContainerBuilder().setAccentColor(THEME.colors.primary);
