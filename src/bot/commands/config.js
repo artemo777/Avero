@@ -5,6 +5,11 @@ import {
 import { THEME } from "../../../averoui/theme.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
 import { getGuildSettings, updateGuildSettings, GUILD_PROFILE_THEMES } from "../../db/guild-settings-repository.js";
+import {
+  getAutoReactionSettings, updateAutoReactionSettings, getAutoReactionRolePerks,
+  upsertAutoReactionRolePerk, removeAutoReactionRolePerk
+} from "../../db/auto-reaction-repository.js";
+import { normalizeReactionEmoji } from "../auto-reactions.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
@@ -20,7 +25,8 @@ function textInput(id, label, value, { style = TextInputStyle.Short, required = 
 }
 function configModal(kind, settings) {
   const modal = new ModalBuilder().setCustomId("avero-config-modal|" + kind)
-    .setTitle(kind === "games" ? "Games & Currency" : kind === "roles" ? "Role perks" : "Avero server profile");
+    .setTitle(kind === "games" ? "Games & Currency" : kind === "roles" ? "Role perks" :
+      kind === "reaction-add" ? "Add reaction perk" : kind === "reaction-remove" ? "Remove reaction perk" : "Avero server profile");
   if (kind === "games") {
     modal.addComponents(
       textInput("dailyReward", "Daily coins (1–100000)", settings.dailyReward, { required: true }),
@@ -33,6 +39,15 @@ function configModal(kind, settings) {
       textInput("funderRoleId", "Funder role ID (blank = off)", settings.funderRoleId),
       textInput("voterRoleId", "Voter role ID (blank = off)", settings.voterRoleId)
     );
+  } else if (kind === "reaction-add") {
+    modal.addComponents(
+      textInput("reactionRoleId", "Discord role ID", "", { required: true, maxLength: 20 }),
+      textInput("reactionEmoji", "One emoji (Unicode or server custom)", "", { required: true, maxLength: 100 })
+    );
+  } else if (kind === "reaction-remove") {
+    modal.addComponents(
+      textInput("reactionRoleId", "Discord role ID to remove", "", { required: true, maxLength: 20 })
+    );
   } else {
     modal.addComponents(
       textInput("profileName", "Avero display name (max 32)", settings.profileName, { maxLength: 32 }),
@@ -40,6 +55,35 @@ function configModal(kind, settings) {
     );
   }
   return modal;
+}
+async function buildReactionPerksPanel(prisma, guildId, guildName) {
+  const [settings, perks] = await Promise.all([
+    getAutoReactionSettings(prisma, guildId),
+    getAutoReactionRolePerks(prisma, guildId)
+  ]);
+  const perkLines = perks.length
+    ? perks.map((perk) => "<@&" + perk.roleId + "> · " + perk.emoji).join("\\n")
+    : "No role perks configured yet.";
+  const buttons = [
+    { customId: "avero-config|reaction-add", label: "Add / edit role", style: ButtonStyle.Primary },
+    { customId: "avero-config|reaction-remove", label: "Remove role", style: ButtonStyle.Secondary },
+    { customId: "avero-config|reaction-toggle", label: settings.enabled ? "Pause perks" : "Enable perks", style: settings.enabled ? ButtonStyle.Secondary : ButtonStyle.Success },
+    { customId: "avero-config|reaction-back", label: "Back to config", style: ButtonStyle.Secondary }
+  ];
+  return gamePayload(createGamePanel({
+    title: "Reaction Perks",
+    eyebrow: "AVERO • CONFIG",
+    description: "Settings for **" + guildName + "**. Avero reacts only when a member with a configured role mentions another user.",
+    color: THEME.colors.primary,
+    sections: [
+      "**STATUS** · " + (settings.enabled ? "Enabled" : "Paused"),
+      "**ROLE REACTIONS**\\n" + perkLines,
+      "**HOW IT WORKS**\\nNormal messages never trigger reactions. Each matching role adds its configured emoji. Duplicate emojis are added only once. Use Add / edit role to assign one emoji per role."
+    ],
+    buttons,
+    footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
+    separators: true
+  }));
 }
 export function buildConfigPanel(settings, guildName) {
   const theme = THEME_COLORS[settings.profileTheme] ?? THEME.colors.primary;
@@ -52,7 +96,8 @@ export function buildConfigPanel(settings, guildName) {
     { customId: "avero-config|toggle-games", label: settings.gamesEnabled ? "Pause games" : "Enable games", style: settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
     { customId: "avero-config|toggle-currency", label: settings.currencyEnabled ? "Pause currency" : "Enable currency", style: settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
     { customId: "avero-config|games", label: "Edit rewards & limits", style: ButtonStyle.Primary },
-    { customId: "avero-config|roles", label: "Configure role perks", style: ButtonStyle.Secondary },
+    { customId: "avero-config|roles", label: "Configure economy roles", style: ButtonStyle.Secondary },
+    { customId: "avero-config|reaction-perks", label: "Reaction perks", style: ButtonStyle.Success },
     { customId: "avero-config|profile", label: "Edit server profile", style: ButtonStyle.Primary },
     ...GUILD_PROFILE_THEMES.map((name) => ({
       customId: "avero-config|theme|" + name,
@@ -138,6 +183,25 @@ export async function handleConfigButton(interaction, prisma) {
     await interaction.update(buildConfigPanel(next, interaction.guild.name));
     return true;
   }
+  if (action === "reaction-perks") {
+    await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
+    return true;
+  }
+  if (action === "reaction-toggle") {
+    const settings = await getAutoReactionSettings(prisma, interaction.guildId);
+    await updateAutoReactionSettings(prisma, interaction.guildId, { enabled: !settings.enabled });
+    await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
+    return true;
+  }
+  if (action === "reaction-add" || action === "reaction-remove") {
+    await interaction.showModal(configModal(action, {}));
+    return true;
+  }
+  if (action === "reaction-back") {
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(buildConfigPanel(settings, interaction.guild.name));
+    return true;
+  }
   if (!["games", "roles", "profile"].includes(action)) {
     await interaction.reply({ content: "That settings page is no longer available.", flags: MessageFlags.Ephemeral });
     return true;
@@ -153,6 +217,29 @@ export async function handleConfigModal(interaction, prisma) {
     return true;
   }
   const kind = interaction.customId.split("|")[1];
+  if (kind === "reaction-add") {
+    const roleId = interaction.fields.getTextInputValue("reactionRoleId").trim();
+    if (!ROLE_ID_PATTERN.test(roleId)) throw new Error("Enter a valid Discord role ID.");
+    const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
+    if (!role) throw new Error("I couldn't find that role in this server.");
+    const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
+    let emoji = parsed.value;
+    if (parsed.kind === "custom") {
+      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
+      if (!customEmoji || !customEmoji.available) throw new Error("Choose an available custom emoji from this server.");
+      emoji = customEmoji.toString();
+    }
+    await upsertAutoReactionRolePerk(prisma, interaction.guildId, roleId, emoji);
+    await interaction.reply({ content: "Reaction perk saved for " + role.toString() + " → " + emoji + ". It triggers only when this member mentions another user.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  if (kind === "reaction-remove") {
+    const roleId = interaction.fields.getTextInputValue("reactionRoleId").trim();
+    if (!ROLE_ID_PATTERN.test(roleId)) throw new Error("Enter a valid Discord role ID.");
+    const removed = await removeAutoReactionRolePerk(prisma, interaction.guildId, roleId);
+    await interaction.reply({ content: removed ? "Reaction perk removed." : "That role had no reaction perk.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
   if (kind === "games") {
     const parseAmount = (id) => {
       const value = Number(interaction.fields.getTextInputValue(id).trim());
