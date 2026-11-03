@@ -108,6 +108,18 @@ model AutoReactionSetting {
   updatedAt         DateTime @updatedAt
 }
 
+model AutoReactionRolePerk {
+  id        String   @id @default(cuid())
+  guildId   String
+  roleId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, roleId])
+  @@index([guildId])
+}
+
 model MemberTitle {
   id         String   @id @default(cuid())
   guildId    String
