@@ -99,6 +99,27 @@ model GuildSettings {
   updatedAt       DateTime @updatedAt
 }
 
+model AutoReactionSetting {
+  guildId           String   @id
+  emoji             String?
+  enabled           Boolean  @default(false)
+  ignoredChannelIds String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AutoReactionRolePerk {
+  id        String   @id @default(cuid())
+  guildId   String
+  roleId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, roleId])
+  @@index([guildId])
+}
+
 model MemberTitle {
   id         String   @id @default(cuid())
   guildId    String
