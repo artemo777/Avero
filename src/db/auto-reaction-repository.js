@@ -59,7 +59,7 @@ export async function removeIgnoredChannel(prisma, guildId, channelId) {
 
 const rolePerkCache = new Map();
 function requireRoleId(roleId) {
-  if (typeof roleId !== "string" || !/^\\d{17,20}$/.test(roleId)) {
+  if (typeof roleId !== "string" || !/^\d{17,20}$/.test(roleId)) {
     throw new TypeError("roleId must be a valid Discord role ID.");
   }
   return roleId;
