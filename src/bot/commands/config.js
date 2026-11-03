@@ -62,7 +62,7 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     getAutoReactionRolePerks(prisma, guildId)
   ]);
   const perkLines = perks.length
-    ? perks.map((perk) => "<@&" + perk.roleId + "> · " + perk.emoji).join("\\n")
+    ? perks.map((perk) => "<@&" + perk.roleId + "> · " + perk.emoji).join("\n")
     : "No role perks configured yet.";
   const buttons = [
     { customId: "avero-config|reaction-add", label: "Add / edit role", style: ButtonStyle.Primary },
@@ -77,8 +77,8 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     color: THEME.colors.primary,
     sections: [
       "**STATUS** · " + (settings.enabled ? "Enabled" : "Paused"),
-      "**ROLE REACTIONS**\\n" + perkLines,
-      "**HOW IT WORKS**\\nNormal messages never trigger reactions. Each matching role adds its configured emoji. Duplicate emojis are added only once. Use Add / edit role to assign one emoji per role."
+      "**ROLE REACTIONS**\n" + perkLines,
+      "**HOW IT WORKS**\nNormal messages never trigger reactions. Each matching role adds its configured emoji. Duplicate emojis are added only once. Use Add / edit role to assign one emoji per role."
     ],
     buttons,
     footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
