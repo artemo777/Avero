@@ -13,7 +13,7 @@ export async function handleAutoReactionMessage(message, prisma) {
   if (!message.reactions?.cache || typeof message.react !== "function" || typeof message.channel?.permissionsFor !== "function") return false;
   if (message.reactions.cache.some((reaction) => reaction.me && reaction.emoji.toString() === settings.emoji)) return false;
 
-  const botMember = message.guild.members.me;
+  const botMember = message.guild.members.me || await message.guild.members.fetchMe().catch(() => null);
   const permissions = botMember ? message.channel.permissionsFor(botMember) : null;
   if (!permissions?.has(PermissionFlagsBits.AddReactions)) {
     const warningKey = message.guildId + ":" + message.channelId;
