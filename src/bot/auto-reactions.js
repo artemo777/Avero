@@ -2,13 +2,13 @@ import { PermissionFlagsBits } from "discord.js";
 import { getAutoReactionSettings, getAutoReactionRolePerks } from "../db/auto-reaction-repository.js";
 
 const warnedPermissions = new Set();
-const CUSTOM_EMOJI_PATTERN = /^<(a?):([a-zA-Z0-9_]{2,32}):(\\d{17,20})>$/u;
-const UNICODE_EMOJI_PATTERN = /\\p{Extended_Pictographic}|\\p{Regional_Indicator}|\\u20E3/u;
+const CUSTOM_EMOJI_PATTERN = /^<(a?):([a-zA-Z0-9_]{2,32}):(\d{17,20})>$/u;
+const UNICODE_EMOJI_PATTERN = /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20E3/u;
 
 export function normalizeReactionEmoji(input) {
   if (typeof input !== "string") throw new TypeError("Choose an emoji.");
   const value = input.trim();
-  if (!value || value.length > 100 || /\\s/u.test(value)) {
+  if (!value || value.length > 100 || /\s/u.test(value)) {
     throw new TypeError("Enter one emoji, not a word or multiple emojis.");
   }
   const custom = value.match(CUSTOM_EMOJI_PATTERN);
