@@ -128,7 +128,7 @@ Use `createPanel({ eyebrow, title, description, sections, footer, accentColor })
 
 ## Advanced autoresponder
 
-Server administrators can create rules with `/autoresponder add`, inspect them with `/autoresponder list`, edit/toggle/remove them, and preview responses with `/autoresponder test`. Rules support exact/contains/starts-with/ends-with matching, attachment and mention triggers, text/embed/reply/random/DM responses, placeholders, role/channel allowlists and denylists, priority, server and per-user cooldowns, stop-after-match, and optional response deletion.
+Server administrators can create rules with `/autoresponder add`, inspect them with `/autoresponder list` and `/autoresponder logs`, edit/toggle/remove them, and preview responses with `/autoresponder test`. Rules support exact/contains/starts-with/ends-with matching, attachment and mention triggers, text/embed/reply/random/DM responses, placeholders, role/channel allowlists and denylists, priority, server and per-user cooldowns, stop-after-match, and optional response deletion.
 
 Enable the **Message Content Intent** for the Avero application in the Discord Developer Portal (Bot → Privileged Gateway Intents). Avero requests this intent at runtime so text triggers can be evaluated. The bot needs **Send Messages** in response channels and **Embed Links** for embed responses. DM responses depend on each member's privacy settings. Configure the feature from `/config` → **Autoresponder**.
 
