@@ -98,6 +98,7 @@ export function buildConfigPanel(settings, guildName) {
     { customId: "avero-config|games", label: "Edit rewards & limits", style: ButtonStyle.Primary },
     { customId: "avero-config|roles", label: "Configure economy roles", style: ButtonStyle.Secondary },
     { customId: "avero-config|reaction-perks", label: "Reaction perks", style: ButtonStyle.Success },
+    { customId: "avero-config|autoresponder", label: "Autoresponder", style: ButtonStyle.Primary },
     { customId: "avero-config|profile", label: "Edit server profile", style: ButtonStyle.Primary },
     ...GUILD_PROFILE_THEMES.map((name) => ({
       customId: "avero-config|theme|" + name,
@@ -181,6 +182,28 @@ export async function handleConfigButton(interaction, prisma) {
     await updateGuildSettings(prisma, interaction.guildId, { [field]: !settings[field] });
     const next = await getGuildSettings(prisma, interaction.guildId);
     await interaction.update(buildConfigPanel(next, interaction.guild.name));
+    return true;
+  }
+  if (action === "autoresponder") {
+    await interaction.update(gamePayload(createGamePanel({
+      title: "Autoresponder",
+      eyebrow: "AVERO • CONFIG",
+      description: "Create automatic server responses with /autoresponder. Manage Server is required.",
+      color: THEME.colors.primary,
+      sections: [
+        "**RULE MANAGEMENT**\n/autoresponder add · Create a rule\n/autoresponder list · View rules and statistics\n/autoresponder edit · Change a rule\n/autoresponder toggle · Enable or pause a rule\n/autoresponder remove · Delete a rule\n/autoresponder test · Preview a response",
+        "**ADVANCED OPTIONS**\nExact / contains / starts with / ends with matching, attachment and mention triggers, text / embed / reply / random / DM responses, placeholders, role and channel filters, priority, cooldowns and response deletion.",
+        "**IMPORTANT**\nEnable the Message Content Intent for Avero in the Discord Developer Portal. The bot also needs Send Messages; Embed Links is required for embed responses."
+      ],
+      buttons: [{ customId: "avero-config|autoresponder-back", label: "Back to config", style: ButtonStyle.Secondary }],
+      footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
+      separators: true
+    }))));
+    return true;
+  }
+  if (action === "autoresponder-back") {
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(buildConfigPanel(settings, interaction.guild.name));
     return true;
   }
   if (action === "reaction-perks") {
