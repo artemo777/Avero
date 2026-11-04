@@ -26,6 +26,7 @@ export async function updateAutoResponseRule(prisma, guildId, ruleId, data) {
 export async function deleteAutoResponseRule(prisma, guildId, ruleId) {
   const key = validGuildId(guildId);
   const result = await prisma.autoResponseRule.deleteMany({ where: { id: ruleId, guildId: key } });
+  if (result.count) await prisma.autoResponseCooldown.deleteMany({ where: { ruleId } });
   invalidate(key); return result.count;
 }
 export async function createAutoResponseLog(prisma, data) { return prisma.autoResponseLog.create({ data }); }
