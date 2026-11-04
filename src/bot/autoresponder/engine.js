@@ -104,7 +104,7 @@ async function sendResponse(rule, message) {
 }
 export async function handleAutoResponseMessage(message, prisma) {
   if (!message?.guildId || !message.guild || !message.author || message.author.bot ||
-      message.webhookId || message.system || !message.channelId || !message.member || !message.channel ||
+      message.webhookId || message.system || !message.channelId || !message.channel ||
       typeof message.channel.send !== "function") return 0;
   const rules = await listAutoResponseRules(prisma, message.guildId);
   if (!rules.length) return 0;
