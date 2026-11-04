@@ -10,6 +10,7 @@ import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/
 import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
+import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
 
 let config;
 try {
@@ -51,6 +52,12 @@ client.on(Events.MessageCreate, async (message) => {
     await handleAutoResponseMessage(message, getPrismaClient());
   } catch (error) {
     console.error("Autoresponder message handler failed:", error);
+  }
+
+  try {
+    await handleMemberMessageMilestone(message, getPrismaClient());
+  } catch (error) {
+    console.error("Message milestone handler failed:", error);
   }
 
   if (client.user && message.mentions.users.has(client.user.id)) {
