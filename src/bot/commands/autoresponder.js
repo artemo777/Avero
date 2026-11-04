@@ -72,8 +72,8 @@ const boolOption = (name, description) => ({ type: 5, name, description });
 const choiceOption = (name, description, values) => ({ type: 3, name, description, choices: values.map((value) => ({ name: value.replaceAll("_", " "), value })) });
 const addEditOptions = (required) => [
   textOption("name", "Short rule name.", required, 50),
-  textOption("trigger", "Keyword, phrase, or trigger value (not needed for attachment/mention triggers).", false, 200),
   textOption("response", "Response text; random choices separated by ||.", required, 1800),
+  textOption("trigger", "Keyword, phrase, or trigger value (not needed for attachment/mention triggers).", false, 200),
   choiceOption("match_type", "How the trigger is matched.", MATCH_TYPES),
   choiceOption("response_type", "How Avero responds.", RESPONSE_TYPES),
   intOption("cooldown", "Server-wide cooldown in seconds.", 0, 86400),
