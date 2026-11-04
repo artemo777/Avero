@@ -169,6 +169,52 @@ model AutoResponseLog {
   @@index([ruleId, createdAt])
 }
 
+model MemberMessageCounter {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, count])
+}
+
+model AutoResponseMilestone {
+  id              String   @id @default(cuid())
+  guildId         String
+  threshold       Int
+  responseContent String   @db.VarChar(1800)
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([guildId, threshold])
+  @@index([guildId, enabled, threshold])
+}
+
+model MemberMessageMilestoneAward {
+  id              String   @id @default(cuid())
+  guildId         String
+  userId          String
+  threshold       Int
+  countAtAward    Int
+  channelId       String
+  responseContent String   @db.VarChar(1800)
+  status          String   @default("pending")
+  attempts        Int      @default(0)
+  lastError       String?  @db.VarChar(500)
+  claimedAt       DateTime?
+  sentAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([guildId, userId, threshold])
+  @@index([guildId, userId, status])
+  @@index([status, claimedAt])
+}
+
 model MemberTitle {
   id         String   @id @default(cuid())
   guildId    String
