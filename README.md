@@ -126,6 +126,14 @@ Import shared helpers from `averoui/index.js`. The toolkit centralizes:
 
 Use `createPanel({ eyebrow, title, description, sections, footer, accentColor })` for a consistent Components V2 layout. Send it using `flags: MessageFlags.IsComponentsV2` and `components: [panel]`. New commands should reuse AveroUI rather than inventing one-off styles.
 
+## Advanced autoresponder
+
+Server administrators can create rules with `/autoresponder add`, inspect them with `/autoresponder list`, edit/toggle/remove them, and preview responses with `/autoresponder test`. Rules support exact/contains/starts-with/ends-with matching, attachment and mention triggers, text/embed/reply/random/DM responses, placeholders, role/channel allowlists and denylists, priority, server and per-user cooldowns, stop-after-match, and optional response deletion.
+
+Enable the **Message Content Intent** for the Avero application in the Discord Developer Portal (Bot → Privileged Gateway Intents). Avero requests this intent at runtime so text triggers can be evaluated. The bot needs **Send Messages** in response channels and **Embed Links** for embed responses. DM responses depend on each member's privacy settings. Configure the feature from `/config` → **Autoresponder**.
+
+Supported placeholders: `{user}`, `{username}`, `{user_id}`, `{server}`, `{server_id}`, `{channel}`, `{member_count}`, `{mention}`, and `{bot}`. Separate random response choices with `||`.
+
 ## Tests
 
 Run the built-in Node.js test suite:
