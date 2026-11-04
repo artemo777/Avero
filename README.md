@@ -134,6 +134,12 @@ Enable the **Message Content Intent** for the Avero application in the Discord D
 
 Supported placeholders: `{user}`, `{username}`, `{user_id}`, `{server}`, `{server_id}`, `{channel}`, `{member_count}`, `{mention}`, and `{bot}`. Separate random response choices with `||`.
 
+
+
+### Message milestones
+
+Use /autoresponder milestones set to configure a celebration response at any 5,000-message step from 5,000 through 100,000. /autoresponder milestones list shows all 20 thresholds; toggle, remove, and test manage each response. Counts are per member per server, persisted in PostgreSQL, and announcements are posted in the channel where the member reaches the threshold with a mention. Supported placeholders: {user}, {mention}, {username}, {user_id}, {server}, {server_id}, {channel}, {count}, and {milestone}. Failed announcements remain pending and are retried on that member's next message.
+
 ## Tests
 
 Run the built-in Node.js test suite:

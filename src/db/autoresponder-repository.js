@@ -48,3 +48,30 @@ export async function getAutoResponseLogs(prisma, guildId, take = 10) {
     select: { ruleId: true, userId: true, channelId: true, status: true, createdAt: true }
   });
 }
+
+export async function listAutoResponseMilestones(prisma, guildId) {
+  const key = validGuildId(guildId);
+  return prisma.autoResponseMilestone.findMany({
+    where: { guildId: key },
+    orderBy: { threshold: "asc" }
+  });
+}
+export async function upsertAutoResponseMilestone(prisma, guildId, threshold, responseContent) {
+  const key = validGuildId(guildId);
+  return prisma.autoResponseMilestone.upsert({
+    where: { guildId_threshold: { guildId: key, threshold } },
+    create: { guildId: key, threshold, responseContent, enabled: true },
+    update: { responseContent, enabled: true }
+  });
+}
+export async function removeAutoResponseMilestone(prisma, guildId, threshold) {
+  const key = validGuildId(guildId);
+  return prisma.autoResponseMilestone.deleteMany({ where: { guildId: key, threshold } });
+}
+export async function toggleAutoResponseMilestone(prisma, guildId, threshold, enabled) {
+  const key = validGuildId(guildId);
+  return prisma.autoResponseMilestone.updateMany({
+    where: { guildId: key, threshold },
+    data: { enabled }
+  });
+}
