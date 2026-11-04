@@ -46,10 +46,12 @@ function fullRule(overrides = {}) {
     ...overrides
   };
 }
+let runtimeGuildCounter = 81000000000000000n;
 function runtimeMessage(overrides = {}) {
   const sent = [];
+  runtimeGuildCounter += 1n;
   const message = {
-    guildId: "30000000000000001", channelId: "40000000000000001",
+    guildId: String(runtimeGuildCounter), channelId: "40000000000000001",
     guild: { name: "Test", memberCount: 5, members: { me: {} } },
     author: { id: "50000000000000001", username: "Ada", bot: false, toString: () => "<@50000000000000001>" },
     member: { roles: { cache: new Set(["60000000000000001"]) } },
