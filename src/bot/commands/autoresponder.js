@@ -1,7 +1,8 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import {
   createAutoResponseRule, deleteAutoResponseRule, getAutoResponseStats, getAutoResponseLogs,
-  listAutoResponseRules, updateAutoResponseRule
+  listAutoResponseRules, updateAutoResponseRule, listAutoResponseMilestones,
+  upsertAutoResponseMilestone, removeAutoResponseMilestone, toggleAutoResponseMilestone
 } from "../../db/autoresponder-repository.js";
 import { isValidMessageMilestone, MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX } from "../autoresponder/milestones.js";
 
