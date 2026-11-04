@@ -38,3 +38,13 @@ export async function getAutoResponseStats(prisma, guildId) {
   ]);
   return { total, recent };
 }
+
+export async function getAutoResponseLogs(prisma, guildId, take = 10) {
+  const key = validGuildId(guildId);
+  return prisma.autoResponseLog.findMany({
+    where: { guildId: key },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(Math.max(Number(take) || 10, 1), 25),
+    select: { ruleId: true, userId: true, channelId: true, status: true, createdAt: true }
+  });
+}
