@@ -198,7 +198,7 @@ export async function handleConfigButton(interaction, prisma) {
       buttons: [{ customId: "avero-config|autoresponder-back", label: "Back to config", style: ButtonStyle.Secondary }],
       footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
       separators: true
-    }))));
+    })));
     return true;
   }
   if (action === "autoresponder-back") {
