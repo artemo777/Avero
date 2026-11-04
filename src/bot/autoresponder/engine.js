@@ -53,20 +53,40 @@ export function renderAutoResponseTemplate(template, message) {
   };
   return String(template ?? "").replace(/\{(user|username|user_id|server|server_id|channel|member_count|mention|bot)\}/g, (_, key) => replacements[key]).slice(0, MAX_CONTENT_LENGTH);
 }
-async function claimCooldown(prisma, ruleId, scopeKey, seconds) {
-  if (!seconds) return true;
-  const now = new Date();
-  try {
-    await prisma.autoResponseCooldown.create({ data: { ruleId, scopeKey, lastTriggeredAt: now } });
-    return true;
-  } catch (error) {
-    if (error?.code !== "P2002") throw error;
+async function claimRuleCooldowns(prisma, rule, userId) {
+  const scopes = [];
+  if (rule.cooldownSeconds > 0) scopes.push({ scopeKey: COOLDOWN_SCOPE_GLOBAL, seconds: rule.cooldownSeconds });
+  if (rule.perUserCooldownSeconds > 0) scopes.push({ scopeKey: userId, seconds: rule.perUserCooldownSeconds });
+  if (!scopes.length) return true;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const keys = scopes.map((scope) => scope.scopeKey);
+        const existing = await tx.autoResponseCooldown.findMany({
+          where: { ruleId: rule.id, scopeKey: { in: keys } }
+        });
+        const byKey = new Map(existing.map((entry) => [entry.scopeKey, entry]));
+        const nowMs = Date.now();
+        for (const scope of scopes) {
+          const row = byKey.get(scope.scopeKey);
+          if (row && row.lastTriggeredAt.getTime() > nowMs - scope.seconds * 1000) return false;
+        }
+        const now = new Date();
+        for (const scope of scopes) {
+          await tx.autoResponseCooldown.upsert({
+            where: { ruleId_scopeKey: { ruleId: rule.id, scopeKey: scope.scopeKey } },
+            create: { ruleId: rule.id, scopeKey: scope.scopeKey, lastTriggeredAt: now },
+            update: { lastTriggeredAt: now }
+          });
+        }
+        return true;
+      }, { isolationLevel: "Serializable" });
+    } catch (error) {
+      if (error?.code === "P2034" && attempt < 2) continue;
+      throw error;
+    }
   }
-  const cutoff = new Date(Date.now() - seconds * 1000);
-  const result = await prisma.autoResponseCooldown.updateMany({
-    where: { ruleId, scopeKey, lastTriggeredAt: { lte: cutoff } }, data: { lastTriggeredAt: now }
-  });
-  return result.count === 1;
+  return false;
 }
 async function sendResponse(rule, message) {
   const rendered = renderAutoResponseTemplate(chooseResponse(rule), message);
@@ -103,8 +123,7 @@ export async function handleAutoResponseMessage(message, prisma) {
   for (const rule of rules) {
     if (!rule.enabled || !isAllowed(rule, message) || !matchesAutoResponseRule(rule, message, message.client?.user?.id)) continue;
     if (rule.responseType === "embed" && !permissions.has(PermissionFlagsBits.EmbedLinks)) continue;
-    if (rule.cooldownSeconds && !await claimCooldown(prisma, rule.id, COOLDOWN_SCOPE_GLOBAL, rule.cooldownSeconds)) continue;
-    if (rule.perUserCooldownSeconds && !await claimCooldown(prisma, rule.id, message.author.id, rule.perUserCooldownSeconds)) continue;
+    if (!await claimRuleCooldowns(prisma, rule, message.author.id)) continue;
     try {
       await sendResponse(rule, message);
       sentCount += 1;
