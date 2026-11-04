@@ -3,6 +3,7 @@ import {
   createAutoResponseRule, deleteAutoResponseRule, getAutoResponseStats, getAutoResponseLogs,
   listAutoResponseRules, updateAutoResponseRule
 } from "../../db/autoresponder-repository.js";
+import { isValidMessageMilestone, MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX } from "../autoresponder/milestones.js";
 
 const SNOWFLAKE = /^\d{17,20}$/;
 const MATCH_TYPES = ["exact", "contains", "starts_with", "ends_with", "attachment", "user_mention", "bot_mention"];
@@ -106,6 +107,23 @@ export const autoresponderCommand = Object.freeze({
       ]},
       { type: 1, name: "list", description: "List rules and response statistics." },
       { type: 1, name: "logs", description: "View the latest response execution logs." },
+      { type: 2, name: "milestones", description: "Configure member message-count celebrations.", options: [
+        { type: 1, name: "set", description: "Set a response for a message milestone.", options: [
+          { ...intOption("threshold", "Milestone: 5000, 10000, ... 100000.", MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX), required: true },
+          textOption("response", "Announcement text. Supports {user}, {username}, {count}, {milestone}, {server}, {channel}.", true, 1800)
+        ]},
+        { type: 1, name: "remove", description: "Remove a configured milestone.", options: [
+          { ...intOption("threshold", "Milestone threshold to remove.", MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX), required: true }
+        ]},
+        { type: 1, name: "toggle", description: "Enable or pause a milestone.", options: [
+          { ...intOption("threshold", "Milestone threshold.", MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX), required: true },
+          { ...boolOption("enabled", "Whether the milestone announcement is enabled."), required: true }
+        ]},
+        { type: 1, name: "list", description: "List all configured message milestones." },
+        { type: 1, name: "test", description: "Preview a milestone announcement privately.", options: [
+          { ...intOption("threshold", "Milestone threshold to preview.", MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX), required: true }
+        ]}
+      ]},
       { type: 1, name: "test", description: "Preview a rule's response without sending it.", options: [textOption("rule_id", "Rule ID from the list.", true, 30)] }
     ]
   }),
@@ -115,7 +133,53 @@ export const autoresponderCommand = Object.freeze({
       await interaction.reply(ephemeral("You need **Manage Server** to manage autoresponder rules."));
       return;
     }
+    const group = interaction.options.getSubcommandGroup(false);
     const action = interaction.options.getSubcommand();
+    if (group === "milestones") {
+      if (action === "list") {
+        const configured = await listAutoResponseMilestones(prisma, interaction.guildId);
+        const byThreshold = new Map(configured.map((entry) => [entry.threshold, entry]));
+        const lines = [];
+        for (let threshold = MESSAGE_MILESTONE_STEP; threshold <= MESSAGE_MILESTONE_MAX; threshold += MESSAGE_MILESTONE_STEP) {
+          const entry = byThreshold.get(threshold);
+          lines.push((entry?.enabled ? "🟢" : entry ? "⏸️" : "⚪") + " **" + threshold.toLocaleString("en-US") + " messages** · " +
+            (entry ? (entry.enabled ? "Enabled" : "Paused") : "Not configured"));
+        }
+        await interaction.reply(ephemeral("## Message milestones\n" + lines.join("\n") +
+          "\n\nSet announcements with /autoresponder milestones set."));
+        return;
+      }
+      const threshold = int(interaction, "threshold");
+      if (!isValidMessageMilestone(threshold)) throw new Error("Choose a milestone from 5,000 to 100,000 in steps of 5,000.");
+      if (action === "set") {
+        const response = str(interaction, "response")?.trim();
+        if (!response || response.length > 1800) throw new Error("Enter a response between 1 and 1,800 characters.");
+        await upsertAutoResponseMilestone(prisma, interaction.guildId, threshold, response);
+        await interaction.reply(ephemeral("Saved the **" + threshold.toLocaleString("en-US") + "-message** announcement. It is enabled."));
+        return;
+      }
+      if (action === "remove") {
+        const removed = await removeAutoResponseMilestone(prisma, interaction.guildId, threshold);
+        await interaction.reply(ephemeral(removed.count ? "Removed the " + threshold.toLocaleString("en-US") + "-message announcement." : "That milestone was not configured."));
+        return;
+      }
+      if (action === "toggle") {
+        const enabled = bool(interaction, "enabled");
+        const updated = await toggleAutoResponseMilestone(prisma, interaction.guildId, threshold, enabled);
+        await interaction.reply(ephemeral(updated.count ? "Milestone " + threshold.toLocaleString("en-US") + " " + (enabled ? "enabled." : "paused.") : "That milestone was not configured."));
+        return;
+      }
+      if (action === "test") {
+        const configured = await listAutoResponseMilestones(prisma, interaction.guildId);
+        const entry = configured.find((item) => item.threshold === threshold);
+        await interaction.reply(ephemeral(entry
+          ? "## Preview · " + threshold.toLocaleString("en-US") + " messages\n" + entry.responseContent +
+            "\n\nPreview only — no message was sent. Placeholders: {user}, {username}, {count}, {milestone}, {server}, {channel}."
+          : "That milestone is not configured yet."));
+        return;
+      }
+      return;
+    }
     if (action === "list") {
       const [rules, stats] = await Promise.all([
         listAutoResponseRules(prisma, interaction.guildId, { force: true }),
