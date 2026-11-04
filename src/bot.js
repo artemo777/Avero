@@ -9,6 +9,7 @@ import { getGuildSettings } from "./db/guild-settings-repository.js";
 import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
 import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
+import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 
 let config;
 try {
@@ -22,7 +23,7 @@ const commandMap = createCommandMap(commands);
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
 client.once(Events.ClientReady, (readyClient) => {
@@ -44,6 +45,12 @@ client.on(Events.MessageCreate, async (message) => {
     await handleAutoReactionMessage(message, getPrismaClient());
   } catch (error) {
     console.error("Auto-reaction message handler failed:", error);
+  }
+
+  try {
+    await handleAutoResponseMessage(message, getPrismaClient());
+  } catch (error) {
+    console.error("Autoresponder message handler failed:", error);
   }
 
   if (client.user && message.mentions.users.has(client.user.id)) {
