@@ -136,7 +136,7 @@ export const autoresponderCommand = Object.freeze({
         "<t:" + Math.floor(entry.createdAt.getTime() / 1000) + ":R> · " + entry.status +
         " · rule " + entry.ruleId + " · <@" + entry.userId + "> · <#" + entry.channelId + ">"
       ) : ["No autoresponder executions have been logged yet."];
-      await interaction.reply(ephemeral("## Recent autoresponder activity\\n" + lines.join("\\n")));
+      await interaction.reply(ephemeral("## Recent autoresponder activity\n" + lines.join("\n")));
       return;
     }
     const ruleId = str(interaction, "rule_id");
