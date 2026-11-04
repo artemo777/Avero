@@ -90,6 +90,8 @@ test("creates and delivers a milestone once at the configured count", async () =
     parse: [], users: ["50000000000000001"], roles: [], repliedUser: false
   });
   assert.equal(state.getAward().status, "sent");
+  assert.deepEqual(await handleMemberMessageMilestone(message, state.prisma), { count: 5000, delivered: 0 });
+  assert.equal(sent.length, 1);
 });
 
 test("does not create an award between thresholds or for disabled milestones", async () => {
