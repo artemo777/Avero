@@ -52,8 +52,9 @@ async function deliverAward(message, prisma, award) {
     if (!channel || typeof channel.send !== "function") throw new Error("Milestone announcement channel is unavailable.");
     const me = message.guild.members.me || await message.guild.members.fetchMe().catch(() => null);
     const permissions = me && typeof channel.permissionsFor === "function" ? channel.permissionsFor(me) : null;
-    if (permissions && !permissions.has(PermissionFlagsBits.SendMessages)) {
-      throw new Error("Avero is missing Send Messages permission in the milestone channel.");
+    const sendPermission = channel.isThread?.() ? PermissionFlagsBits.SendMessagesInThreads : PermissionFlagsBits.SendMessages;
+    if (permissions && !permissions.has(sendPermission)) {
+      throw new Error("Avero is missing permission to send messages in the milestone channel.");
     }
     const content = renderMessageMilestoneTemplate(
       award.responseContent, message, award.countAtAward, award.threshold
@@ -114,7 +115,14 @@ export async function handleMemberMessageMilestone(message, prisma) {
     }
 
     const pending = await tx.memberMessageMilestoneAward.findMany({
-      where: { guildId: message.guildId, userId: message.author.id, status: "pending" },
+      where: {
+        guildId: message.guildId,
+        userId: message.author.id,
+        OR: [
+          { status: "pending" },
+          { status: "sending", claimedAt: { lt: new Date(Date.now() - CLAIM_LEASE_MS) } }
+        ]
+      },
       orderBy: { createdAt: "asc" },
       take: PENDING_RETRY_LIMIT
     });
