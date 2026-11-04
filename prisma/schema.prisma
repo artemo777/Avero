@@ -120,6 +120,55 @@ model AutoReactionRolePerk {
   @@index([guildId])
 }
 
+model AutoResponseRule {
+  id                       String   @id @default(cuid())
+  guildId                  String
+  name                     String   @db.VarChar(50)
+  matchType                String   @default("contains")
+  trigger                  String   @default("") @db.VarChar(200)
+  responseType             String   @default("text")
+  responseContent          String   @db.VarChar(2000)
+  randomResponses          String[] @default([])
+  enabled                  Boolean  @default(true)
+  caseSensitive            Boolean  @default(false)
+  priority                 Int      @default(0)
+  stopOnMatch              Boolean  @default(true)
+  cooldownSeconds          Int      @default(0)
+  perUserCooldownSeconds   Int      @default(0)
+  deleteAfterSeconds       Int      @default(0)
+  allowedChannelIds        String[] @default([])
+  ignoredChannelIds        String[] @default([])
+  allowedRoleIds           String[] @default([])
+  ignoredRoleIds           String[] @default([])
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([guildId, enabled, priority])
+}
+
+model AutoResponseCooldown {
+  id              String   @id @default(cuid())
+  ruleId          String
+  scopeKey        String
+  lastTriggeredAt DateTime @default(now())
+
+  @@unique([ruleId, scopeKey])
+  @@index([lastTriggeredAt])
+}
+
+model AutoResponseLog {
+  id        String   @id @default(cuid())
+  guildId   String
+  ruleId    String
+  userId    String
+  channelId String
+  status    String
+  createdAt DateTime @default(now())
+
+  @@index([guildId, status, createdAt])
+  @@index([ruleId, createdAt])
+}
+
 model MemberTitle {
   id         String   @id @default(cuid())
   guildId    String
