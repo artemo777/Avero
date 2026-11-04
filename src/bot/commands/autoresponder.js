@@ -1,6 +1,6 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import {
-  createAutoResponseRule, deleteAutoResponseRule, getAutoResponseStats,
+  createAutoResponseRule, deleteAutoResponseRule, getAutoResponseStats, getAutoResponseLogs,
   listAutoResponseRules, updateAutoResponseRule
 } from "../../db/autoresponder-repository.js";
 
@@ -105,6 +105,7 @@ export const autoresponderCommand = Object.freeze({
         { type: 5, name: "enabled", description: "Whether the rule is enabled.", required: true }
       ]},
       { type: 1, name: "list", description: "List rules and response statistics." },
+      { type: 1, name: "logs", description: "View the latest response execution logs." },
       { type: 1, name: "test", description: "Preview a rule's response without sending it.", options: [textOption("rule_id", "Rule ID from the list.", true, 30)] }
     ]
   }),
@@ -120,7 +121,7 @@ export const autoresponderCommand = Object.freeze({
         listAutoResponseRules(prisma, interaction.guildId, { force: true }),
         getAutoResponseStats(prisma, interaction.guildId)
       ]);
-      const lines = rules.length ? rules.map((rule) =>
+      const lines = rules.length ? rules.slice(0, 8).map((rule) =>
         "**" + rule.name + "** · " + (rule.enabled ? "Enabled" : "Paused") + " · " + rule.matchType + " · " + rule.responseType +
         "\nID: " + rule.id + " · Priority " + rule.priority + " · Cooldown " + rule.cooldownSeconds + "s / user " + rule.perUserCooldownSeconds + "s"
       ) : ["No rules yet. Use /autoresponder add to create one."];
@@ -129,8 +130,19 @@ export const autoresponderCommand = Object.freeze({
         stats.recent.toLocaleString("en-US") + " in the last 24 hours\nUse /autoresponder edit, toggle, or remove with a rule ID."));
       return;
     }
+    if (action === "logs") {
+      const logs = await getAutoResponseLogs(prisma, interaction.guildId, 10);
+      const lines = logs.length ? logs.map((entry) =>
+        "<t:" + Math.floor(entry.createdAt.getTime() / 1000) + ":R> · " + entry.status +
+        " · rule " + entry.ruleId + " · <@" + entry.userId + "> · <#" + entry.channelId + ">"
+      ) : ["No autoresponder executions have been logged yet."];
+      await interaction.reply(ephemeral("## Recent autoresponder activity\\n" + lines.join("\\n")));
+      return;
+    }
     const ruleId = str(interaction, "rule_id");
     if (action === "add") {
+      const current = await listAutoResponseRules(prisma, interaction.guildId, { force: true });
+      if (current.length >= 50) throw new Error("This server has reached the 50-rule limit. Remove an unused rule first.");
       const data = readRuleOptions(interaction);
       if (!data.name || !data.trigger && !["attachment", "user_mention", "bot_mention"].includes(data.matchType) || !data.responseContent) {
         throw new Error("Name, response, and a trigger value (except for attachment/mention triggers) are required.");
@@ -145,6 +157,13 @@ export const autoresponderCommand = Object.freeze({
     if (action === "edit") {
       const data = readRuleOptions(interaction, true);
       if (!Object.keys(data).length) throw new Error("Supply at least one setting to update.");
+      const existing = (await listAutoResponseRules(prisma, interaction.guildId, { force: true })).find((entry) => entry.id === ruleId);
+      const nextType = data.responseType ?? existing?.responseType;
+      const nextContent = data.responseContent ?? existing?.responseContent;
+      if (nextType === "random" && data.responseContent !== undefined) {
+        data.randomResponses = nextContent.split(/\\s*\\|\\|\\s*/).filter(Boolean).slice(0, 10);
+        if (data.randomResponses.length < 2) throw new Error("Random responses need at least two choices separated by ||.");
+      }
       const count = await updateAutoResponseRule(prisma, interaction.guildId, ruleId, data);
       await interaction.reply(ephemeral(count ? "Rule updated." : "I couldn't find that rule in this server."));
       return;
