@@ -4,8 +4,9 @@ import {
   handleMemberMessageMilestone, isValidMessageMilestone, renderMessageMilestoneTemplate
 } from "../src/bot/autoresponder/milestones.js";
 
-function createMessage({ bot = false, webhookId = null } = {}) {
+function createMessage({ bot = false, webhookId = null, failFirstSend = false } = {}) {
   const sent = [];
+  let attempts = 0;
   const author = {
     id: "50000000000000001", username: "Ada", bot, system: false,
     toString: () => "<@50000000000000001>"
@@ -13,7 +14,7 @@ function createMessage({ bot = false, webhookId = null } = {}) {
   const channel = {
     name: "general",
     permissionsFor: () => ({ has: () => true }),
-    send: async (payload) => { sent.push(payload); return {}; }
+    send: async (payload) => { attempts += 1; if (failFirstSend && attempts === 1) throw new Error("temporary Discord send failure"); sent.push(payload); return {}; }
   };
   const message = {
     guildId: "30000000000000001", channelId: "40000000000000001", webhookId,
@@ -27,9 +28,8 @@ function createMessage({ bot = false, webhookId = null } = {}) {
   return { message, sent, channel };
 }
 
-function fakePrisma({ count, config = null, failFirstSend = false }) {
+function fakePrisma({ count, config = null }) {
   let award = null;
-  let sends = 0;
   const prisma = {
     $transaction: async (callback) => callback({
       memberMessageCounter: { upsert: async () => ({ count }) },
@@ -54,11 +54,7 @@ function fakePrisma({ count, config = null, failFirstSend = false }) {
       }
     }
   };
-  return { prisma, getAward: () => award, getSends: () => sends, setSend: async (payload) => {
-    sends += 1;
-    if (failFirstSend && sends === 1) throw new Error("temporary Discord send failure");
-    return payload;
-  }};
+  return { prisma, getAward: () => award };
 }
 
 test("accepts only 5,000-message increments through 100,000", () => {
@@ -118,10 +114,10 @@ test("ignores bots and webhook messages without incrementing counters", async ()
 });
 
 test("keeps failed announcements pending and retries them on the member's next message", async () => {
-  const { message, sent } = createMessage();
+  const { message, sent } = createMessage({ failFirstSend: true });
   const state = fakePrisma({ count: 5000, config: {
     enabled: true, responseContent: "You made it to {count}!"
-  }, failFirstSend: true });
+  }});
   const first = await handleMemberMessageMilestone(message, state.prisma);
   assert.deepEqual(first, { count: 5000, delivered: 0 });
   assert.equal(state.getAward().status, "pending");
