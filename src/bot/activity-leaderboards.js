@@ -157,7 +157,8 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         where: { guildId_periodType_periodKey_position: claimKey }
       });
     }
-    if (!claim || ["delivered", "pending_xp_review", "pending_xp_config"].includes(claim.status)) continue;
+    if (!claim || claim.status === "delivered" || claim.status === "pending_xp_review" ||
+        (claim.status === "pending_xp_config" && !process.env.ENGAUGE_API_TOKEN)) continue;
     let roleDelivered = !claim.roleId;
     if (claim.roleId) {
       try {
