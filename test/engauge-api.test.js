@@ -52,5 +52,5 @@ test("Engauge client rejects unsafe inputs and missing token", async () => {
   await assert.rejects(client.getMember(serverId, memberId), /ENGAUGE_API_TOKEN/);
   const ready = createEngaugeClient({ token: "x", fetchImpl: async () => new Response("{}", { status: 200 }) });
   assert.throws(() => ready.addMemberXp(serverId, memberId, 0), /XP amount/);
-  await assert.rejects(ready.getMember("not-a-server", memberId), /serverId/);
+  assert.throws(() => ready.getMember("not-a-server", memberId), /serverId/);
 });
