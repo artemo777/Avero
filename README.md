@@ -174,3 +174,12 @@ npm test
 ```
 
 RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and the nine-milestone achievements command are implemented; the remaining economy finish work is final balance/reliability verification and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). Leveling remains paused and is not included in this release.
+
+
+## Activity leaderboards
+
+Avero can maintain two persistent server-scoped Components V2 activity boards: daily and weekly. Message activity is counted once per Discord message ID; voice time is settled from persisted sessions while a non-bot member is unmuted and undeafened in a voice channel with the configured minimum number of humans. Voice-state events do not expose actual speaking activity, so this is an eligible-presence measure rather than proof that a member is speaking.
+
+Configure the boards from /config → **Activity leaderboards**. Set each text-channel ID, weighted message and voice-minute scores, timezone, weekly reset day, refresh interval, and placement reward rules (daily and weekly positions 1–10). Configuring channels publishes the boards; subsequent updates edit the stored messages, and missing messages are recreated. /activity shows a compact private summary.
+
+Reward claims are unique per guild, period, period key, and placement. Coin rewards are credited to the existing global wallet and logged as currency transactions; role delivery is retried when permissions or hierarchy prevent it. XP reward amounts are stored as pending until Avero's exact Engauge levelFormula is verified and implemented; no replacement level curve is guessed. Voice tracking requires the GuildVoiceStates gateway intent. Avero needs View Channel and Send Messages in each configured board channel, and Manage Server to edit activity settings.
