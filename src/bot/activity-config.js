@@ -137,7 +137,7 @@ export async function handleActivityConfigModal(interaction, prisma) {
       if (!/^\d{17,20}$/.test(roleId) || !await interaction.guild.roles.fetch(roleId).catch(() => null)) throw new Error("Choose a valid role from this server.");
     }
     await upsertActivityRewardRule(prisma, interaction.guildId, periodType, position, { roleId: roleId || null, coins, xp, enabled: true });
-    await interaction.reply({ content: "Placement reward saved. Role and coin rewards are ready; XP delivery remains gated on verifying Avero's exact Engauge levelFormula so levels are never guessed.", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: "Placement reward saved. Role and coin rewards are ready; XP is sent through Engauge's member XP API, which applies the server's configured level curve.", flags: MessageFlags.Ephemeral });
     return true;
   }
   return false;
