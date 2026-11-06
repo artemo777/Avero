@@ -1,5 +1,6 @@
 const DEFAULT_BASE_URL = "https://engau.ge";
 const ID_PATTERN = /^\d{17,20}$/;
+const ERROR_BODY_LIMIT = 300;
 
 function requireId(value, name) {
   const id = String(value ?? "");
@@ -13,12 +14,22 @@ function parseJson(response, body) {
   catch { throw new Error("Engauge returned a non-JSON response (HTTP " + response.status + ")."); }
 }
 
+function safeErrorBody(body, token) {
+  return String(body ?? "")
+    .replaceAll(token, "[redacted]")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, ERROR_BODY_LIMIT);
+}
+
 export class EngaugeApiError extends Error {
-  constructor(message, { status = 0, committed = false, cause } = {}) {
+  constructor(message, { status = 0, committed = false, responseBody = "", cause } = {}) {
     super(message, { cause });
     this.name = "EngaugeApiError";
     this.status = status;
     this.committed = committed;
+    this.responseBody = responseBody;
   }
 }
 
@@ -54,7 +65,8 @@ export function createEngaugeClient({
       // Engauge documents that HTTP 502 can be returned after the XP write has committed.
       throw new EngaugeApiError("Engauge API request failed (HTTP " + response.status + ").", {
         status: response.status,
-        committed: method === "POST" && response.status === 502
+        committed: method === "POST" && response.status === 502,
+        responseBody: safeErrorBody(raw, apiToken)
       });
     }
     return parseJson(response, raw);
