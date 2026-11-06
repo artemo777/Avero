@@ -3,6 +3,7 @@ import {
 } from "discord.js";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol } from "../../averoui/assets.js";
+import { createEngaugeClient, EngaugeApiError } from "./engauge-api.js";
 import {
   getActivitySettings, getActivityPeriodKey, getActivityRanking, recordActivityMessage,
   settleVoiceSession, upsertVoiceSession
@@ -10,6 +11,7 @@ import {
 
 const SYMBOLS = Object.freeze(["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ"]);
 const lastBoardUpdate = new Map();
+const engauge = createEngaugeClient();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
 const fmtScore = (value) => Number(value.toFixed(2)).toLocaleString("en-US", { maximumFractionDigits: 2 });
 function boardPayload(periodType, periodKey, rows, settings, guildName) {
@@ -155,7 +157,7 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         where: { guildId_periodType_periodKey_position: claimKey }
       });
     }
-    if (!claim || claim.status === "delivered" || claim.status === "pending_xp_formula") continue;
+    if (!claim || ["delivered", "pending_xp_review", "pending_xp_config"].includes(claim.status)) continue;
     let roleDelivered = !claim.roleId;
     if (claim.roleId) {
       try {
@@ -168,10 +170,40 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         console.error("Activity reward role delivery failed for guild " + guild.id + ":", error);
       }
     }
-    const status = !roleDelivered ? "pending_role" : claim.xp > 0 ? "pending_xp_formula" : "delivered";
+
+    let xpDelivered = claim.xp <= 0;
+    let nextStatus = !roleDelivered ? "pending_role" : "delivered";
+    if (roleDelivered && claim.xp > 0) {
+      try {
+        // Read first to validate token scope and confirm the member exists in the configured Engauge server.
+        await engauge.getMember(guild.id, claim.userId);
+        await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
+        xpDelivered = true;
+      } catch (error) {
+        if (error instanceof EngaugeApiError && error.committed) {
+          // Engauge explicitly documents that 502 may happen after the XP write commits.
+          xpDelivered = true;
+          console.error("Engauge reported a post-commit level-up notification failure for guild " + guild.id + ".");
+        } else if (error instanceof EngaugeApiError && error.status === 0 && /ENGAUGE_API_TOKEN/.test(error.message)) {
+          nextStatus = "pending_xp_config";
+          console.error("Engauge XP reward is waiting for ENGAUGE_API_TOKEN.");
+        } else if (error instanceof EngaugeApiError && [400, 403, 404].includes(error.status)) {
+          nextStatus = "pending_xp_retry";
+          console.error("Engauge XP reward rejected for guild " + guild.id + " (HTTP " + error.status + ").");
+        } else {
+          // Network/5xx outcomes can be ambiguous; never automatically repeat a possibly committed XP award.
+          nextStatus = "pending_xp_review";
+          console.error("Engauge XP reward needs manual verification for guild " + guild.id + ":", error.message);
+        }
+      }
+    }
+    if (roleDelivered) {
+      if (xpDelivered) nextStatus = "delivered";
+      else if (nextStatus === "delivered") nextStatus = "pending_xp_retry";
+    }
     await prisma.activityRewardClaim.update({
       where: { id: claim.id },
-      data: { status, ...(status === "delivered" ? { deliveredAt: new Date() } : {}) }
+      data: { status: nextStatus, ...(nextStatus === "delivered" ? { deliveredAt: new Date() } : {}) }
     });
   }
 }
