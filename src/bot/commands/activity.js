@@ -25,6 +25,6 @@ export const activityCommand = Object.freeze({
       description: "**DAILY**\n" + format(daily) + "\n\n**WEEKLY**\n" + format(weekly),
       footer: "WEIGHTED MESSAGE + VOICE ACTIVITY",
       separators: true
-    }))), allowedMentions: { parse: [] } });
+    })), allowedMentions: { parse: [] } });
   }
 });
