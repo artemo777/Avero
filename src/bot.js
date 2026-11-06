@@ -92,7 +92,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
       try {
         await handleConfigButton(interaction, getPrismaClient());
       } catch (error) {
-        const payload = { content: "Could not open settings. Check your permissions and try again.", flags: MessageFlags.Ephemeral };
+        console.error("Config button failed (action: " + interaction.customId.split("|")[1] + ", guild: " + interaction.guildId + "):", error);
+        const payload = {
+          content: "Avero couldn't open that settings page. Please try again. If it keeps happening, ask an admin to check the bot logs.",
+          flags: MessageFlags.Ephemeral
+        };
         if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
         else await interaction.reply(payload).catch(() => {});
       }
