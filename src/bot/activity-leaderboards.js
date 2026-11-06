@@ -11,11 +11,12 @@ import {
 const SYMBOLS = Object.freeze(["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ"]);
 const lastBoardUpdate = new Map();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
+const fmtScore = (value) => Number(value.toFixed(2)).toLocaleString("en-US", { maximumFractionDigits: 2 });
 function boardPayload(periodType, periodKey, rows, settings, guildName) {
   const title = periodType === "weekly" ? "WEEKLY ACTIVITY" : "DAILY ACTIVITY";
   const body = rows.length ? rows.map((row, index) => {
     const voiceMinutes = Math.floor(row.voiceSeconds / 60);
-    return "**" + SYMBOLS[index] + "  <@" + row.userId + ">**  ·  **" + fmt(row.score) + " pt**\n-# " + fmt(row.messages) + " messages  ·  " + fmt(voiceMinutes) + " voice min";
+    return "**" + SYMBOLS[index] + "  <@" + row.userId + ">**  ·  **" + fmtScore(row.score) + " pt**\n-# " + fmt(row.messages) + " messages  ·  " + fmt(voiceMinutes) + " voice min";
   }).join("\n") : "-# No activity recorded yet. Be the first on the board.";
   const container = new ContainerBuilder().setAccentColor(THEME.colors.primary);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
