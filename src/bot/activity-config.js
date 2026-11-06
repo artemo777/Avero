@@ -111,7 +111,8 @@ export async function handleActivityConfigModal(interaction, prisma) {
       values[name] = id || null;
     }
     await updateActivitySettings(prisma, interaction.guildId, values);
-    await interaction.reply({ content: "Leaderboard channels saved. Use Publish / repair boards to create the two live messages.", flags: MessageFlags.Ephemeral });
+    await publishActivityBoards(interaction.client, prisma, interaction.guild);
+    await interaction.reply({ content: "Leaderboard channels saved. Avero has published the configured boards and will keep updating those messages.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "activity-scoring") {
