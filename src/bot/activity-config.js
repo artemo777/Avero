@@ -6,6 +6,7 @@ import { createGamePanel, gamePayload } from "./game-ui.js";
 import { getActivitySettings, updateActivitySettings, upsertActivityRewardRule } from "../db/activity-repository.js";
 import { publishActivityBoards } from "./activity-leaderboards.js";
 import { THEME } from "../../averoui/theme.js";
+import { getAssetSymbol } from "../../averoui/assets.js";
 
 const DAY_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const canManage = (interaction) => Boolean(interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild));
@@ -42,6 +43,8 @@ function modal(kind, settings) {
 }
 export async function buildActivityConfigPanel(prisma, guildId, guildName) {
   const s = await getActivitySettings(prisma, guildId);
+  const rewards = await prisma.activityRewardRule.findMany({ where: { guildId }, orderBy: [{ periodType: "asc" }, { position: "asc" }] });
+  const rewardLines = rewards.length ? rewards.map((reward) => (reward.periodType === "daily" ? "Daily" : "Weekly") + " #" + reward.position + " · " + (reward.roleId ? "<@&" + reward.roleId + ">" : "No role") + " · " + reward.coins + " coins · " + reward.xp + " XP").join("\n") : "No placement rewards configured.";
   const buttons = [
     { customId: "avero-config|activity-channels", label: "Set board channels", style: ButtonStyle.Primary },
     { customId: "avero-config|activity-scoring", label: "Scoring weights", style: ButtonStyle.Secondary },
@@ -54,7 +57,8 @@ export async function buildActivityConfigPanel(prisma, guildId, guildName) {
     title: "Activity management",
     eyebrow: "◈ AVERO / CONFIG",
     description: "**" + guildName + "**\n\n**01 · LIVE BOARDS**\nDaily · " + (s.dailyChannelId ? "<#" + s.dailyChannelId + ">" : "Not configured") + "\nWeekly · " + (s.weeklyChannelId ? "<#" + s.weeklyChannelId + ">" : "Not configured") +
-      "\n\n**02 · WEIGHTED SCORE**\nMessages · " + s.messageWeight + " pt each\nVoice · " + s.voiceWeight + " pt / minute\n\n**03 · SCHEDULE & VOICE**\nTimezone · " + s.timezone + "\nWeekly reset · " + DAY_LABELS[s.weeklyResetDay] + "\nRefresh · " + s.updateIntervalSeconds + " sec\nVoice minimum · " + s.voiceMinParticipants + " humans\n\n∴ **PROFESSOR'S NOTE**\nVoice time accrues only while unmuted, undeafened members share a voice channel with another human. Discord does not expose actual speaking activity through voice-state events alone.",
+      "\n\n**02 · WEIGHTED SCORE**\nMessages · " + s.messageWeight + " pt each\nVoice · " + s.voiceWeight + " pt / minute\n\n**03 · SCHEDULE & VOICE**\nTimezone · " + s.timezone + "\nWeekly reset · " + DAY_LABELS[s.weeklyResetDay] + "\nRefresh · " + s.updateIntervalSeconds + " sec\nVoice minimum · " + s.voiceMinParticipants + " humans\n\n" + getAssetSymbol("reward-sparkle") + " **PLACEMENT REWARDS**
+" + rewardLines + "\n\n∴ **PROFESSOR'S NOTE**\nVoice time accrues only while unmuted, undeafened members share a voice channel with another human. Discord does not expose actual speaking activity through voice-state events alone.",
     color: THEME.colors.primary, buttons,
     footer: "MANAGE SERVER REQUIRED · SERVER-SCOPED SETTINGS", separators: true
   }));
