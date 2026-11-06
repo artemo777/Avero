@@ -10,7 +10,7 @@ import {
   upsertAutoReactionRolePerk, removeAutoReactionRolePerk
 } from "../../db/auto-reaction-repository.js";
 import { normalizeReactionEmoji } from "../auto-reactions.js";
-import { buildActivityConfigPanel, handleActivityConfigButton, handleActivityConfigModal } from "../activity-config.js";
+import { handleActivityConfigButton, handleActivityConfigModal } from "../activity-config.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
