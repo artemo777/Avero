@@ -19,12 +19,12 @@ export const activityCommand = Object.freeze({
       getActivityRanking(prisma, interaction.guildId, "weekly", weeklyKey, settings, 3)
     ]);
     const format = (rows) => rows.length ? rows.map((row, i) => (["Ⅰ", "Ⅱ", "Ⅲ"][i] + "  <@" + row.userId + "> · **" + Math.round(row.score).toLocaleString("en-US") + " pt**")).join("\n") : "-# No activity yet.";
-    await interaction.reply(gamePayload(createGamePanel({
+    await interaction.reply({ ...gamePayload(createGamePanel({
       title: "Activity rankings",
       eyebrow: "◈ AVERO / LIVE ACTIVITY",
       description: "**DAILY**\n" + format(daily) + "\n\n**WEEKLY**\n" + format(weekly),
       footer: "WEIGHTED MESSAGE + VOICE ACTIVITY",
       separators: true
-    })));
+    }))), allowedMentions: { parse: [] } });
   }
 });
