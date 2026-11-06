@@ -36,6 +36,26 @@ test("Engauge XP award sends the documented amount query parameter", async () =>
   assert.equal(captured.options.method, "POST");
 });
 
+test("Engauge API errors retain a short sanitized response body", async () => {
+  const longBody = "invalid amount " + "x".repeat(400) + " test-token";
+  const client = createEngaugeClient({
+    token: "test-token",
+    fetchImpl: async () => new Response(longBody, { status: 400 })
+  });
+  await assert.rejects(
+    client.addMemberXp(serverId, memberId, 1),
+    (error) => {
+      assert.ok(error instanceof EngaugeApiError);
+      assert.equal(error.status, 400);
+      assert.equal(error.committed, false);
+      assert.ok(error.responseBody.startsWith("invalid amount "));
+      assert.ok(error.responseBody.length <= 300);
+      assert.ok(!error.responseBody.includes("test-token"));
+      return true;
+    }
+  );
+});
+
 test("Engauge 502 XP response is marked committed to prevent duplicate rewards", async () => {
   const client = createEngaugeClient({
     token: "test-token",
