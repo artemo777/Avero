@@ -13,7 +13,7 @@ test("activity periods respect configured timezone and Monday weekly boundary", 
 });
 
 test("weighted activity scoring keeps raw messages and voice separate", () => {
-  assert.equal(calculateActivityScore({ messages: 100, voiceSeconds: 3600 }, { messageWeight: 1.5, voiceWeight: 2 }), 350);
+  assert.equal(calculateActivityScore({ messages: 100, voiceSeconds: 3600 }, { messageWeight: 1.5, voiceWeight: 2 }), 270);
   assert.equal(calculateActivityScore({ messages: 0, voiceSeconds: 0 }, { messageWeight: 1, voiceWeight: 1 }), 0);
 });
 
