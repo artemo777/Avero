@@ -16,7 +16,11 @@ const ROLE_ID_PATTERN = /^\d{17,20}$/;
 const THEME_COLORS = Object.freeze({ violet: 0x8b5cf6, ocean: 0x0ea5e9, sunset: 0xf97316, mint: 0x10b981, mono: 0x64748b });
 const THEME_LABELS = Object.freeze({ violet: "Violet", ocean: "Ocean", sunset: "Sunset", mint: "Mint", mono: "Mono" });
 function canManage(interaction) {
-  return Boolean(interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild));
+  const permissions = interaction.memberPermissions ?? interaction.member?.permissions;
+  return Boolean(
+    permissions?.has(PermissionFlagsBits.Administrator) ||
+    permissions?.has(PermissionFlagsBits.ManageGuild)
+  );
 }
 function textInput(id, label, value, { style = TextInputStyle.Short, required = false, maxLength = 1000 } = {}) {
   const input = new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(style).setRequired(required).setMaxLength(maxLength);
@@ -208,7 +212,11 @@ export async function handleConfigButton(interaction, prisma) {
     return true;
   }
   if (action === "reaction-perks") {
-    await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
+    // Acknowledge the component before database reads; otherwise a slow DB can
+    // exceed Discord's 3-second interaction response deadline.
+    await interaction.deferUpdate();
+    const panel = await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name);
+    await interaction.editReply(panel);
     return true;
   }
   if (action === "reaction-toggle") {
