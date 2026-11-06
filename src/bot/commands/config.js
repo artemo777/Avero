@@ -326,18 +326,11 @@ export async function handleConfigModal(interaction, prisma) {
       if (!customEmoji || !customEmoji.available) {
         throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Make sure the emoji's server is still available to Avero and paste its full Discord emoji markup.");
       }
-      if (customEmoji.guild.id !== interaction.guildId) {
-        const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
-        const permissions = botMember && interaction.channel?.permissionsFor(botMember);
-        if (!permissions?.has(PermissionFlagsBits.UseExternalEmojis)) {
-          throw new TypeError("To use an emoji from another server, Avero needs the Use External Emojis permission in this channel.");
-        }
-      }
       emoji = customEmoji.toString();
     }
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
     await interaction.reply({
-      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts any single Unicode emoji or a custom emoji copied from this server.",
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts a single Unicode emoji or a custom emoji from any server it shares.",
       flags: MessageFlags.Ephemeral
     });
     return true;
@@ -350,8 +343,10 @@ export async function handleConfigModal(interaction, prisma) {
     const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
     let emoji = parsed.value;
     if (parsed.kind === "custom") {
-      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
-      if (!customEmoji || !customEmoji.available) throw new Error("Choose an available custom emoji from this server.");
+      const customEmoji = resolveSharedCustomEmoji(interaction.client, parsed.id);
+      if (!customEmoji || !customEmoji.available) {
+        throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Paste its full Discord emoji markup and make sure its server is available to Avero.");
+      }
       emoji = customEmoji.toString();
     }
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, roleId, emoji);
