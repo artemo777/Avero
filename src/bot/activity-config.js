@@ -57,8 +57,7 @@ export async function buildActivityConfigPanel(prisma, guildId, guildName) {
     title: "Activity management",
     eyebrow: "◈ AVERO / CONFIG",
     description: "**" + guildName + "**\n\n**01 · LIVE BOARDS**\nDaily · " + (s.dailyChannelId ? "<#" + s.dailyChannelId + ">" : "Not configured") + "\nWeekly · " + (s.weeklyChannelId ? "<#" + s.weeklyChannelId + ">" : "Not configured") +
-      "\n\n**02 · WEIGHTED SCORE**\nMessages · " + s.messageWeight + " pt each\nVoice · " + s.voiceWeight + " pt / minute\n\n**03 · SCHEDULE & VOICE**\nTimezone · " + s.timezone + "\nWeekly reset · " + DAY_LABELS[s.weeklyResetDay] + "\nRefresh · " + s.updateIntervalSeconds + " sec\nVoice minimum · " + s.voiceMinParticipants + " humans\n\n" + getAssetSymbol("reward-sparkle") + " **PLACEMENT REWARDS**
-" + rewardLines + "\n\n∴ **PROFESSOR'S NOTE**\nVoice time accrues only while unmuted, undeafened members share a voice channel with another human. Discord does not expose actual speaking activity through voice-state events alone.",
+      "\n\n**02 · WEIGHTED SCORE**\nMessages · " + s.messageWeight + " pt each\nVoice · " + s.voiceWeight + " pt / minute\n\n**03 · SCHEDULE & VOICE**\nTimezone · " + s.timezone + "\nWeekly reset · " + DAY_LABELS[s.weeklyResetDay] + "\nRefresh · " + s.updateIntervalSeconds + " sec\nVoice minimum · " + s.voiceMinParticipants + " humans\n\n" + getAssetSymbol("reward-sparkle") + " **PLACEMENT REWARDS**\n" + rewardLines + "\n\n∴ **PROFESSOR'S NOTE**\nVoice time accrues only while unmuted, undeafened members share a voice channel with another human. Discord does not expose actual speaking activity through voice-state events alone.",
     color: THEME.colors.primary, buttons,
     footer: "MANAGE SERVER REQUIRED · SERVER-SCOPED SETTINGS", separators: true
   }));
