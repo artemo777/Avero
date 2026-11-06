@@ -50,7 +50,6 @@ export function createEngaugeClient({
       throw new EngaugeApiError("Could not reach the Engauge API; delivery outcome is unknown.", { cause });
     }
     const raw = await response.text().catch(() => "");
-    const data = parseJson(response, raw);
     if (!response.ok) {
       // Engauge documents that HTTP 502 can be returned after the XP write has committed.
       throw new EngaugeApiError("Engauge API request failed (HTTP " + response.status + ").", {
@@ -58,7 +57,7 @@ export function createEngaugeClient({
         committed: method === "POST" && response.status === 502
       });
     }
-    return data;
+    return parseJson(response, raw);
   }
 
   return Object.freeze({
