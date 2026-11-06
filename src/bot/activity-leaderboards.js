@@ -116,10 +116,69 @@ async function recoverVoiceSessions(client, prisma) {
     }
   }
 }
+async function processClosedPeriodRewards(client, prisma, guild, periodType, now) {
+  const settings = await getActivitySettings(prisma, guild.id);
+  const previous = new Date(now);
+  previous.setDate(previous.getDate() - (periodType === "daily" ? 1 : 7));
+  const periodKey = getActivityPeriodKey(periodType, previous, settings.timezone, settings.weeklyResetDay);
+  const rules = await prisma.activityRewardRule.findMany({
+    where: { guildId: guild.id, periodType, enabled: true },
+    orderBy: { position: "asc" }
+  });
+  if (!rules.length) return;
+  const ranking = await getActivityRanking(prisma, guild.id, periodType, periodKey, settings, 10);
+  for (const rule of rules) {
+    const winner = ranking[rule.position - 1];
+    if (!winner) continue;
+    const claimKey = { guildId: guild.id, periodType, periodKey, position: rule.position };
+    let claim;
+    try {
+      claim = await prisma.$transaction(async (tx) => {
+        const created = await tx.activityRewardClaim.create({
+          data: { ...claimKey, userId: winner.userId, roleId: rule.roleId, coins: rule.coins, xp: rule.xp, status: "pending" }
+        });
+        if (rule.coins > 0) {
+          const walletKey = { guildId: "__avero_global__", userId: winner.userId };
+          await tx.currencyAccount.upsert({ where: { guildId_userId: walletKey }, create: walletKey, update: {} });
+          await tx.currencyAccount.update({ where: { guildId_userId: walletKey }, data: { balance: { increment: rule.coins } } });
+          await tx.currencyTransaction.create({
+            data: { ...walletKey, amount: rule.coins, currency: "coins", type: "activity_" + periodType + "_reward" }
+          });
+        }
+        return created;
+      });
+    } catch (error) {
+      if (error?.code !== "P2002") throw error;
+      claim = await prisma.activityRewardClaim.findUnique({
+        where: { guildId_periodType_periodKey_position: claimKey }
+      });
+    }
+    if (!claim || claim.status === "delivered" || claim.status === "pending_xp_formula") continue;
+    let roleDelivered = !claim.roleId;
+    if (claim.roleId) {
+      try {
+        const role = await guild.roles.fetch(claim.roleId);
+        const member = await guild.members.fetch(claim.userId);
+        if (!role || role.id === guild.id || !role.editable) throw new Error("Reward role is unavailable or above Avero's role.");
+        await member.roles.add(role, "Avero activity leaderboard reward");
+        roleDelivered = true;
+      } catch (error) {
+        console.error("Activity reward role delivery failed for guild " + guild.id + ":", error);
+      }
+    }
+    const status = !roleDelivered ? "pending_role" : claim.xp > 0 ? "pending_xp_formula" : "delivered";
+    await prisma.activityRewardClaim.update({
+      where: { id: claim.id },
+      data: { status, ...(status === "delivered" ? { deliveredAt: new Date() } : {}) }
+    });
+  }
+}
 export async function updateActivityBoards(client, prisma) {
   for (const guild of client.guilds.cache.values()) {
     try {
       const settings = await getActivitySettings(prisma, guild.id);
+      await processClosedPeriodRewards(client, prisma, guild, "daily", new Date());
+      await processClosedPeriodRewards(client, prisma, guild, "weekly", new Date());
       for (const periodType of ["daily", "weekly"]) {
         const channelId = periodType === "daily" ? settings.dailyChannelId : settings.weeklyChannelId;
         const key = guild.id + ":" + periodType;
