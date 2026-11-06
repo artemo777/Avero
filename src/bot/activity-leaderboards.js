@@ -8,6 +8,7 @@ import {
 } from "../db/activity-repository.js";
 
 const SYMBOLS = Object.freeze(["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ"]);
+const lastBoardUpdate = new Map();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
 function boardPayload(periodType, periodKey, rows, settings, guildName) {
   const title = periodType === "weekly" ? "WEEKLY ACTIVITY" : "DAILY ACTIVITY";
@@ -94,6 +95,14 @@ async function syncVoiceChannel(prisma, guild, channel) {
 }
 export async function handleVoiceStateUpdate(prisma, oldState, newState) {
   const guild = newState.guild ?? oldState.guild;
+  const memberId = newState.id ?? oldState.id;
+  const settings = await getActivitySettings(prisma, guild.id);
+  const existing = memberId ? await prisma.activityVoiceSession.findUnique({
+    where: { guildId_userId: { guildId: guild.id, userId: memberId } }
+  }) : null;
+  if (existing && (!isVoiceEligible(newState, settings, guild) || newState.channelId !== existing.channelId)) {
+    await settleVoiceSession(prisma, existing, new Date(), true);
+  }
   const channels = new Set([oldState.channel, newState.channel].filter(Boolean));
   for (const channel of channels) await syncVoiceChannel(prisma, guild, channel);
 }
@@ -111,8 +120,15 @@ export async function updateActivityBoards(client, prisma) {
   for (const guild of client.guilds.cache.values()) {
     try {
       const settings = await getActivitySettings(prisma, guild.id);
-      if (settings.dailyChannelId) await renderBoard(client, prisma, guild, "daily");
-      if (settings.weeklyChannelId) await renderBoard(client, prisma, guild, "weekly");
+      for (const periodType of ["daily", "weekly"]) {
+        const channelId = periodType === "daily" ? settings.dailyChannelId : settings.weeklyChannelId;
+        const key = guild.id + ":" + periodType;
+        const last = lastBoardUpdate.get(key) ?? 0;
+        if (channelId && Date.now() - last >= settings.updateIntervalSeconds * 1000) {
+          await renderBoard(client, prisma, guild, periodType);
+          lastBoardUpdate.set(key, Date.now());
+        }
+      }
     } catch (error) {
       console.error("Activity leaderboard update failed for guild " + guild.id + ":", error);
     }
@@ -126,7 +142,7 @@ export function startActivityRuntime(client, prisma) {
       for (const session of sessions) await settleVoiceSession(prisma, session, new Date(), false);
       await updateActivityBoards(client, prisma);
     })().catch((error) => console.error("Activity runtime tick failed:", error));
-  }, 60_000);
+  }, 30_000);
   timer.unref?.();
   return timer;
 }
