@@ -10,6 +10,7 @@ import {
   upsertAutoReactionRolePerk, removeAutoReactionRolePerk
 } from "../../db/auto-reaction-repository.js";
 import { normalizeReactionEmoji } from "../auto-reactions.js";
+import { handleActivityConfigButton, handleActivityConfigModal } from "../activity-config.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
@@ -98,6 +99,7 @@ export function buildConfigPanel(settings, guildName) {
     { customId: "avero-config|games", label: "Edit rewards & limits", style: ButtonStyle.Primary },
     { customId: "avero-config|roles", label: "Configure economy roles", style: ButtonStyle.Secondary },
     { customId: "avero-config|reaction-perks", label: "Reaction perks", style: ButtonStyle.Success },
+    { customId: "avero-config|activity", label: "Activity leaderboards", style: ButtonStyle.Primary },
     { customId: "avero-config|autoresponder", label: "Autoresponder", style: ButtonStyle.Primary },
     { customId: "avero-config|profile", label: "Edit server profile", style: ButtonStyle.Primary },
     ...GUILD_PROFILE_THEMES.map((name) => ({
@@ -166,6 +168,7 @@ export async function handleConfigButton(interaction, prisma) {
   const parts = interaction.customId.split("|");
   const action = parts[1];
   const value = parts[2];
+  if (action === "activity" || action.startsWith("activity-")) return handleActivityConfigButton(interaction, prisma);
   if (action === "theme") {
     if (!GUILD_PROFILE_THEMES.includes(value)) {
       await interaction.reply({ content: "That profile theme is unavailable.", flags: MessageFlags.Ephemeral });
@@ -241,6 +244,7 @@ export async function handleConfigModal(interaction, prisma) {
     return true;
   }
   const kind = interaction.customId.split("|")[1];
+  if (kind.startsWith("activity-")) return handleActivityConfigModal(interaction, prisma);
   if (kind === "reaction-add") {
     const roleId = interaction.fields.getTextInputValue("reactionRoleId").trim();
     if (!ROLE_ID_PATTERN.test(roleId)) throw new Error("Enter a valid Discord role ID.");
