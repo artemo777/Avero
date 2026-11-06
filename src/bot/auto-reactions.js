@@ -68,7 +68,9 @@ export async function handleAutoReactionMessage(message, prisma) {
 
   let added = false;
   for (const emoji of emojis) {
-    if (CUSTOM_EMOJI_PATTERN.test(emoji) &&
+    const customMatch = emoji.match(CUSTOM_EMOJI_PATTERN);
+    const isExternalCustomEmoji = customMatch && !message.guild.emojis.cache.has(customMatch[3]);
+    if (isExternalCustomEmoji &&
         !permissions.has(PermissionFlagsBits.UseExternalEmojis)) {
       const warningKey = message.guildId + ":" + message.channelId + ":external-emoji";
       if (!warnedPermissions.has(warningKey)) {
