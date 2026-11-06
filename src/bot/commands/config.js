@@ -322,8 +322,17 @@ export async function handleConfigModal(interaction, prisma) {
     const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
     let emoji = parsed.value;
     if (parsed.kind === "custom") {
-      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
-      if (!customEmoji || !customEmoji.available) throw new Error("That custom emoji is not available in this server. Copy an emoji from this server and try again.");
+      const customEmoji = resolveSharedCustomEmoji(interaction.client, parsed.id);
+      if (!customEmoji || !customEmoji.available) {
+        throw new Error("Avero couldn't find that custom emoji in any server it shares. Make sure the emoji's server is still available to Avero and paste its full Discord emoji markup.");
+      }
+      if (customEmoji.guild.id !== interaction.guildId) {
+        const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
+        const permissions = botMember && interaction.channel?.permissionsFor(botMember);
+        if (!permissions?.has(PermissionFlagsBits.UseExternalEmojis)) {
+          throw new Error("To use an emoji from another server, Avero needs the **Use External Emojis** permission in this channel.");
+        }
+      }
       emoji = customEmoji.toString();
     }
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
@@ -454,9 +463,9 @@ export async function handleConfigSelect(interaction, prisma) {
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     const visibleCustomCount = Math.min(customEmojis.length, 25);
     await interaction.update({
-      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji copied from this server (including animated emojis)." +
+      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji from any server Avero shares (including animated emojis)." +
         (customEmojis.length > 25 ? "\\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
-        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste any Unicode emoji." : ""),
+        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste Unicode or a custom emoji from another server Avero shares." : ""),
       components: emojiPickerRows(interaction.guild, roleId, customEmojis.slice(0, visibleCustomCount))
     });
     return true;
