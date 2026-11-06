@@ -28,6 +28,19 @@ function roleSelectRow(customId, placeholder) {
     new RoleSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(1)
   );
 }
+function reactionEmojiModal(roleId) {
+  const input = new TextInputBuilder()
+    .setCustomId("reactionEmoji")
+    .setLabel("Paste one emoji")
+    .setPlaceholder("🔥 or <:name:id> or <a:name:id>")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(100);
+  return new ModalBuilder()
+    .setCustomId("avero-config-modal|reaction-emoji|" + roleId)
+    .setTitle("Paste reaction emoji")
+    .addComponents(new ActionRowBuilder().addComponents(input));
+}
 function emojiPickerRows(guild, roleId, customEmojis) {
   const unicodeMenu = new StringSelectMenuBuilder()
     .setCustomId("avero-config-select|reaction-unicode|" + roleId)
@@ -49,6 +62,10 @@ function emojiPickerRows(guild, roleId, customEmojis) {
     rows.push(new ActionRowBuilder().addComponents(customMenu));
   }
   rows.push(new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("avero-config-select|reaction-paste|" + roleId)
+      .setLabel("Paste any emoji")
+      .setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId("avero-config-select|reaction-cancel").setLabel("Cancel").setStyle(ButtonStyle.Secondary)
   ));
   return rows;
@@ -297,7 +314,25 @@ export async function handleConfigModal(interaction, prisma) {
     await interaction.reply({ content: "You need **Manage Server** to save these settings.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  const kind = interaction.customId.split("|")[1];
+  const [, kind, modalRoleId] = interaction.customId.split("|");
+  if (kind === "reaction-emoji") {
+    if (!ROLE_ID_PATTERN.test(modalRoleId || "")) throw new Error("That role selection expired. Please start again.");
+    const role = await interaction.guild.roles.fetch(modalRoleId).catch(() => null);
+    if (!role || role.id === interaction.guild.id || role.managed) throw new Error("That role is no longer available. Please start again.");
+    const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
+    let emoji = parsed.value;
+    if (parsed.kind === "custom") {
+      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
+      if (!customEmoji || !customEmoji.available) throw new Error("That custom emoji is not available in this server. Copy an emoji from this server and try again.");
+      emoji = customEmoji.toString();
+    }
+    await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
+    await interaction.reply({
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts any single Unicode emoji or a custom emoji copied from this server.",
+      flags: MessageFlags.Ephemeral
+    });
+    return true;
+  }
   if (kind === "reaction-add") {
     const roleId = interaction.fields.getTextInputValue("reactionRoleId").trim();
     if (!ROLE_ID_PATTERN.test(roleId)) throw new Error("Enter a valid Discord role ID.");
@@ -378,6 +413,21 @@ export async function handleConfigSelect(interaction, prisma) {
     return true;
   }
 
+  if (action === "reaction-paste") {
+    const roleId = extra;
+    if (!ROLE_ID_PATTERN.test(roleId || "")) {
+      await interaction.reply({ content: "That role selection was invalid. Please start again.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
+    if (!role || role.id === interaction.guild.id || role.managed) {
+      await interaction.reply({ content: "That role is no longer available. Please start again.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    await interaction.showModal(reactionEmojiModal(roleId));
+    return true;
+  }
+
   if (action === "reaction-role") {
     const mode = extra;
     const roleId = interaction.values?.[0];
@@ -404,9 +454,9 @@ export async function handleConfigSelect(interaction, prisma) {
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     const visibleCustomCount = Math.min(customEmojis.length, 25);
     await interaction.update({
-      content: "Choose an emoji for " + role.toString() + ". Unicode choices are in the first menu; custom emojis uploaded to this server are in the second menu." +
-        (customEmojis.length > 25 ? "\\nShowing the first 25 server emojis, sorted by name." : "") +
-        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis, so choose a Unicode emoji." : ""),
+      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji copied from this server (including animated emojis)." +
+        (customEmojis.length > 25 ? "\\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
+        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste any Unicode emoji." : ""),
       components: emojiPickerRows(interaction.guild, roleId, customEmojis.slice(0, visibleCustomCount))
     });
     return true;
