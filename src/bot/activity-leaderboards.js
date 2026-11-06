@@ -193,11 +193,18 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
           console.error("Engauge XP reward is waiting for ENGAUGE_API_TOKEN.");
         } else if (error instanceof EngaugeApiError && [400, 403, 404].includes(error.status)) {
           nextStatus = "pending_xp_retry";
-          console.error("Engauge XP reward rejected for guild " + guild.id + " (HTTP " + error.status + ").");
+          console.error(
+            "Engauge XP reward rejected for guild " + guild.id + " (HTTP " + error.status + ")." +
+            (error.responseBody ? " Response: " + error.responseBody : "")
+          );
         } else {
           // Network/5xx outcomes can be ambiguous; never automatically repeat a possibly committed XP award.
           nextStatus = "pending_xp_review";
-          console.error("Engauge XP reward needs manual verification for guild " + guild.id + ":", error.message);
+          console.error(
+            "Engauge XP reward needs manual verification for guild " + guild.id + ":",
+            error.message,
+            error instanceof EngaugeApiError && error.responseBody ? error.responseBody : ""
+          );
         }
       }
     }
