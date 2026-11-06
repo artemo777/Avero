@@ -2,6 +2,7 @@ import {
   ContainerBuilder, MessageFlags, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder
 } from "discord.js";
 import { THEME } from "../../averoui/theme.js";
+import { getAssetSymbol } from "../../averoui/assets.js";
 import {
   getActivitySettings, getActivityPeriodKey, getActivityRanking, recordActivityMessage,
   settleVoiceSession, upsertVoiceSession
@@ -18,7 +19,7 @@ function boardPayload(periodType, periodKey, rows, settings, guildName) {
   }).join("\n") : "-# No activity recorded yet. Be the first on the board.";
   const container = new ContainerBuilder().setAccentColor(THEME.colors.primary);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# ◈ AVERO  /  ACTIVITY\n## " + title + "\n-# " + guildName + "  ·  " + periodKey + "\n\n" +
+    "-# " + getAssetSymbol("brand-mark-svg") + " AVERO  /  ACTIVITY\n## " + title + "\n-# " + guildName + "  ·  " + periodKey + "\n\n" +
     "**WEIGHTED SCORE**  ·  " + settings.messageWeight + "× messages + " + settings.voiceWeight + "× voice minutes"
   ));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
