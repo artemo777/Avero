@@ -28,7 +28,7 @@ CREATE TABLE "ActivityStat" (
   CONSTRAINT "ActivityStat_pkey" PRIMARY KEY ("id")
 );
 CREATE UNIQUE INDEX "ActivityStat_guildId_userId_periodType_periodKey_key" ON "ActivityStat"("guildId", "userId", "periodType", "periodKey");
-CREATE INDEX "ActivityStat_guildId_periodType_periodKey_score_idx" ON "ActivityStat"("guildId", "periodType", "periodKey");
+CREATE INDEX "ActivityStat_guildId_periodType_periodKey_idx" ON "ActivityStat"("guildId", "periodType", "periodKey");
 CREATE TABLE "ActivityMessageReceipt" (
   "messageId" TEXT NOT NULL,
   "guildId" TEXT NOT NULL,
