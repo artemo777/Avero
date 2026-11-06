@@ -1,4 +1,5 @@
 import { PermissionFlagsBits } from "discord.js";
+import * as emojiNames from "node-emoji";
 import { getAutoReactionSettings, getAutoReactionRolePerks } from "../db/auto-reaction-repository.js";
 
 const warnedPermissions = new Set();
@@ -13,6 +14,11 @@ export function normalizeReactionEmoji(input) {
   }
   const custom = value.match(CUSTOM_EMOJI_PATTERN);
   if (custom) return { kind: "custom", id: custom[3], value };
+  if (/^:[a-zA-Z0-9_+-]+:$/u.test(value)) {
+    const shortcode = emojiNames.get(value);
+    if (!shortcode) throw new TypeError("That emoji shortcode is not recognized. Try a standard Discord emoji name such as :rainbow_flag:.");
+    return { kind: "unicode", value: shortcode };
+  }
   if (/[<>:]/u.test(value) || !UNICODE_EMOJI_PATTERN.test(value)) {
     throw new TypeError("Enter a standard emoji or a custom emoji from this server.");
   }
@@ -20,6 +26,15 @@ export function normalizeReactionEmoji(input) {
     throw new TypeError("Enter exactly one emoji.");
   }
   return { kind: "unicode", value };
+}
+
+export function resolveSharedCustomEmoji(client, emojiId) {
+  if (!client?.guilds?.cache || typeof emojiId !== "string") return null;
+  for (const guild of client.guilds.cache.values()) {
+    const found = guild.emojis?.cache?.get(emojiId);
+    if (found?.available) return found;
+  }
+  return null;
 }
 
 export async function handleAutoReactionMessage(message, prisma) {
@@ -53,6 +68,17 @@ export async function handleAutoReactionMessage(message, prisma) {
 
   let added = false;
   for (const emoji of emojis) {
+    const customMatch = emoji.match(CUSTOM_EMOJI_PATTERN);
+    const isExternalCustomEmoji = customMatch && !message.guild.emojis.cache.has(customMatch[3]);
+    if (isExternalCustomEmoji &&
+        !permissions.has(PermissionFlagsBits.UseExternalEmojis)) {
+      const warningKey = message.guildId + ":" + message.channelId + ":external-emoji";
+      if (!warnedPermissions.has(warningKey)) {
+        warnedPermissions.add(warningKey);
+        console.warn("Role reaction perks skipped for external custom emojis: Avero needs Use External Emojis in channel " + warningKey + ".");
+      }
+      continue;
+    }
     if (message.reactions.cache.some((reaction) =>
       reaction.me && reaction.emoji.toString() === emoji
     )) continue;
