@@ -83,7 +83,7 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
   const rendered = payload.components[0].toJSON().components
     .filter((component) => component.type === 10)
     .map((component) => component.content)
-    .join("\\n");
+    .join("\n");
   assert.match(rendered, /WEEKLY ACTIVITY LEADERBOARD/);
   assert.match(rendered, /Resets every Monday/);
   assert.match(rendered, /13 msg  ·  42 min VC/);
