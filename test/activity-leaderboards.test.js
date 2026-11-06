@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildActivityBoardPayload } from "../src/bot/activity-leaderboards.js";
 import {
   calculateActivityScore, getActivityPeriodKey, recordActivityMessage,
   updateActivitySettings, upsertActivityRewardRule
@@ -71,4 +72,21 @@ test("reward rules support independently configured daily and weekly placements"
   assert.equal(writes[0].create.periodType, "daily");
   assert.equal(writes[1].create.periodType, "weekly");
   await assert.rejects(() => upsertActivityRewardRule(prisma, "12345678901234567", "monthly", 1, {}), /daily or weekly/);
+});
+
+
+test("live leaderboard cards use a compact server-name-free layout without pinging members", () => {
+  const payload = buildActivityBoardPayload("weekly", "2026-11-02", [
+    { userId: "12345678901234567", score: 28.5, messages: 13, voiceSeconds: 2520 },
+    { userId: "12345678901234568", score: 19, messages: 9, voiceSeconds: 1800 }
+  ], { messageWeight: 1, voiceWeight: 1, weeklyResetDay: 1 });
+  const rendered = payload.components[0].toJSON().components
+    .filter((component) => component.type === 10)
+    .map((component) => component.content)
+    .join("\\n");
+  assert.match(rendered, /WEEKLY ACTIVITY LEADERBOARD/);
+  assert.match(rendered, /Resets every Monday/);
+  assert.match(rendered, /13 msg  ·  42 min VC/);
+  assert.doesNotMatch(rendered, /AVERO TEST SERVER/i);
+  assert.deepEqual(payload.allowedMentions, { parse: [] });
 });
