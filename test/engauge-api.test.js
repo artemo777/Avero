@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createEngaugeClient, EngaugeApiError } from "../src/bot/engauge-api.js";
 
-const serverId = "1434292419788017766";
-const memberId = "1563451996512583713";
+const serverId = "12345678901234567";
+const memberId = "12345678901234568";
 
 test("Engauge member lookup uses the documented member endpoint", async () => {
   let captured;
