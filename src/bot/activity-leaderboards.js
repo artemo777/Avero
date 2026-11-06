@@ -14,22 +14,29 @@ const lastBoardUpdate = new Map();
 const engauge = createEngaugeClient();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
 const fmtScore = (value) => Number(value.toFixed(2)).toLocaleString("en-US", { maximumFractionDigits: 2 });
-function boardPayload(periodType, periodKey, rows, settings, guildName) {
-  const title = periodType === "weekly" ? "WEEKLY ACTIVITY" : "DAILY ACTIVITY";
+export function buildActivityBoardPayload(periodType, periodKey, rows, settings) {
+  const title = periodType === "weekly" ? "WEEKLY ACTIVITY LEADERBOARD" : "DAILY ACTIVITY LEADERBOARD";
+  const resetLabel = periodType === "weekly"
+    ? "Resets every " + ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][settings.weeklyResetDay] + " ↻"
+    : "Resets daily ↻";
   const body = rows.length ? rows.map((row, index) => {
     const voiceMinutes = Math.floor(row.voiceSeconds / 60);
-    return "**" + SYMBOLS[index] + "  <@" + row.userId + ">**  ·  **" + fmtScore(row.score) + " pt**\n-# " + fmt(row.messages) + " messages  ·  " + fmt(voiceMinutes) + " voice min";
+    const rank = String(index + 1).padStart(2, "0");
+    const messages = fmt(row.messages);
+    const voice = fmt(voiceMinutes);
+    return "**" + rank + "**  <@" + row.userId + ">  **" + fmtScore(row.score) + " pt**  ·  " +
+      messages + " msg  ·  " + voice + " min VC";
   }).join("\n") : "-# No activity recorded yet. Be the first on the board.";
   const container = new ContainerBuilder().setAccentColor(THEME.colors.primary);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# " + getAssetSymbol("brand-mark-svg") + " AVERO  /  ACTIVITY\n## " + title + "\n-# " + guildName + "  ·  " + periodKey + "\n\n" +
-    "**WEIGHTED SCORE**  ·  " + settings.messageWeight + "× messages + " + settings.voiceWeight + "× voice minutes"
+    "## " + getAssetSymbol("brand-mark-svg") + " " + title + "\n" +
+    "-# " + resetLabel + "  ·  " + periodKey
   ));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# " + (periodType === "weekly" ? "WEEKLY" : "DAILY") + " CYCLE  ·  Updates automatically  ·  Top 10"
+    "-# WEIGHTED SCORE  ·  " + settings.messageWeight + "× messages + " + settings.voiceWeight + "× voice minutes  ·  LIVE TOP 10"
   ));
   return { flags: MessageFlags.IsComponentsV2, components: [container], allowedMentions: { parse: [] } };
 }
@@ -48,7 +55,7 @@ async function renderBoard(client, prisma, guild, periodType, now = new Date()) 
   const rows = await getActivityRanking(prisma, guild.id, periodType, periodKey, settings, 10);
   const target = await getBoardMessage(client, guild, settings, periodType);
   if (!target) return false;
-  const payload = boardPayload(periodType, periodKey, rows, settings, guild.name);
+  const payload = buildActivityBoardPayload(periodType, periodKey, rows, settings);
   if (target.message) {
     await target.message.edit(payload);
   } else {
