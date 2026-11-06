@@ -270,8 +270,6 @@ model ActivityBoardSetting {
   updateIntervalSeconds   Int      @default(60)
   voiceMinParticipants    Int      @default(2)
   ignoredChannelIds       String[] @default([])
-  lastDailyUpdateAt       DateTime?
-  lastWeeklyUpdateAt      DateTime?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
