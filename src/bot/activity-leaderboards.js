@@ -157,7 +157,7 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         where: { guildId_periodType_periodKey_position: claimKey }
       });
     }
-    if (!claim || claim.status === "delivered" || claim.status === "pending_xp_review" ||
+    if (!claim || claim.status === "delivered" || ["pending_xp_review", "xp_in_flight"].includes(claim.status) ||
         (claim.status === "pending_xp_config" && !process.env.ENGAUGE_API_TOKEN)) continue;
     let roleDelivered = !claim.roleId;
     if (claim.roleId) {
@@ -178,6 +178,9 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
       try {
         // Read first to validate token scope and confirm the member exists in the configured Engauge server.
         await engauge.getMember(guild.id, claim.userId);
+        // Persist an in-flight marker before the non-idempotent API write. A crash after POST
+        // must require verification rather than automatically awarding the same XP again.
+        await prisma.activityRewardClaim.update({ where: { id: claim.id }, data: { status: "xp_in_flight" } });
         await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
         xpDelivered = true;
       } catch (error) {
