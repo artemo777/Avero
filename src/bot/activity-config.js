@@ -44,7 +44,7 @@ function modal(kind, settings) {
 export async function buildActivityConfigPanel(prisma, guildId, guildName) {
   const s = await getActivitySettings(prisma, guildId);
   const rewards = await prisma.activityRewardRule.findMany({ where: { guildId }, orderBy: [{ periodType: "asc" }, { position: "asc" }] });
-  const rewardLines = rewards.length ? rewards.map((reward) => (reward.periodType === "daily" ? "Daily" : "Weekly") + " #" + reward.position + " · " + (reward.roleId ? "<@&" + reward.roleId + ">" : "No role") + " · " + reward.coins + " coins · " + reward.xp + " XP").join("\n") : "No placement rewards configured.";
+  const rewardLines = rewards.length ? rewards.map((reward) => (reward.periodType === "daily" ? "Daily" : "Weekly") + " #" + reward.position + " · " + (reward.roleId ? getAssetSymbol("badge") + " <@&" + reward.roleId + ">" : "No role") + " · " + getAssetSymbol("coin") + " " + reward.coins + " · " + reward.xp + " XP").join("\n") : "No placement rewards configured.";
   const buttons = [
     { customId: "avero-config|activity-channels", label: "Set board channels", style: ButtonStyle.Primary },
     { customId: "avero-config|activity-scoring", label: "Scoring weights", style: ButtonStyle.Secondary },
