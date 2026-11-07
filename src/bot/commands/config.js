@@ -157,40 +157,45 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
   }));
 }
 export function buildConfigPanel(settings, guildName) {
-  const theme = THEME_COLORS[settings.profileTheme] ?? THEME.colors.primary;
-  const themeLabel = THEME_LABELS[settings.profileTheme] || "Violet";
+  const themeLabel = THEME_LABELS[settings.profileTheme] || "Mono";
   const profileName = settings.profileName || "Avero";
   const profileBio = settings.profileBio || "No bio set.";
   const roleStatus = (id) => id ? "Configured" : "Not set";
-
-  const buttons = [
-    { customId: "avero-config|toggle-games", label: settings.gamesEnabled ? "Pause games" : "Enable games", style: settings.gamesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
-    { customId: "avero-config|toggle-currency", label: settings.currencyEnabled ? "Pause currency" : "Enable currency", style: settings.currencyEnabled ? ButtonStyle.Secondary : ButtonStyle.Success },
-    { customId: "avero-config|games", label: "Edit rewards & limits", style: ButtonStyle.Primary },
-    { customId: "avero-config|roles", label: "Configure economy roles", style: ButtonStyle.Secondary },
-    { customId: "avero-config|reaction-perks", label: "Reaction perks", style: ButtonStyle.Success },
-    { customId: "avero-config|activity", label: "Activity leaderboards", style: ButtonStyle.Primary },
-    { customId: "avero-config|autoresponder", label: "Autoresponder", style: ButtonStyle.Primary },
-    { customId: "avero-config|profile", label: "Edit server profile", style: ButtonStyle.Primary },
-    ...GUILD_PROFILE_THEMES.map((name) => ({
-      customId: "avero-config|theme|" + name,
-      label: (settings.profileTheme === name ? "✓ " : "") + THEME_LABELS[name],
-      style: settings.profileTheme === name ? ButtonStyle.Success : ButtonStyle.Secondary
-    }))
-  ];
+  const themeButtons = GUILD_PROFILE_THEMES.map((name) => ({
+    customId: "avero-config|theme|" + name,
+    label: (settings.profileTheme === name ? "✓ " : "") + THEME_LABELS[name],
+    style: ButtonStyle.Secondary
+  }));
   return gamePayload(createGamePanel({
     title: "Server settings",
-    eyebrow: "AVERO • CONFIG",
-    description: "Settings for **" + guildName + "**. Changes here only affect this server.",
-    color: theme,
+    eyebrow: "AVERO / CONTROL CENTER",
+    description: "A compact dashboard for **" + guildName + "**. Choose a section below; changes apply only to this server.",
     sections: [
-      "**01 · SYSTEM**\n**Games** · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "\n**Currency** · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
-      "**02 · ECONOMY & REWARDS**\n**Daily claim** · " + settings.dailyReward.toLocaleString("en-US") + " coins\n**Work payout** · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US") + " coins",
-      "**03 · ROLE PERKS**\n**Booster** · " + roleStatus(settings.boosterRoleId) + "\n**Funder** · " + roleStatus(settings.funderRoleId) + "\n**Voter** · " + roleStatus(settings.voterRoleId),
-      "**04 · SERVER PROFILE**\n**Display name** · " + profileName + "\n**Bio** · " + profileBio + "\n**Appearance** · " + themeLabel + " theme\nChange the server avatar with /config profile_image."
+      "**01 · SYSTEM**\nGames · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "  /  Currency · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
+      "**02 · REWARDS & LIMITS**\nDaily · " + settings.dailyReward.toLocaleString("en-US") + " coins  /  Work · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US"),
+      "**03 · ROLE PERKS**\nBooster · " + roleStatus(settings.boosterRoleId) + "  /  Funder · " + roleStatus(settings.funderRoleId) + "  /  Voter · " + roleStatus(settings.voterRoleId),
+      "**04 · ACTIVITY & AUTOMATION**\nLive daily/weekly boards, weighted activity scoring, autoresponder rules and milestone announcements.",
+      "**05 · SERVER PROFILE**\nName · " + profileName + "\nBio · " + profileBio,
+      "**06 · APPEARANCE**\nCurrent profile theme · **" + themeLabel + "**"
     ],
-    buttons,
-    footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
+    sectionButtons: [
+      [
+        { customId: "avero-config|toggle-games", label: settings.gamesEnabled ? "Pause games" : "Enable games" },
+        { customId: "avero-config|toggle-currency", label: settings.currencyEnabled ? "Pause currency" : "Enable currency" }
+      ],
+      [{ customId: "avero-config|games", label: "Edit rewards & limits" }],
+      [
+        { customId: "avero-config|roles", label: "Economy roles" },
+        { customId: "avero-config|reaction-perks", label: "Reaction perks" }
+      ],
+      [
+        { customId: "avero-config|activity", label: "Activity leaderboards" },
+        { customId: "avero-config|autoresponder", label: "Autoresponder" }
+      ],
+      [{ customId: "avero-config|profile", label: "Edit server profile" }],
+      themeButtons
+    ],
+    footer: "MANAGE SERVER REQUIRED · SERVER-SCOPED SETTINGS",
     separators: true
   }));
 }
