@@ -35,7 +35,7 @@ test("inventory uses the compact Components V2 layout and exposes item details",
   const json = panel(response);
   assert.match(allText(json), /Total Market Value/);
   assert.match(allText(json), /Page Market Value/);
-  assert.match(allText(json), /2\/26/);
+  assert.match(allText(json), /2\/29/);
   assert.equal(json.components.filter((component) => component.type === 14).length, 2);
   const itemButtons = buttons(json).filter((entry) => entry.custom_id.startsWith("avero|user-1|item|"));
   assert.equal(itemButtons.length, 2);
