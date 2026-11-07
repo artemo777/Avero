@@ -93,6 +93,29 @@ export async function recordActivityMessage(prisma, message, now = new Date()) {
           update: { messages: { increment: 1 } }
         });
       }
+      // Match Engauge's configured one-message-per-60-second XP cooldown.
+      await tx.activityXpThrottle.upsert({
+        where: { guildId_userId: { guildId: message.guildId, userId: message.author.id } },
+        create: { guildId: message.guildId, userId: message.author.id },
+        update: {}
+      });
+      const xpWindow = new Date(now.getTime() - 60_000);
+      const xpClaim = await tx.activityXpThrottle.updateMany({
+        where: {
+          guildId: message.guildId,
+          userId: message.author.id,
+          OR: [{ lastMessageXpAt: null }, { lastMessageXpAt: { lte: xpWindow } }]
+        },
+        data: { lastMessageXpAt: now }
+      });
+      if (xpClaim.count) {
+        await tx.activityXpAward.create({
+          data: {
+            dedupeKey: "message:" + message.guildId + ":" + message.author.id + ":" + now.toISOString(),
+            guildId: message.guildId, userId: message.author.id, source: "message", amount: 8
+          }
+        });
+      }
     });
     return true;
   } catch (error) {
@@ -135,10 +158,19 @@ function buildVoicePeriodBuckets(start, seconds, settings) {
 export async function settleVoiceSession(prisma, session, now = new Date(), close = false) {
   const elapsedMs = Math.max(0, Math.min(now.getTime() - session.lastSettledAt.getTime(), 120_000));
   const seconds = Math.floor(elapsedMs / 1000);
+  const priorRemainder = session.xpRemainderSeconds ?? 0;
+  const priorMinutesAwarded = session.xpMinutesAwarded ?? 0;
+  const totalXpSeconds = priorRemainder + seconds;
+  const earnedVoiceMinutes = Math.floor(totalXpSeconds / 60);
+  const nextRemainder = totalXpSeconds % 60;
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.activityVoiceSession.updateMany({
       where: { guildId: session.guildId, userId: session.userId, lastSettledAt: session.lastSettledAt },
-      data: { lastSettledAt: now }
+      data: {
+        lastSettledAt: now,
+        xpRemainderSeconds: close ? 0 : nextRemainder,
+        xpMinutesAwarded: { increment: earnedVoiceMinutes }
+      }
     });
     if (!claimed.count) return;
     if (seconds > 0) {
@@ -153,6 +185,15 @@ export async function settleVoiceSession(prisma, session, now = new Date(), clos
           });
         }
       }
+    }
+    for (let minute = 1; minute <= earnedVoiceMinutes; minute += 1) {
+      const sequence = priorMinutesAwarded + minute;
+      await tx.activityXpAward.create({
+        data: {
+          dedupeKey: "voice:" + session.id + ":" + sequence,
+          guildId: session.guildId, userId: session.userId, source: "voice", amount: 8
+        }
+      });
     }
     if (close) await tx.activityVoiceSession.deleteMany({ where: { guildId: session.guildId, userId: session.userId, lastSettledAt: now } });
   });
