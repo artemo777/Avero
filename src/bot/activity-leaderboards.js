@@ -139,6 +139,7 @@ export async function recordMessageActivity(message, prisma) {
 function isVoiceEligible(state, settings, guild) {
   if (!state?.channelId || !state.member || state.member.user?.bot) return false;
   if (state.channelId === guild.afkChannelId) return false;
+  if (settings.ignoredChannelIds?.includes(state.channelId)) return false;
   if (state.selfMute || state.serverMute || state.selfDeaf || state.serverDeaf) return false;
   const channel = state.channel;
   const humans = channel?.members?.filter((member) => !member.user.bot).size ?? 0;
@@ -188,6 +189,14 @@ async function recoverVoiceSessions(client, prisma) {
 }
 async function processClosedPeriodRewards(client, prisma, guild, periodType, now) {
   const settings = await getActivitySettings(prisma, guild.id);
+  // A crash after an XP POST may leave a claim in-flight. Never replay it automatically.
+  await prisma.activityRewardClaim.updateMany({
+    where: {
+      guildId: guild.id, periodType, status: "xp_in_flight",
+      updatedAt: { lt: new Date(now.getTime() - 10 * 60_000) }
+    },
+    data: { status: "pending_xp_review" }
+  });
   const previous = new Date(now);
   previous.setDate(previous.getDate() - (periodType === "daily" ? 1 : 7));
   const periodKey = getActivityPeriodKey(periodType, previous, settings.timezone, settings.weeklyResetDay);
