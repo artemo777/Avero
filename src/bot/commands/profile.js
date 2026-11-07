@@ -155,7 +155,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
         ownedBadges.length ? { minValues: 0, maxValues: Math.min(5, ownedBadges.length) } : { minValues: 1, maxValues: 1, disabled: true })
     );
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-      "-# Select an option to apply it instantly. Upload a custom image with **/profile banner:**. Badges support multi-select."
+      "-# Select an option to apply it instantly. Upload a custom image with **/profile banner:** or set text with **/profile bio:**. Badges support multi-select."
     ));
   } else {
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# AVERO • GLOBAL PROFILE"));
@@ -195,7 +195,8 @@ export const profileCommand = Object.freeze({
     description: "View and customize your Avero profile card.",
     options: [
       { type: 6, name: "member", description: "Member profile to view.", required: false },
-      { type: 11, name: "banner", description: "Upload a PNG, JPEG, or WebP custom profile banner (max 5 MB).", required: false }
+      { type: 11, name: "banner", description: "Upload a PNG, JPEG, or WebP custom profile banner (max 5 MB).", required: false },
+      { type: 3, name: "bio", description: "Set your profile bio (120 characters max). Use clear to remove it.", required: false, max_length: 120 }
     ]
   }),
   async execute(interaction, { prisma } = {}) {
@@ -206,9 +207,13 @@ export const profileCommand = Object.freeze({
     }
     const target = interaction.options.getUser("member") ?? interaction.user;
     const upload = interaction.options.getAttachment?.("banner") ?? null;
-    if (upload && target.id !== interaction.user.id) {
+    const bio = interaction.options.getString?.("bio") ?? null;
+    if ((upload || bio !== null) && target.id !== interaction.user.id) {
       await interaction.reply({ content: "You can only upload a banner to your own profile.", flags: MessageFlags.Ephemeral });
       return;
+    }
+    if (bio !== null) {
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileBio: bio.trim().toLowerCase() === "clear" ? null : bio.trim() || null });
     }
     if (upload) {
       try {
