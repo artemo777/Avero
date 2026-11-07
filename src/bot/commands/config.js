@@ -15,7 +15,6 @@ import { handleActivityConfigButton, handleActivityConfigModal } from "../activi
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
-const THEME_COLORS = Object.freeze({ violet: 0x8b5cf6, ocean: 0x0ea5e9, sunset: 0xf97316, mint: 0x10b981, mono: 0x64748b });
 const THEME_LABELS = Object.freeze({ violet: "Violet", ocean: "Ocean", sunset: "Sunset", mint: "Mint", mono: "Mono" });
 const UNICODE_REACTION_CHOICES = Object.freeze([
   ["🎉", "Party popper"], ["❤️", "Red heart"], ["🔥", "Fire"], ["⭐", "Star"],
