@@ -362,6 +362,7 @@ model ActivityRewardClaim {
   xp          Int      @default(0)
   status      String   @default("pending")
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   deliveredAt DateTime?
 
   @@unique([guildId, periodType, periodKey, position])
