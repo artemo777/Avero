@@ -129,15 +129,13 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
       default: !profile?.profileBannerImage && name === banner
     }));
     const styleOptions = [
-      { label: "Remove frame", value: "frame:none", description: "Use the default accent outline.", default: !equippedFrame },
+      { label: "Remove frame", value: "frame:none", description: "Use the default accent outline." },
       ...PROFILE_FRAME_IDS.filter((id) => owned.has(id)).map((id) => ({
-        label: PROFILE_FRAME_NAMES.get(id), value: "frame:" + id, description: "Equip this owned profile frame.",
-        default: equippedFrame?.id === id
+        label: PROFILE_FRAME_NAMES.get(id), value: "frame:" + id, description: "Equip this owned profile frame."
       })),
-      { label: "Remove avatar decoration", value: "deco:none", description: "Remove the decoration around your avatar." , default: !equippedDecoration },
+      { label: "Remove avatar decoration", value: "deco:none", description: "Remove the decoration around your avatar." },
       ...PROFILE_DECORATIONS.filter((id) => owned.has(id)).map((id) => ({
-        label: PROFILE_DECORATION_NAMES.get(id), value: "deco:" + id, description: "Equip this owned avatar decoration.",
-        default: equippedDecoration?.id === id
+        label: PROFILE_DECORATION_NAMES.get(id), value: "deco:" + id, description: "Equip this owned avatar decoration."
       }))
     ];
     const titleOptions = [
@@ -151,7 +149,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     container.addActionRowComponents(
       profileSelect(viewerId, "profile_accent_select", "Choose your accent color", accentOptions),
       profileSelect(viewerId, "profile_banner_select", profile?.profileBannerImage ? "Custom banner active · choose a preset" : "Choose a banner style", bannerOptions),
-      profileSelect(viewerId, "profile_style_select", "Choose a frame or avatar decoration", styleOptions),
+      profileSelect(viewerId, "profile_style_select", "Frame: " + (equippedFrame?.name ?? "Default") + " · Deco: " + (equippedDecoration?.name ?? "None"), styleOptions),
       profileSelect(viewerId, "profile_title_select", "Choose an unlocked title", titleOptions),
       profileSelect(viewerId, "profile_badges_select", "Choose up to 5 showcased badges", badgeOptions,
         ownedBadges.length ? { minValues: 0, maxValues: Math.min(5, ownedBadges.length) } : { minValues: 1, maxValues: 1, disabled: true })
