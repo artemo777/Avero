@@ -180,7 +180,7 @@ export async function renderProfileCard({
   if (bio) {
     ctx.fillStyle = "rgba(255,255,255,0.68)";
     ctx.font = "500 18px sans-serif";
-    const safeBio = String(bio).replace(/[\\r\\n]+/g, " ").slice(0, 100);
+    const safeBio = String(bio).replaceAll(String.fromCharCode(10), " ").replaceAll(String.fromCharCode(13), " ").slice(0, 100);
     ctx.fillText(safeBio, textX + 2, 350, 760);
   }
 
