@@ -106,6 +106,7 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
   assert.match(rendered, /<@12345678901234567>/);
   assert.match(rendered, /13 messages  ·  42 voice min/);
   assert.match(rendered, /AUTO-REFRESH · EVERY 5 MIN/);
+  assert.doesNotMatch(rendered, /WEIGHTED SCORE|× messages|× voice minutes/i);
   assert.doesNotMatch(rendered, /AVERO TEST SERVER/i);
   assert.deepEqual(payload.allowedMentions, { parse: [], users: [], roles: [], repliedUser: false });
   assert.equal(ACTIVITY_BOARD_REFRESH_INTERVAL_MS, 300_000);
