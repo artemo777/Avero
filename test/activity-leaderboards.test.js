@@ -37,8 +37,6 @@ test("message activity records daily and weekly rows once per Discord message", 
         updateMany: async ({ where, data }) => {
           const eligible = lastMessageXpAt === null || lastMessageXpAt <= where.OR[1].lastMessageXpAt.lte;
           if (!eligible) return { count: 0 };
-          lastMessageXpAt = data.lastMessageXpAt ?? data.lastMessageXpAt;
-          // The repository writes the supplied event timestamp.
           lastMessageXpAt = data.lastMessageXpAt;
           return { count: 1 };
         }
