@@ -7,7 +7,7 @@ import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
-import { equipProfileBadge, getMemberProfile, unequipProfileBadge } from "../db/member-repository.js";
+import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame } from "../db/member-repository.js";
 import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
 import { WORK_JOBS } from "./work-catalog.js";
@@ -358,18 +358,21 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
   ]);
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
   const equipped = profile?.equippedBadgeItemId === item.id;
+  const frameEquipped = profile?.equippedFrameItemId === item.id;
   return gamePayload(createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
-      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped on your profile**" : "") +
+      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped badge**" : "") + (frameEquipped ? "\n▧ **Equipped profile frame**" : "") +
       "\nCatalog price: **" + item.price.toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**" +
       "\nYour balance: **" + (item.currency === "gems" ? (account?.gemBalance ?? 0) : (account?.balance ?? 0)).toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**",
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
       button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
-      ...(owned && item.category === "badges" ? [equipped ? button(userId, "unequip_badge", "Unequip", item.id, ButtonStyle.Secondary) : button(userId, "equip_badge", "Equip", item.id, ButtonStyle.Success)] : owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
+      ...(owned && item.category === "badges" ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary) : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success)] :
+        owned && item.category === "cosmetics" ? [frameEquipped ? button(userId, "unequip_frame", "Remove frame", item.id, ButtonStyle.Secondary) : button(userId, "equip_frame", "Use as frame", item.id, ButtonStyle.Success)] :
+        owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
     ]
   }));
@@ -735,6 +738,20 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     }
     case "unequip_badge": {
       await unequipProfileBadge(prisma, interaction.guildId, interaction.user.id);
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
+    case "equip_frame": {
+      const result = await equipProfileFrame(prisma, interaction.guildId, interaction.user.id, parsed.arg);
+      if (!result.equipped) {
+        await interaction.reply({ content: "You can only equip a profile frame you own. Unlock it in the shop first.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
+    case "unequip_frame": {
+      await unequipProfileFrame(prisma, interaction.guildId, interaction.user.id);
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
       break;
     }

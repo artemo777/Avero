@@ -45,6 +45,7 @@ export const profileCommand = Object.freeze({
     const badgeItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
     const equippedBadge = SHOP_ITEMS.find((item) => item.id === profile?.equippedBadgeItemId && owned.has(item.id));
     const equippedTitle = TITLE_CATALOG.find((title) => title.id === profile?.equippedTitleId);
+    const equippedFrame = SHOP_ITEMS.find((item) => item.id === profile?.equippedFrameItemId && item.category === "cosmetics" && owned.has(item.id));
     const badgeFilename = "profile-badge.png";
     let badgeFiles = [];
     if (equippedBadge) {
@@ -53,7 +54,7 @@ export const profileCommand = Object.freeze({
     }
     const sections = [
       "**🪙 Wallet** · " + (account?.balance ?? 0).toLocaleString("en-US") + " coins\n**🎒 Collection** · " + rarityCount + " / " + SHOP_ITEMS.length + "\n**🗺️ Sets** · " + completedSets + " / 3 complete",
-      "**🏷️ Set titles**\n" + (collectionTitles.length ? collectionTitles.join(", ") : "None unlocked") + "\n**Profile title** · " + (equippedTitle?.name ?? "None") + "\n**Equipped badge** · " + (equippedBadge?.name ?? "None"),
+      "**🏷️ Set titles**\n" + (collectionTitles.length ? collectionTitles.join(", ") : "None unlocked") + "\n**Profile title** · " + (equippedTitle?.name ?? "None") + "\n**Equipped badge** · " + (equippedBadge?.name ?? "None") + "\n**Profile frame** · " + (equippedFrame?.name ?? "Default"),
       "**🎮 Games record** · " + (stats.gamesPlayed ? stats.gameWins + "W / " + stats.gameLosses + "L / " + stats.gameTies + "T (" + Math.round(stats.gameWins / stats.gamesPlayed * 100) + "% win rate)" : "No games yet") + "\n**🎯 Games played** · " + stats.gamesPlayed + "\n**🏅 Arcade mastery**\n" + (arcadeMastery || "No mastery progress yet"),
       "**🪙 Coins earned** · " + stats.lifetimeEarned.toLocaleString("en-US") + "\n**🛍️ Items bought** · " + stats.itemsPurchased + "\n**📆 Daily claims** · " + stats.dailyClaims + "\n**🧰 Work shifts** · " + stats.workShifts + "\n**🔎 Scavenges** · " + stats.scavenges + "\n**Coins spent** · " + stats.lifetimeSpent.toLocaleString("en-US"),
       "**Badges**\n" + (badgeItems.length ? badgeItems.map((item) => item.name).join(", ") : "None")

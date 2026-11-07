@@ -10,7 +10,7 @@ import {
   getAutoReactionSettings, updateAutoReactionSettings, getAutoReactionRolePerks,
   upsertAutoReactionRolePerk, removeAutoReactionRolePerk
 } from "../../db/auto-reaction-repository.js";
-import { normalizeReactionEmoji } from "../auto-reactions.js";
+import { normalizeReactionEmoji, resolveSharedCustomEmoji } from "../auto-reactions.js";
 import { handleActivityConfigButton, handleActivityConfigModal } from "../activity-config.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
@@ -189,7 +189,8 @@ export function buildConfigPanel(settings, guildName) {
       ],
       [
         { customId: "avero-config|activity", label: "Activity leaderboards" },
-        { customId: "avero-config|autoresponder", label: "Autoresponder" }
+        { customId: "avero-config|autoresponder", label: "Autoresponder" },
+        { customId: "avero-config|diagnostics", label: "Diagnostics" }
       ],
       [{ customId: "avero-config|profile", label: "Edit server profile" }],
       themeButtons
@@ -210,6 +211,37 @@ async function loadUploadedAvatar(attachment) {
   if (!buffer.length || buffer.length > 8 * 1024 * 1024) throw new Error("Profile artwork must be under 8 MB.");
   return buffer;
 }
+export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
+  const count = async (model, where) => typeof model?.count === "function" ? model.count({ where }) : null;
+  const [pendingXp, reviewXp, rejectedXp, rewardReview, activeRules, activity] = await Promise.all([
+    count(prisma.activityXpAward, { guildId, status: "pending" }),
+    count(prisma.activityXpAward, { guildId, status: "needs_review" }),
+    count(prisma.activityXpAward, { guildId, status: "rejected" }),
+    count(prisma.activityRewardClaim, { guildId, status: "pending_xp_review" }),
+    count(prisma.autoResponseRule, { guildId, enabled: true }),
+    prisma.activityBoardSetting?.findUnique
+      ? prisma.activityBoardSetting.findUnique({ where: { guildId } })
+      : null
+  ]);
+  const display = (value) => value === null ? "Unavailable" : value.toLocaleString("en-US");
+  return gamePayload(createGamePanel({
+    title: "Avero diagnostics",
+    eyebrow: "AVERO / CONTROL CENTER",
+    description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
+    sections: [
+      "**ENGAUGE XP DELIVERY**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
+      "**ACTIVITY REWARDS**\nClaims requiring XP review · " + display(rewardReview),
+      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules),
+      "**LEADERBOARDS**\nDaily channel · " + (activity?.dailyChannelId ? "Configured" : "Not configured") +
+        "\nWeekly channel · " + (activity?.weeklyChannelId ? "Configured" : "Not configured") +
+        "\nRefresh interval · " + (activity?.updateIntervalSeconds ?? "Default") + " sec"
+    ],
+    buttons: [{ customId: "avero-config|diagnostics-back", label: "Back to config", style: ButtonStyle.Secondary }],
+    footer: "MANAGE SERVER REQUIRED • INTERNAL SERVER HEALTH",
+    separators: true
+  }));
+}
+
 export const configCommand = Object.freeze({
   data: Object.freeze({
     name: "config",
@@ -243,6 +275,16 @@ export async function handleConfigButton(interaction, prisma) {
   const action = parts[1];
   const value = parts[2];
   if (action === "activity" || action.startsWith("activity-")) return handleActivityConfigButton(interaction, prisma);
+  if (action === "diagnostics") {
+    await interaction.deferUpdate();
+    await interaction.editReply(await buildDiagnosticsPanel(prisma, interaction.guildId, interaction.guild.name));
+    return true;
+  }
+  if (action === "diagnostics-back") {
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(buildConfigPanel(settings, interaction.guild.name));
+    return true;
+  }
   if (action === "theme") {
     if (!GUILD_PROFILE_THEMES.includes(value)) {
       await interaction.reply({ content: "That profile theme is unavailable.", flags: MessageFlags.Ephemeral });
@@ -330,13 +372,15 @@ export async function handleConfigModal(interaction, prisma) {
     const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
     let emoji = parsed.value;
     if (parsed.kind === "custom") {
-      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
-      if (!customEmoji || !customEmoji.available) throw new Error("That custom emoji is not available in this server. Copy an emoji from this server and try again.");
+      const customEmoji = resolveSharedCustomEmoji(interaction.client, parsed.id);
+      if (!customEmoji || !customEmoji.available) {
+        throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Paste its full Discord emoji markup and make sure its server is available to Avero.");
+      }
       emoji = customEmoji.toString();
     }
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
     await interaction.reply({
-      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts any single Unicode emoji or a custom emoji copied from this server.",
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts a single Unicode emoji or a custom emoji from any server it shares.",
       flags: MessageFlags.Ephemeral
     });
     return true;
@@ -349,8 +393,10 @@ export async function handleConfigModal(interaction, prisma) {
     const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
     let emoji = parsed.value;
     if (parsed.kind === "custom") {
-      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
-      if (!customEmoji || !customEmoji.available) throw new Error("Choose an available custom emoji from this server.");
+      const customEmoji = resolveSharedCustomEmoji(interaction.client, parsed.id);
+      if (!customEmoji || !customEmoji.available) {
+        throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Paste its full Discord emoji markup and make sure its server is available to Avero.");
+      }
       emoji = customEmoji.toString();
     }
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, roleId, emoji);
@@ -462,9 +508,9 @@ export async function handleConfigSelect(interaction, prisma) {
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     const visibleCustomCount = Math.min(customEmojis.length, 25);
     await interaction.update({
-      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji copied from this server (including animated emojis)." +
+      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji from any server Avero shares (including animated emojis)." +
         (customEmojis.length > 25 ? "\\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
-        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste any Unicode emoji." : ""),
+        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste Unicode or a custom emoji from another server Avero shares." : ""),
       components: emojiPickerRows(interaction.guild, roleId, customEmojis.slice(0, visibleCustomCount))
     });
     return true;

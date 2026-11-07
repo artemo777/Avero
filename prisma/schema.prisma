@@ -17,6 +17,7 @@ model MemberProfile {
   level            Int      @default(0)
   lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
+  equippedFrameItemId String?
   equippedTitleId     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

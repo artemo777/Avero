@@ -140,7 +140,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
       const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;
@@ -162,7 +162,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await handleConfigModal(interaction, getPrismaClient());
     } catch (error) {
-      const payload = { content: "Settings could not be saved. Check the values and try again.", flags: MessageFlags.Ephemeral };
+      const message = error instanceof TypeError || error instanceof RangeError ? error.message : "Settings could not be saved. Check the values and try again.";
+      const payload = { content: message, flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }

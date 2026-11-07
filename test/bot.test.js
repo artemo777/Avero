@@ -491,6 +491,8 @@ test("setup command reports channel permissions, feature status and first steps 
   assert.match(text, /Embed Links.*needed/);
   assert.match(text, /Games.*Ready/);
   assert.match(text, /Currency.*Paused/);
+  assert.match(text, /Message Content Intent/);
+  assert.match(text, /Voice State Intent/);
 });
 
 
@@ -548,8 +550,9 @@ test("config dashboard groups compact monochrome controls inside its Components 
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 6);
   const buttons = rows.flatMap((row) => row.components);
-  assert.equal(buttons.length, 13);
+  assert.equal(buttons.length, 14);
   assert.ok(buttons.every((button) => button.style === 2));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|activity"));
+  assert.ok(buttons.some((button) => button.custom_id === "avero-config|diagnostics"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
 });

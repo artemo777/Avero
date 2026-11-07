@@ -75,15 +75,15 @@ Currency is virtual and has no cash value. Each Discord user has one global wall
 
 ## Profile customization roadmap
 
-The collectible shop is the foundation for a more expressive Avero profile system. Member-owned profile data and equipment are global across servers. Planned work is intentionally staged so the economy and ownership rules are reliable before profile rendering is added.
+The collectible shop is the foundation for Avero profile customization. Member-owned profile data and equipment are global across servers. Members can equip one owned badge and one owned cosmetic as their profile frame; both selections persist across servers.
 
 - **Profile cards:** evolve the compact `/profile` summary into a shareable card with avatar, coins, selected stats, badges, title, and bio.
-- **Customization inventory:** buy and equip profile themes, color accents, icons, frames, badges, titles, and static or animated backgrounds. Owned items and equipped items should be separate concepts.
+- **Customization inventory:** badges and cosmetic profile frames can be bought and equipped independently. Further profile themes, color accents and title styles remain planned.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
 - **Rendering:** games and currency panels use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
 - **Server boundaries:** member balances, purchases, equipped cosmetics, careers, titles, and progression are global across servers. Guild-specific settings and role configuration remain server-scoped.
 
-These are roadmap items, not implemented features yet. Owned collectibles can be equipped as a profile badge from an item detail panel. Only items already in the member's collection can be equipped; the selected badge is persisted per server and appears as a small icon beside the username on `/profile`. The selection can be removed from the same item detail panel.
+Profile frames and badges are global member cosmetics. Open `/inventory`, select an owned badge or cosmetic, then use its Equip action. Only owned items can be equipped; the selected badge and frame are shown on `/profile`. Either selection can be removed from the same item detail panel.
 
 ## Persistence
 
@@ -173,7 +173,7 @@ npm test
 └── test/
 ```
 
-RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and the nine-milestone achievements command are implemented; the remaining economy finish work is final balance/reliability verification and cosmetic profile items. See [the games and currency finish plan](docs/games-currency-roadmap.md). Leveling remains paused and is not included in this release.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, and Engauge-backed leveling are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
 
 
 ## Activity leaderboards

@@ -1,5 +1,7 @@
-import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { GatewayIntentBits, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
+import { getActivitySettings } from "../../db/activity-repository.js";
+import { getAutoReactionSettings, getAutoReactionRolePerks } from "../../db/auto-reaction-repository.js";
 
 const REQUIRED_PERMISSIONS = Object.freeze([
   ["View Channel", PermissionFlagsBits.ViewChannel],
@@ -9,30 +11,49 @@ const REQUIRED_PERMISSIONS = Object.freeze([
 
 export const setupCommand = Object.freeze({
   data: Object.freeze({ name: "setup", description: "Check Avero's setup in this server." }),
-  async execute(interaction, { settings } = {}) {
+  async execute(interaction, { settings, prisma } = {}) {
     if (!settings) throw new Error("Setup command requires server settings.");
     const permissions = interaction.appPermissions;
     const permissionLines = REQUIRED_PERMISSIONS.map(([label, permission]) => {
       const available = Boolean(permissions?.has(permission));
-      return (available ? "✓" : "✕") + " **" + label + "**" + (available ? "" : " · needed");
+      return (available ? "✓" : "✕") + " **" + label + "**" + (available ? "" : " · needed in this channel");
     });
     const missing = REQUIRED_PERMISSIONS.some(([, permission]) => !permissions?.has(permission));
+    const intents = interaction.client?.options?.intents;
+    const messageContentRequested = Boolean(intents?.has?.(GatewayIntentBits.MessageContent));
+    const voiceRequested = Boolean(intents?.has?.(GatewayIntentBits.GuildVoiceStates));
     const featureLines = [
       "**Games** · " + (settings.gamesEnabled ? "Ready" : "Paused by a server admin"),
-      "**Currency** · " + (settings.currencyEnabled ? "Ready" : "Paused by a server admin")
+      "**Currency** · " + (settings.currencyEnabled ? "Ready" : "Paused by a server admin"),
+      "**Message Content Intent** · " + (messageContentRequested ? "Requested at runtime · verify it is enabled in the Developer Portal" : "Not requested · text autoresponder triggers will not work"),
+      "**Voice State Intent** · " + (voiceRequested ? "Requested at runtime" : "Not requested · voice activity will not be tracked")
     ];
+    const sections = [
+      "**Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
+      "**Server admins**\nUse /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile.",
+      "**Channel permissions**\n" + permissionLines.join("\n"),
+      "**Feature status**\n" + featureLines.join("\n")
+    ];
+    if (prisma) {
+      const [activity, reactions, perks] = await Promise.all([
+        getActivitySettings(prisma, interaction.guildId),
+        getAutoReactionSettings(prisma, interaction.guildId),
+        getAutoReactionRolePerks(prisma, interaction.guildId)
+      ]);
+      sections.push("**Activity boards**\nDaily · " + (activity.dailyChannelId ? "Channel configured" : "Not configured") +
+        "\nWeekly · " + (activity.weeklyChannelId ? "Channel configured" : "Not configured") +
+        "\nTimezone · " + activity.timezone + " · Refresh · " + activity.updateIntervalSeconds + " sec");
+      sections.push("**Reaction Perks**\n" + (reactions.enabled
+        ? (perks.length ? perks.length + " role reaction(s) configured · " + (permissions?.has(PermissionFlagsBits.AddReactions) ? "Add Reactions permission available" : "Add Reactions permission needed") : "Enabled · no role reactions configured")
+        : "Paused"));
+    }
     const payload = gamePayload(createGamePanel({
       title: "Server setup",
       eyebrow: "AVERO • SETUP",
       description: missing
         ? "Avero is connected, but needs a few channel permissions before every response can display properly."
         : "Avero is connected and the key channel permissions are in place.",
-      sections: [
-        "**Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
-        "**Server admins**\nUse /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile.",
-        "**Channel permissions**\n" + permissionLines.join("\n"),
-        "**Feature status**\n" + featureLines.join("\n")
-      ],
+      sections,
       color: missing ? 0xFBBF24 : undefined,
       footer: "RUN /HELP FOR THE FULL COMMAND LIST",
       separators: true
