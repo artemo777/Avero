@@ -22,6 +22,8 @@ model MemberProfile {
   profileAccentColor  Int      @default(9141503)
   profileBanner       String   @default("midnight")
   profileBio          String?
+  profileBannerImage  Bytes?
+  profileBannerImageType String?
   equippedAvatarDecorationId String?
   profileShowcaseBadgeIds String[] @default([])
   createdAt        DateTime @default(now())
