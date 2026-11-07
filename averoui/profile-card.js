@@ -92,13 +92,28 @@ export async function renderProfileCard({
   ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 12, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
-  ctx.strokeStyle = accent;
+  const frameColors = {
+    aurora_frame: "#70e4d0", nebula_cape: "#bd9cff", moonlit_token: "#9bd5ff",
+    prism_crown: "#f3d477", pixel_cape: "#a8b7ff", cloud_specs: "#d5e8ff",
+    comet_trail: "#ffad82", mossy_mug: "#9bd29c", paper_crown: "#e8d7a6"
+  };
+  ctx.strokeStyle = frame ? (frameColors[frame] ?? accent) : accent;
   ctx.lineWidth = frame ? 13 : 7;
   ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 8, 0, Math.PI * 2); ctx.stroke();
   if (frame) {
-    ctx.strokeStyle = "rgba(255,255,255,0.82)";
+    ctx.strokeStyle = "rgba(255,255,255,0.78)";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 20, 0, Math.PI * 2); ctx.stroke();
+    if (frame === "pixel_cape" || frame === "paper_crown") {
+      ctx.fillStyle = frameColors[frame];
+      for (const [dx, dy] of [[-120, -42], [120, -42], [-112, 54], [112, 54]]) {
+        ctx.fillRect(avatarX + dx - 5, avatarY + dy - 5, 10, 10);
+      }
+    } else if (frame === "nebula_cape" || frame === "comet_trail") {
+      ctx.strokeStyle = frameColors[frame];
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(avatarX, avatarY, 126, 48, -0.42, 0, Math.PI * 2); ctx.stroke();
+    }
   }
 
   ctx.save();
