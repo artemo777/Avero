@@ -11,34 +11,52 @@ import {
 
 const SYMBOLS = Object.freeze(["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ"]);
 const lastBoardUpdate = new Map();
+export const ACTIVITY_BOARD_REFRESH_INTERVAL_MS = 5 * 60_000;
 const engauge = createEngaugeClient();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
 const fmtScore = (value) => Number(value.toFixed(2)).toLocaleString("en-US", { maximumFractionDigits: 2 });
 export function buildActivityBoardPayload(periodType, periodKey, rows, settings) {
-  const title = periodType === "weekly" ? "WEEKLY ACTIVITY LEADERBOARD" : "DAILY ACTIVITY LEADERBOARD";
+  const title = periodType === "weekly" ? "WEEKLY ACTIVITY" : "DAILY ACTIVITY";
   const resetLabel = periodType === "weekly"
-    ? "Resets every " + ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][settings.weeklyResetDay] + " ↻"
-    : "Resets daily ↻";
-  const body = rows.length ? rows.map((row, index) => {
-    const voiceMinutes = Math.floor(row.voiceSeconds / 60);
+    ? "Resets every " + ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][settings.weeklyResetDay]
+    : "Resets daily";
+  const podium = rows.slice(0, 3).map((row, index) => {
     const rank = String(index + 1).padStart(2, "0");
     const messages = fmt(row.messages);
-    const voice = fmt(voiceMinutes);
-    return "**" + rank + "**  <@" + row.userId + ">  **" + fmtScore(row.score) + " pt**  ·  " +
-      messages + " msg  ·  " + voice + " min VC";
-  }).join("\n") : "-# No activity recorded yet. Be the first on the board.";
+    const voice = fmt(Math.floor(row.voiceSeconds / 60));
+    const marker = ["✦", "◆", "◇"][index];
+    return "**" + rank + " " + marker + "**  **<@" + row.userId + ">**  ·  **" +
+      fmtScore(row.score) + " pt**\n-# " + messages + " messages  ·  " + voice + " voice min";
+  });
+  const remaining = rows.slice(3).map((row, index) => {
+    const rank = String(index + 4).padStart(2, "0");
+    const messages = fmt(row.messages);
+    const voice = fmt(Math.floor(row.voiceSeconds / 60));
+    return "**" + rank + "**  <@" + row.userId + ">  ·  **" + fmtScore(row.score) +
+      " pt**  ·  " + messages + " msg  ·  " + voice + " min";
+  });
+  const sections = [];
+  if (podium.length) sections.push(podium.join("\n"));
+  if (remaining.length) sections.push("**THE RANKINGS**\n" + remaining.join("\n"));
+  const body = rows.length ? sections.join("\n\n") : "-# No activity recorded yet. Be the first on the board.";
   const container = new ContainerBuilder().setAccentColor(THEME.colors.primary);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
     "## " + getAssetSymbol("brand-mark-svg") + " " + title + "\n" +
-    "-# " + resetLabel + "  ·  " + periodKey
+    "-# LIVE SERVER RANKING  ·  " + periodKey + "  ·  " + resetLabel
   ));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# WEIGHTED SCORE  ·  " + settings.messageWeight + "× messages + " + settings.voiceWeight + "× voice minutes  ·  LIVE TOP 10"
+    "-# AUTO-REFRESH · EVERY 5 MIN  ·  WEIGHTED SCORE  ·  " +
+    settings.messageWeight + "× messages + " + settings.voiceWeight + "× voice minutes"
   ));
-  return { flags: MessageFlags.IsComponentsV2, components: [container], allowedMentions: { parse: [] } };
+  return {
+    flags: MessageFlags.IsComponentsV2,
+    components: [container],
+    // Keep Discord user mentions visible while explicitly suppressing all notifications.
+    allowedMentions: { parse: [], users: [], roles: [], repliedUser: false }
+  };
 }
 async function getBoardMessage(client, guild, settings, periodType) {
   const channelId = periodType === "daily" ? settings.dailyChannelId : settings.weeklyChannelId;
@@ -115,9 +133,15 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
       } else {
         status = "needs_review";
       }
+      const lookupHint = stage === "lookup" && error instanceof EngaugeApiError && error.status === 404
+        ? " Engauge could not find this Discord server or member; verify that Engauge is installed in this server and recognizes this member."
+        : "";
+      const responseDetail = error instanceof EngaugeApiError && error.responseBody
+        ? " Response: " + error.responseBody
+        : "";
       console.error(
         "Engauge activity XP " + status + " for " + award.source + " award " + award.id +
-        " during " + stage + (error?.message ? ": " + error.message : "")
+        " during " + stage + (error?.message ? ": " + error.message : "") + lookupHint + responseDetail
       );
     }
     await prisma.activityXpAward.update({
@@ -317,7 +341,7 @@ export async function updateActivityBoards(client, prisma) {
         const channelId = periodType === "daily" ? settings.dailyChannelId : settings.weeklyChannelId;
         const key = guild.id + ":" + periodType;
         const last = lastBoardUpdate.get(key) ?? 0;
-        if (channelId && Date.now() - last >= settings.updateIntervalSeconds * 1000) {
+        if (channelId && Date.now() - last >= ACTIVITY_BOARD_REFRESH_INTERVAL_MS) {
           await renderBoard(client, prisma, guild, periodType);
           lastBoardUpdate.set(key, Date.now());
         }
