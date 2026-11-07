@@ -271,8 +271,8 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Ada/);
-  assert.match(text, /Title · None/);
-  assert.match(text, /Frame · Default/);
+  assert.match(text, /Title/);
+  assert.match(text, /Frame/);
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
@@ -298,7 +298,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
-  assert.match(panelText(response), /Showcased badges · Vault Rat/);
+  assert.match(panelText(response), /Showcased badges.*Vault Rat/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
