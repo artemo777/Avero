@@ -107,24 +107,51 @@ export async function upsertVoiceSession(prisma, guildId, userId, channelId, now
     update: { channelId, lastSettledAt: now }
   });
 }
+function buildVoicePeriodBuckets(start, seconds, settings) {
+  if (seconds <= 0) return [];
+  const first = new Date(start);
+  const last = new Date(first.getTime() + (seconds - 1) * 1000);
+  const keyAt = (date) => ({
+    daily: getActivityPeriodKey("daily", date, settings.timezone, settings.weeklyResetDay),
+    weekly: getActivityPeriodKey("weekly", date, settings.timezone, settings.weeklyResetDay)
+  });
+  const firstKeys = keyAt(first);
+  const lastKeys = keyAt(last);
+  if (firstKeys.daily === lastKeys.daily && firstKeys.weekly === lastKeys.weekly) {
+    return [{ ...firstKeys, seconds }];
+  }
+  // Only intervals that cross a reset boundary need per-second bucketing.
+  // Normal 30-second settlements take the constant-time path above.
+  const buckets = new Map();
+  for (let offset = 0; offset < seconds; offset += 1) {
+    const keys = keyAt(new Date(first.getTime() + offset * 1000));
+    const id = keys.daily + "|" + keys.weekly;
+    const bucket = buckets.get(id) ?? { ...keys, seconds: 0 };
+    bucket.seconds += 1;
+    buckets.set(id, bucket);
+  }
+  return [...buckets.values()];
+}
 export async function settleVoiceSession(prisma, session, now = new Date(), close = false) {
   const elapsedMs = Math.max(0, Math.min(now.getTime() - session.lastSettledAt.getTime(), 120_000));
   const seconds = Math.floor(elapsedMs / 1000);
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.activityVoiceSession.updateMany({
       where: { guildId: session.guildId, userId: session.userId, lastSettledAt: session.lastSettledAt },
-      data: close ? { lastSettledAt: now } : { lastSettledAt: now }
+      data: { lastSettledAt: now }
     });
     if (!claimed.count) return;
     if (seconds > 0) {
       const settings = await getActivitySettings(tx, session.guildId);
-      for (const periodType of ["daily", "weekly"]) {
-        const periodKey = getActivityPeriodKey(periodType, session.lastSettledAt, settings.timezone, settings.weeklyResetDay);
-        await tx.activityStat.upsert({
-          where: { guildId_userId_periodType_periodKey: { guildId: session.guildId, userId: session.userId, periodType, periodKey } },
-          create: { guildId: session.guildId, userId: session.userId, periodType, periodKey, voiceSeconds: seconds },
-          update: { voiceSeconds: { increment: seconds } }
-        });
+      const buckets = buildVoicePeriodBuckets(session.lastSettledAt, seconds, settings);
+      for (const bucket of buckets) {
+        for (const [periodType, periodKey] of [["daily", bucket.daily], ["weekly", bucket.weekly]]) {
+          await tx.activityStat.upsert({
+            where: { guildId_userId_periodType_periodKey: { guildId: session.guildId, userId: session.userId, periodType, periodKey } },
+            create: { guildId: session.guildId, userId: session.userId, periodType, periodKey, voiceSeconds: bucket.seconds },
+            update: { voiceSeconds: { increment: bucket.seconds } }
+          });
+        }
       }
     }
     if (close) await tx.activityVoiceSession.deleteMany({ where: { guildId: session.guildId, userId: session.userId, lastSettledAt: now } });
