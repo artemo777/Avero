@@ -17,6 +17,7 @@ import { leaderboardCommand } from "./leaderboard.js";
 import { perksCommand } from "./perks.js";
 import { pingCommand } from "./ping.js";
 import { profileCommand } from "./profile.js";
+import { rankCommand } from "./rank.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
