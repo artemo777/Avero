@@ -111,6 +111,7 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
 test("voice sessions split seconds across local midnight and weekly reset boundaries", async () => {
   const rows = new Map();
   const xpAwards = [];
+  const progress = { voiceRemainderSeconds: 0, voiceMinutesAwarded: 0 };
   const sessionStart = new Date("2026-11-08T22:59:30.000Z"); // Sunday 23:59:30 in Stockholm
   const now = new Date("2026-11-08T23:01:30.000Z"); // Monday 00:01:30 in Stockholm
   const prisma = {
@@ -118,6 +119,15 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
       activityVoiceSession: {
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
+      },
+      activityXpThrottle: {
+        upsert: async () => ({ ...progress }),
+        updateMany: async ({ where, data }) => {
+          if (progress.voiceRemainderSeconds !== where.voiceRemainderSeconds || progress.voiceMinutesAwarded !== where.voiceMinutesAwarded) return { count: 0 };
+          progress.voiceRemainderSeconds = data.voiceRemainderSeconds;
+          progress.voiceMinutesAwarded += data.voiceMinutesAwarded.increment;
+          return { count: 1 };
+        }
       },
       activityXpAward: { create: async ({ data }) => { xpAwards.push(data); } },
       activityBoardSetting: {
@@ -137,9 +147,7 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
     id: "voice-session-1",
     guildId: "12345678901234567",
     userId: "12345678901234569",
-    lastSettledAt: sessionStart,
-    xpRemainderSeconds: 0,
-    xpMinutesAwarded: 0
+    lastSettledAt: sessionStart
   }, now, true);
   assert.equal(rows.get("daily:2026-11-08").voiceSeconds, 30);
   assert.equal(rows.get("daily:2026-11-09").voiceSeconds, 90);
@@ -148,4 +156,46 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
   assert.equal(xpAwards.length, 2);
   assert.deepEqual(xpAwards.map((award) => award.amount), [8, 8]);
   assert.deepEqual(xpAwards.map((award) => award.source), ["voice", "voice"]);
+});
+
+
+test("voice XP carries sub-minute eligible time across separate sessions", async () => {
+  const progress = { voiceRemainderSeconds: 0, voiceMinutesAwarded: 0 };
+  const awards = [];
+  const prisma = {
+    $transaction: async (callback) => callback({
+      activityVoiceSession: {
+        updateMany: async () => ({ count: 1 }),
+        deleteMany: async () => ({ count: 1 })
+      },
+      activityXpThrottle: {
+        upsert: async () => ({ ...progress }),
+        updateMany: async ({ where, data }) => {
+          if (progress.voiceRemainderSeconds !== where.voiceRemainderSeconds || progress.voiceMinutesAwarded !== where.voiceMinutesAwarded) return { count: 0 };
+          progress.voiceRemainderSeconds = data.voiceRemainderSeconds;
+          progress.voiceMinutesAwarded += data.voiceMinutesAwarded.increment;
+          return { count: 1 };
+        }
+      },
+      activityXpAward: { create: async ({ data }) => { awards.push(data); } },
+      activityBoardSetting: { upsert: async () => ({ timezone: "UTC", weeklyResetDay: 1 }) },
+      activityStat: { upsert: async () => ({}) }
+    })
+  };
+  const guildId = "12345678901234567";
+  const userId = "12345678901234569";
+  await settleVoiceSession(prisma, {
+    id: "voice-session-a", guildId, userId,
+    lastSettledAt: new Date("2026-11-06T12:00:00Z")
+  }, new Date("2026-11-06T12:00:30Z"), true);
+  assert.equal(progress.voiceRemainderSeconds, 30);
+  assert.equal(awards.length, 0);
+  await settleVoiceSession(prisma, {
+    id: "voice-session-b", guildId, userId,
+    lastSettledAt: new Date("2026-11-06T12:01:00Z")
+  }, new Date("2026-11-06T12:01:30Z"), true);
+  assert.equal(progress.voiceRemainderSeconds, 0);
+  assert.equal(progress.voiceMinutesAwarded, 1);
+  assert.equal(awards.length, 1);
+  assert.equal(awards[0].dedupeKey, "voice:" + guildId + ":" + userId + ":1");
 });
