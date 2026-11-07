@@ -90,7 +90,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     throw new RangeError("Avero panel contains duplicate interactive component IDs.");
   }
   const container = new ContainerBuilder().setAccentColor(0x3A3D45);
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + eyebrow + "\n## " + title + "\n" + description));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# AVERO / " + eyebrow + "\n## " + title + "\n\n" + description));
   if (separators && (sections.length || buttons.length)) container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
   for (const [index, section] of sections.entries()) {
     const thumbnail = sectionThumbnails[index];

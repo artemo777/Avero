@@ -228,7 +228,7 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   const panel = response.components[0].toJSON();
   assert.equal(panel.components.some((component) => component.type === 12), false);
   const text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
-  assert.doesNotMatch(text, /A V E R O|AVERO\s*\//);
+  assert.match(text, /AVERO \/ GAMES/);
   assert.match(text, /Guess/);
   assert.match(text, /Vault/);
   assert.match(text, /Coinflip/);

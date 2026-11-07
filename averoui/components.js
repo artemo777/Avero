@@ -57,7 +57,7 @@ export function createPanel({
 
   // One compact text display unless the caller explicitly asks for separators.
   if (!separators) {
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(blocks.join("\n")));
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(blocks.join("\n\n")));
     return container;
   }
 
