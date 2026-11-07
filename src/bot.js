@@ -6,7 +6,7 @@ import { loadBotConfig } from "./bot/config.js";
 import { getPrismaClient, disconnectPrismaClient } from "./db/client.js";
 import { handleGameComponent } from "./bot/game-ui.js";
 import { getGuildSettings } from "./db/guild-settings-repository.js";
-import { handleConfigButton, handleConfigModal, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
+import { handleConfigButton, handleConfigModal, handleConfigSelect, AVERO_SUPPORT_URL } from "./bot/commands/config.js";
 import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
@@ -94,7 +94,7 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (interaction.isButton() || interaction.isStringSelectMenu()) {
+  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
         await handleMoneyRequestButton(interaction, getPrismaClient());
@@ -104,11 +104,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
       return;
     }
+    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu()) &&
+        interaction.customId.startsWith("avero-config-select|")) {
+      try {
+        await handleConfigSelect(interaction, getPrismaClient());
+      } catch (error) {
+        console.error("Reaction perk selection failed (guild: " + interaction.guildId + "):", error);
+        const payload = { content: "Avero couldn't save that reaction perk. Please try again.", flags: MessageFlags.Ephemeral };
+        if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+        else await interaction.reply(payload).catch(() => {});
+      }
+      return;
+    }
     if (interaction.isButton() && interaction.customId.startsWith("avero-config|")) {
       try {
         await handleConfigButton(interaction, getPrismaClient());
       } catch (error) {
-        const payload = { content: "Could not open settings. Check your permissions and try again.", flags: MessageFlags.Ephemeral };
+        console.error("Config button failed (action: " + interaction.customId.split("|")[1] + ", guild: " + interaction.guildId + "):", error);
+        const payload = {
+          content: "Avero couldn't open that settings page. Please try again. If it keeps happening, ask an admin to check the bot logs.",
+          flags: MessageFlags.Ephemeral
+        };
         if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
         else await interaction.reply(payload).catch(() => {});
       }

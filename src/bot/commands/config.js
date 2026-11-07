@@ -1,6 +1,7 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, ModalBuilder,
-  PermissionFlagsBits, TextInputBuilder, TextInputStyle
+  PermissionFlagsBits, RoleSelectMenuBuilder, StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { THEME } from "../../../averoui/theme.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
@@ -16,8 +17,77 @@ const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
 const THEME_COLORS = Object.freeze({ violet: 0x8b5cf6, ocean: 0x0ea5e9, sunset: 0xf97316, mint: 0x10b981, mono: 0x64748b });
 const THEME_LABELS = Object.freeze({ violet: "Violet", ocean: "Ocean", sunset: "Sunset", mint: "Mint", mono: "Mono" });
+const UNICODE_REACTION_CHOICES = Object.freeze([
+  ["🎉", "Party popper"], ["❤️", "Red heart"], ["🔥", "Fire"], ["⭐", "Star"],
+  ["💎", "Gem"], ["✨", "Sparkles"], ["😂", "Laughing"], ["👀", "Eyes"],
+  ["🚀", "Rocket"], ["💜", "Purple heart"], ["👍", "Thumbs up"], ["🏆", "Trophy"],
+  ["🎮", "Game controller"], ["🌟", "Glowing star"], ["🥳", "Party face"],
+  ["💯", "Hundred points"], ["🫡", "Saluting face"], ["🤝", "Handshake"]
+]);
+function roleSelectRow(customId, placeholder) {
+  return new ActionRowBuilder().addComponents(
+    new RoleSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(1)
+  );
+}
+function reactionEmojiModal(roleId) {
+  const input = new TextInputBuilder()
+    .setCustomId("reactionEmoji")
+    .setLabel("Paste one emoji")
+    .setPlaceholder("🔥 or <:name:id> or <a:name:id>")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(100);
+  return new ModalBuilder()
+    .setCustomId("avero-config-modal|reaction-emoji|" + roleId)
+    .setTitle("Paste reaction emoji")
+    .addComponents(new ActionRowBuilder().addComponents(input));
+}
+function emojiPickerRows(guild, roleId, customEmojis) {
+  const unicodeMenu = new StringSelectMenuBuilder()
+    .setCustomId("avero-config-select|reaction-unicode|" + roleId)
+    .setPlaceholder("Choose a Unicode emoji")
+    .addOptions(UNICODE_REACTION_CHOICES.map(([emoji, label]) =>
+      new StringSelectMenuOptionBuilder().setLabel(label).setValue(emoji).setEmoji(emoji)
+    ));
+  const rows = [new ActionRowBuilder().addComponents(unicodeMenu)];
+  if (customEmojis.length) {
+    const customMenu = new StringSelectMenuBuilder()
+      .setCustomId("avero-config-select|reaction-custom|" + roleId)
+      .setPlaceholder("Choose a custom server emoji")
+      .addOptions(customEmojis.slice(0, 25).map((emoji) =>
+        new StringSelectMenuOptionBuilder()
+          .setLabel((emoji.name || "server-emoji").slice(0, 100))
+          .setValue(emoji.id)
+          .setEmoji({ id: emoji.id, name: emoji.name || undefined, animated: emoji.animated })
+      ));
+    rows.push(new ActionRowBuilder().addComponents(customMenu));
+  }
+  rows.push(new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("avero-config-select|reaction-paste|" + roleId)
+      .setLabel("Paste any emoji")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("avero-config-select|reaction-cancel").setLabel("Cancel").setStyle(ButtonStyle.Secondary)
+  ));
+  return rows;
+}
+async function showReactionRolePicker(interaction, mode) {
+  const isRemove = mode === "remove";
+  await interaction.reply({
+    content: isRemove
+      ? "Select the server role whose reaction perk you want to remove."
+      : "Select the server role that should receive a reaction perk. You can edit an existing role too.",
+    components: [roleSelectRow("avero-config-select|reaction-role|" + mode, "Choose a server role")],
+    flags: MessageFlags.Ephemeral
+  });
+}
+
 function canManage(interaction) {
-  return Boolean(interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild));
+  const permissions = interaction.memberPermissions ?? interaction.member?.permissions;
+  return Boolean(
+    permissions?.has(PermissionFlagsBits.Administrator) ||
+    permissions?.has(PermissionFlagsBits.ManageGuild)
+  );
 }
 function textInput(id, label, value, { style = TextInputStyle.Short, required = false, maxLength = 1000 } = {}) {
   const input = new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(style).setRequired(required).setMaxLength(maxLength);
@@ -211,7 +281,11 @@ export async function handleConfigButton(interaction, prisma) {
     return true;
   }
   if (action === "reaction-perks") {
-    await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
+    // Acknowledge the component before database reads; otherwise a slow DB can
+    // exceed Discord's 3-second interaction response deadline.
+    await interaction.deferUpdate();
+    const panel = await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name);
+    await interaction.editReply(panel);
     return true;
   }
   if (action === "reaction-toggle") {
@@ -221,7 +295,7 @@ export async function handleConfigButton(interaction, prisma) {
     return true;
   }
   if (action === "reaction-add" || action === "reaction-remove") {
-    await interaction.showModal(configModal(action, {}));
+    await showReactionRolePicker(interaction, action === "reaction-remove" ? "remove" : "add");
     return true;
   }
   if (action === "reaction-back") {
@@ -243,8 +317,26 @@ export async function handleConfigModal(interaction, prisma) {
     await interaction.reply({ content: "You need **Manage Server** to save these settings.", flags: MessageFlags.Ephemeral });
     return true;
   }
-  const kind = interaction.customId.split("|")[1];
+  const [, kind, modalRoleId] = interaction.customId.split("|");
   if (kind.startsWith("activity-")) return handleActivityConfigModal(interaction, prisma);
+  if (kind === "reaction-emoji") {
+    if (!ROLE_ID_PATTERN.test(modalRoleId || "")) throw new Error("That role selection expired. Please start again.");
+    const role = await interaction.guild.roles.fetch(modalRoleId).catch(() => null);
+    if (!role || role.id === interaction.guild.id || role.managed) throw new Error("That role is no longer available. Please start again.");
+    const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
+    let emoji = parsed.value;
+    if (parsed.kind === "custom") {
+      const customEmoji = await interaction.guild.emojis.fetch(parsed.id).catch(() => null);
+      if (!customEmoji || !customEmoji.available) throw new Error("That custom emoji is not available in this server. Copy an emoji from this server and try again.");
+      emoji = customEmoji.toString();
+    }
+    await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
+    await interaction.reply({
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts any single Unicode emoji or a custom emoji copied from this server.",
+      flags: MessageFlags.Ephemeral
+    });
+    return true;
+  }
   if (kind === "reaction-add") {
     const roleId = interaction.fields.getTextInputValue("reactionRoleId").trim();
     if (!ROLE_ID_PATTERN.test(roleId)) throw new Error("Enter a valid Discord role ID.");
@@ -310,3 +402,108 @@ export async function handleConfigModal(interaction, prisma) {
   return true;
 }
 export const AVERO_SUPPORT_URL = SUPPORT_URL;
+
+
+export async function handleConfigSelect(interaction, prisma) {
+  if (!interaction.customId?.startsWith("avero-config-select|")) return false;
+  if (!interaction.guildId || !canManage(interaction)) {
+    await interaction.reply({ content: "You need **Manage Server** to edit these settings.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+
+  const [, action, extra] = interaction.customId.split("|");
+  if (action === "reaction-cancel") {
+    await interaction.update({ content: "Reaction perk editing cancelled.", components: [] });
+    return true;
+  }
+
+  if (action === "reaction-paste") {
+    const roleId = extra;
+    if (!ROLE_ID_PATTERN.test(roleId || "")) {
+      await interaction.reply({ content: "That role selection was invalid. Please start again.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
+    if (!role || role.id === interaction.guild.id || role.managed) {
+      await interaction.reply({ content: "That role is no longer available. Please start again.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    await interaction.showModal(reactionEmojiModal(roleId));
+    return true;
+  }
+
+  if (action === "reaction-role") {
+    const mode = extra;
+    const roleId = interaction.values?.[0];
+    if (!["add", "remove"].includes(mode) || !ROLE_ID_PATTERN.test(roleId || "")) {
+      await interaction.update({ content: "That role selection was invalid. Please try again.", components: [] });
+      return true;
+    }
+    const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
+    if (!role || role.id === interaction.guild.id || role.managed) {
+      await interaction.update({ content: "Choose a regular server role that Avero can manage.", components: [] });
+      return true;
+    }
+    if (mode === "remove") {
+      const removed = await removeAutoReactionRolePerk(prisma, interaction.guildId, roleId);
+      await interaction.update({
+        content: removed ? "Removed the reaction perk for " + role.toString() + "." : role.toString() + " did not have a reaction perk.",
+        components: []
+      });
+      return true;
+    }
+
+    const customEmojis = [...(await interaction.guild.emojis.fetch().catch(() => new Map())).values()]
+      .filter((emoji) => emoji.available)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const visibleCustomCount = Math.min(customEmojis.length, 25);
+    await interaction.update({
+      content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji copied from this server (including animated emojis)." +
+        (customEmojis.length > 25 ? "\\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
+        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste any Unicode emoji." : ""),
+      components: emojiPickerRows(interaction.guild, roleId, customEmojis.slice(0, visibleCustomCount))
+    });
+    return true;
+  }
+
+  if (action === "reaction-unicode" || action === "reaction-custom") {
+    const roleId = extra;
+    if (!ROLE_ID_PATTERN.test(roleId || "")) {
+      await interaction.update({ content: "That role selection was invalid.", components: [] });
+      return true;
+    }
+    const role = await interaction.guild.roles.fetch(roleId).catch(() => null);
+    if (!role || role.managed || role.id === interaction.guild.id) {
+      await interaction.update({ content: "That role is no longer available. Please start again.", components: [] });
+      return true;
+    }
+
+    let emoji;
+    if (action === "reaction-unicode") {
+      const selected = interaction.values?.[0];
+      if (!UNICODE_REACTION_CHOICES.some(([value]) => value === selected)) {
+        await interaction.update({ content: "That Unicode emoji choice was invalid.", components: [] });
+        return true;
+      }
+      emoji = selected;
+    } else {
+      const emojiId = interaction.values?.[0];
+      const customEmoji = await interaction.guild.emojis.fetch(emojiId).catch(() => null);
+      if (!customEmoji || !customEmoji.available) {
+        await interaction.update({ content: "That custom emoji is no longer available in this server. Please choose another.", components: [] });
+        return true;
+      }
+      emoji = customEmoji.toString();
+    }
+
+    await upsertAutoReactionRolePerk(prisma, interaction.guildId, roleId, emoji);
+    await interaction.update({
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero will add this reaction when a member with that role mentions another user.",
+      components: []
+    });
+    return true;
+  }
+
+  await interaction.reply({ content: "That reaction-perk selection is no longer available. Open Config → Reaction Perks and try again.", flags: MessageFlags.Ephemeral });
+  return true;
+}
