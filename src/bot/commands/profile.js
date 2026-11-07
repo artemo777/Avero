@@ -77,7 +77,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   const equippedFrame = SHOP_ITEMS.find((item) => item.id === profile?.equippedFrameItemId && owned.has(item.id));
   const equippedDecoration = SHOP_ITEMS.find((item) => item.id === profile?.equippedAvatarDecorationId && owned.has(item.id));
   const ownedBadges = ownedItems.filter((item) => item.category === "badges");
-  const selectedBadgeIds = Array.isArray(profile?.profileShowcaseBadgeIds) && profile.profileShowcaseBadgeIds.length
+  const selectedBadgeIds = Array.isArray(profile?.profileShowcaseBadgeIds)
     ? profile.profileShowcaseBadgeIds
     : (profile?.equippedBadgeItemId ? [profile.equippedBadgeItemId] : []);
   const badges = selectedBadgeIds.map((id) => ownedBadges.find((item) => item.id === id)).filter(Boolean);
