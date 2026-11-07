@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildActivityBoardPayload } from "../src/bot/activity-leaderboards.js";
 import {
-  calculateActivityScore, getActivityPeriodKey, recordActivityMessage,
+  calculateActivityScore, getActivityPeriodKey, recordActivityMessage, settleVoiceSession,
   updateActivitySettings, upsertActivityRewardRule
 } from "../src/db/activity-repository.js";
 
@@ -89,4 +89,38 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
   assert.match(rendered, /13 msg  ·  42 min VC/);
   assert.doesNotMatch(rendered, /AVERO TEST SERVER/i);
   assert.deepEqual(payload.allowedMentions, { parse: [] });
+});
+
+test("voice sessions split seconds across local midnight and weekly reset boundaries", async () => {
+  const rows = new Map();
+  const sessionStart = new Date("2026-11-08T22:59:30.000Z"); // Sunday 23:59:30 in Stockholm
+  const now = new Date("2026-11-08T23:01:30.000Z"); // Monday 00:01:30 in Stockholm
+  const prisma = {
+    $transaction: async (callback) => callback({
+      activityVoiceSession: {
+        updateMany: async () => ({ count: 1 }),
+        deleteMany: async () => ({ count: 1 })
+      },
+      activityBoardSetting: {
+        upsert: async () => ({ timezone: "Europe/Stockholm", weeklyResetDay: 1 })
+      },
+      activityStat: {
+        upsert: async ({ where, create, update }) => {
+          const key = where.guildId_userId_periodType_periodKey.periodType + ":" + where.guildId_userId_periodType_periodKey.periodKey;
+          const row = rows.get(key) ?? { ...create };
+          if (rows.has(key)) row.voiceSeconds += update.voiceSeconds.increment;
+          rows.set(key, row);
+        }
+      }
+    })
+  };
+  await settleVoiceSession(prisma, {
+    guildId: "12345678901234567",
+    userId: "12345678901234569",
+    lastSettledAt: sessionStart
+  }, now, true);
+  assert.equal(rows.get("daily:2026-11-08").voiceSeconds, 30);
+  assert.equal(rows.get("daily:2026-11-09").voiceSeconds, 90);
+  assert.equal(rows.get("weekly:2026-11-02").voiceSeconds, 30);
+  assert.equal(rows.get("weekly:2026-11-09").voiceSeconds, 90);
 });
