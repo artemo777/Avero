@@ -58,7 +58,7 @@ function ownedBadgeOptions(ownedBadges, selectedIds) {
     label: item.name.slice(0, 100),
     value: item.id,
     description: item.description.slice(0, 100),
-    emoji: item.icon,
+    emoji: { name: item.icon },
     default: selectedIds.includes(item.id)
   }));
 }
@@ -119,7 +119,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     const accentOptions = PROFILE_ACCENTS.map((color) => ({
       label: ACCENT_LABELS.get(color),
       value: String(color),
-      emoji: PROFILE_ACCENT_EMOJIS.get(color),
+      emoji: { name: PROFILE_ACCENT_EMOJIS.get(color) },
       default: color === accent
     }));
     const bannerOptions = PROFILE_BANNERS.map((name) => ({
@@ -170,7 +170,8 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
 
 export async function downloadProfileBanner(attachment) {
   if (!attachment || typeof attachment.url !== "string") throw new TypeError("Attach a PNG, JPEG, or WebP image to upload as your profile banner.");
-  if (!["image/png", "image/jpeg", "image/webp"].includes(attachment.contentType) || attachment.size > 5 * 1024 * 1024) {
+  const contentType = String(attachment.contentType ?? "").split(";")[0].toLowerCase();
+  if (!["image/png", "image/jpeg", "image/webp"].includes(contentType) || attachment.size > 5 * 1024 * 1024) {
     throw new RangeError("Profile banners must be PNG, JPEG, or WebP images no larger than 5 MB.");
   }
   const url = new URL(attachment.url);
@@ -185,7 +186,7 @@ export async function downloadProfileBanner(attachment) {
   if (image.width < 320 || image.height < 160 || image.width > 4096 || image.height > 4096) {
     throw new RangeError("Profile banners must be between 320×160 and 4096×4096 pixels.");
   }
-  return { bytes, contentType: attachment.contentType };
+  return { bytes, contentType };
 }
 
 export const profileCommand = Object.freeze({
@@ -204,7 +205,7 @@ export const profileCommand = Object.freeze({
       return;
     }
     const target = interaction.options.getUser("member") ?? interaction.user;
-    const upload = interaction.options.getAttachment("banner");
+    const upload = interaction.options.getAttachment?.("banner") ?? null;
     if (upload && target.id !== interaction.user.id) {
       await interaction.reply({ content: "You can only upload a banner to your own profile.", flags: MessageFlags.Ephemeral });
       return;
