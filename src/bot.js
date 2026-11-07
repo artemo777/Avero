@@ -11,6 +11,7 @@ import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
+import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 
 let config;
 try {
@@ -24,7 +25,7 @@ const commandMap = createCommandMap(commands);
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
 });
 
 client.once(Events.ClientReady, (readyClient) => {
@@ -37,10 +38,17 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
+  startActivityRuntime(readyClient, getPrismaClient());
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guildId || message.author.bot || message.webhookId) return;
+
+  try {
+    await recordMessageActivity(message, getPrismaClient());
+  } catch (error) {
+    console.error("Activity message tracking failed:", error);
+  }
 
   try {
     await handleAutoReactionMessage(message, getPrismaClient());
@@ -75,6 +83,14 @@ client.on(Events.MessageCreate, async (message) => {
     }).catch((error) => console.error("Mention intro panel failed:", error));
   }
 
+});
+
+client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
+  try {
+    await handleVoiceStateUpdate(getPrismaClient(), oldState, newState);
+  } catch (error) {
+    console.error("Activity voice tracking failed:", error);
+  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -174,9 +190,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    // Every command except the two database-free utilities receives a shared Prisma client.
+    // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
     // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
-    const needsDatabase = !["ping", "help"].includes(interaction.commandName);
+    const needsDatabase = !["ping", "help", "rank"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
     if (gameCommandNames.has(interaction.commandName) && !settings.gamesEnabled) {
