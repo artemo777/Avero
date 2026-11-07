@@ -267,7 +267,7 @@ model ActivityBoardSetting {
   voiceWeight             Float    @default(1)
   timezone                String   @default("UTC")
   weeklyResetDay          Int      @default(1)
-  updateIntervalSeconds   Int      @default(60)
+  updateIntervalSeconds   Int      @default(300)
   voiceMinParticipants    Int      @default(2)
   ignoredChannelIds       String[] @default([])
   createdAt               DateTime @default(now())
