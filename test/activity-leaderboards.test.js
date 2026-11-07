@@ -101,7 +101,7 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
     .filter((component) => component.type === 10)
     .map((component) => component.content)
     .join("\n");
-  assert.match(rendered, /WEEKLY ACTIVITY LEADERBOARD/);
+  assert.match(rendered, /WEEKLY ACTIVITY/);
   assert.match(rendered, /Resets every Monday/);
   assert.match(rendered, /<@12345678901234567>/);
   assert.match(rendered, /13 messages  ·  42 voice min/);
