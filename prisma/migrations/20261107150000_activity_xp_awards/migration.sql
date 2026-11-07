@@ -1,13 +1,11 @@
 ALTER TABLE "ActivityRewardClaim" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
-ALTER TABLE "ActivityVoiceSession"
-  ADD COLUMN "xpRemainderSeconds" INTEGER NOT NULL DEFAULT 0,
-  ADD COLUMN "xpMinutesAwarded" INTEGER NOT NULL DEFAULT 0;
-
 CREATE TABLE "ActivityXpThrottle" (
   "guildId" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
   "lastMessageXpAt" TIMESTAMP(3),
+  "voiceRemainderSeconds" INTEGER NOT NULL DEFAULT 0,
+  "voiceMinutesAwarded" INTEGER NOT NULL DEFAULT 0,
   CONSTRAINT "ActivityXpThrottle_pkey" PRIMARY KEY ("guildId", "userId")
 );
 
