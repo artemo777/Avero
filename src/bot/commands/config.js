@@ -189,7 +189,8 @@ export function buildConfigPanel(settings, guildName) {
       ],
       [
         { customId: "avero-config|activity", label: "Activity leaderboards" },
-        { customId: "avero-config|autoresponder", label: "Autoresponder" }
+        { customId: "avero-config|autoresponder", label: "Autoresponder" },
+        { customId: "avero-config|diagnostics", label: "Diagnostics" }
       ],
       [{ customId: "avero-config|profile", label: "Edit server profile" }],
       themeButtons
@@ -210,6 +211,37 @@ async function loadUploadedAvatar(attachment) {
   if (!buffer.length || buffer.length > 8 * 1024 * 1024) throw new Error("Profile artwork must be under 8 MB.");
   return buffer;
 }
+export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
+  const count = async (model, where) => typeof model?.count === "function" ? model.count({ where }) : null;
+  const [pendingXp, reviewXp, rejectedXp, rewardReview, activeRules, activity] = await Promise.all([
+    count(prisma.activityXpAward, { guildId, status: "pending" }),
+    count(prisma.activityXpAward, { guildId, status: "needs_review" }),
+    count(prisma.activityXpAward, { guildId, status: "rejected" }),
+    count(prisma.activityRewardClaim, { guildId, status: "pending_xp_review" }),
+    count(prisma.autoResponseRule, { guildId, enabled: true }),
+    prisma.activityBoardSetting?.findUnique
+      ? prisma.activityBoardSetting.findUnique({ where: { guildId } })
+      : null
+  ]);
+  const display = (value) => value === null ? "Unavailable" : value.toLocaleString("en-US");
+  return gamePayload(createGamePanel({
+    title: "Avero diagnostics",
+    eyebrow: "AVERO / CONTROL CENTER",
+    description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
+    sections: [
+      "**ENGAUGE XP DELIVERY**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
+      "**ACTIVITY REWARDS**\nClaims requiring XP review · " + display(rewardReview),
+      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules),
+      "**LEADERBOARDS**\nDaily channel · " + (activity?.dailyChannelId ? "Configured" : "Not configured") +
+        "\nWeekly channel · " + (activity?.weeklyChannelId ? "Configured" : "Not configured") +
+        "\nRefresh interval · " + (activity?.updateIntervalSeconds ?? "Default") + " sec"
+    ],
+    buttons: [{ customId: "avero-config|diagnostics-back", label: "Back to config", style: ButtonStyle.Secondary }],
+    footer: "MANAGE SERVER REQUIRED • INTERNAL SERVER HEALTH",
+    separators: true
+  }));
+}
+
 export const configCommand = Object.freeze({
   data: Object.freeze({
     name: "config",
@@ -243,6 +275,16 @@ export async function handleConfigButton(interaction, prisma) {
   const action = parts[1];
   const value = parts[2];
   if (action === "activity" || action.startsWith("activity-")) return handleActivityConfigButton(interaction, prisma);
+  if (action === "diagnostics") {
+    await interaction.deferUpdate();
+    await interaction.editReply(await buildDiagnosticsPanel(prisma, interaction.guildId, interaction.guild.name));
+    return true;
+  }
+  if (action === "diagnostics-back") {
+    const settings = await getGuildSettings(prisma, interaction.guildId);
+    await interaction.update(buildConfigPanel(settings, interaction.guild.name));
+    return true;
+  }
   if (action === "theme") {
     if (!GUILD_PROFILE_THEMES.includes(value)) {
       await interaction.reply({ content: "That profile theme is unavailable.", flags: MessageFlags.Ephemeral });
