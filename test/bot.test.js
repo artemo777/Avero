@@ -277,6 +277,11 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
+  const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
+  assert.equal(selectorRows.length, 5);
+  assert.deepEqual(selectorRows.map((row) => row.components[0].custom_id.split("|")[2]), [
+    "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"
+  ]);
 });
 
 
