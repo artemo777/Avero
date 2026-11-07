@@ -104,6 +104,12 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
     if (!PROFILE_ACCENT_COLORS.has(changes.profileAccentColor)) throw new RangeError("Choose an accent color from the Avero palette.");
     data.profileAccentColor = changes.profileAccentColor;
   }
+  if (Object.hasOwn(changes, "profileBio")) {
+    if (changes.profileBio !== null && (typeof changes.profileBio !== "string" || changes.profileBio.length > 120)) {
+      throw new RangeError("Profile bio must be 120 characters or fewer.");
+    }
+    data.profileBio = changes.profileBio === null ? null : changes.profileBio.trim();
+  }
   if (Object.hasOwn(changes, "profileBanner")) {
     if (!PROFILE_BANNERS.has(changes.profileBanner)) throw new RangeError("Choose a supported Avero banner.");
     data.profileBanner = changes.profileBanner;
