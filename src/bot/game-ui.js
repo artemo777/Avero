@@ -7,7 +7,9 @@ import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
-import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame } from "../db/member-repository.js";
+import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame, updateProfileCustomization } from "../db/member-repository.js";
+import { renderProfilePayload, PROFILE_ACCENTS, PROFILE_DECORATIONS, PROFILE_FRAME_IDS } from "./commands/profile.js";
+import { PROFILE_BANNERS } from "../../averoui/profile-card.js";
 import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
 import { WORK_JOBS } from "./work-catalog.js";
@@ -64,6 +66,7 @@ const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
 const COIN_ICON = getAssetSymbol("coin");
+const AVATAR_DECORATION_IDS = new Set(PROFILE_DECORATIONS);
 function collectibleButtonEmoji(itemId) {
   const emojis = { neon_badge: "👾", vault_badge: "🐀", starlight_badge: "📡", moonlit_token: "🛸", prism_crown: "🧪", avero_relic: "🪩" };
   return emojis[itemId] ?? "🏅";
@@ -359,6 +362,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
   const equipped = profile?.equippedBadgeItemId === item.id;
   const frameEquipped = profile?.equippedFrameItemId === item.id;
+  const avatarDecorationEquipped = profile?.equippedAvatarDecorationId === item.id;
   return gamePayload(createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
@@ -371,6 +375,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     buttons: [
       button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
       ...(owned && item.category === "badges" ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary) : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success)] :
+        owned && AVATAR_DECORATION_IDS.has(item.id) ? [avatarDecorationEquipped ? button(userId, "unequip_avatar_decoration", "Remove avatar deco", item.id, ButtonStyle.Secondary) : button(userId, "equip_avatar_decoration", "Equip avatar deco", item.id, ButtonStyle.Success)] :
         owned && item.category === "cosmetics" ? [frameEquipped ? button(userId, "unequip_frame", "Remove frame", item.id, ButtonStyle.Secondary) : button(userId, "equip_frame", "Use as frame", item.id, ButtonStyle.Success)] :
         owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
@@ -753,6 +758,71 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
     case "unequip_frame": {
       await unequipProfileFrame(prisma, interaction.guildId, interaction.user.id);
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
+    case "equip_avatar_decoration":
+    case "unequip_avatar_decoration": {
+      const itemId = parsed.action === "unequip_avatar_decoration" ? null : parsed.arg;
+      const result = await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { equippedAvatarDecorationId: itemId });
+      if (!result.updated) {
+        await interaction.reply({ content: "You can only equip an avatar decoration you own.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
+    case "profile_accent": {
+      const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
+      const current = PROFILE_ACCENTS.indexOf(profile?.profileAccentColor ?? PROFILE_ACCENTS[0]);
+      const next = PROFILE_ACCENTS[(current + 1) % PROFILE_ACCENTS.length];
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileAccentColor: next });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_banner": {
+      const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
+      const current = PROFILE_BANNERS.indexOf(profile?.profileBanner ?? "midnight");
+      const next = PROFILE_BANNERS[(current + 1) % PROFILE_BANNERS.length];
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileBanner: next });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_avatar": {
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const owned = purchases.map((purchase) => purchase.itemId).filter((id) => PROFILE_DECORATIONS.includes(id));
+      const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
+      const options = [null, ...owned];
+      const current = options.indexOf(profile?.equippedAvatarDecorationId ?? null);
+      const next = options[(current + 1) % options.length];
+      if (next && !owned.length) {
+        await interaction.reply({ content: "Unlock an avatar decoration in /shop first.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { equippedAvatarDecorationId: next });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_frame": {
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const owned = purchases.map((purchase) => purchase.itemId).filter((id) => PROFILE_FRAME_IDS.includes(id));
+      const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
+      const options = [null, ...owned];
+      const current = options.indexOf(profile?.equippedFrameItemId ?? null);
+      const next = options[(current + 1) % options.length];
+      if (next) await equipProfileFrame(prisma, interaction.guildId, interaction.user.id, next);
+      else await unequipProfileFrame(prisma, interaction.guildId, interaction.user.id);
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_badges": {
+      const purchases = await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id);
+      const owned = purchases.map((purchase) => purchase.itemId)
+        .filter((id) => SHOP_ITEMS.some((item) => item.id === id && item.category === "badges")).slice(0, 5);
+      const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
+      const current = profile?.profileShowcaseBadgeIds ?? [];
+      const same = current.length === owned.length && current.every((id, index) => id === owned[index]);
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileShowcaseBadgeIds: same ? [] : owned });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
       break;
     }
     case "buy": {
