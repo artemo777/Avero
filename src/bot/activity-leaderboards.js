@@ -48,7 +48,7 @@ export function buildActivityBoardPayload(periodType, periodKey, rows, settings)
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(body));
   container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    " -# AUTO-REFRESH · EVERY 5 MIN".trim()
+    "-# AUTO-REFRESH · EVERY 5 MIN"
   ));
   return {
     flags: MessageFlags.IsComponentsV2,
