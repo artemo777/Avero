@@ -134,6 +134,7 @@ export async function handleProfileBioModal(interaction, prisma) {
   }
   const bio = interaction.fields.getTextInputValue("bio");
   await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileBio: bio.trim() || null });
-  await interaction.update(await renderProfilePayload(prisma, interaction.guildId, interaction.user));
+  const payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+  await interaction.update({ components: payload.components, files: payload.files, attachments: [] });
   return true;
 }
