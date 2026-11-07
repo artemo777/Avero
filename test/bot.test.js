@@ -358,7 +358,8 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
     ["profile_style_select", ["frame:aurora_frame"], () => assert.equal(profile.equippedFrameItemId, "aurora_frame")],
     ["profile_style_select", ["deco:halo_ring"], () => assert.equal(profile.equippedAvatarDecorationId, "halo_ring")],
     ["profile_title_select", ["lobby_menace"], () => assert.equal(profile.equippedTitleId, "lobby_menace")],
-    ["profile_badges_select", ["neon_badge"], () => assert.deepEqual(profile.profileShowcaseBadgeIds, ["neon_badge"])]
+    ["profile_badges_select", ["neon_badge"], () => assert.deepEqual(profile.profileShowcaseBadgeIds, ["neon_badge"])],
+    ["profile_badges_select", [], () => assert.deepEqual(profile.profileShowcaseBadgeIds, [])]
   ];
   for (const [action, values, verify] of selections) {
     let response;
