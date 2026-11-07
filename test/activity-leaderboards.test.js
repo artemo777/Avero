@@ -205,7 +205,11 @@ test("voice session recovery closes missing, muted and under-populated sessions"
   const userId = "12345678901234569";
   const channelId = "12345678901234568";
   const otherId = "12345678901234570";
-  const channel = { members: new Map() };
+  const members = new Map();
+  members.filter = function (predicate) {
+    return new Map([...this.entries()].filter(([, value]) => predicate(value)));
+  };
+  const channel = { members };
   const member = { id: userId, user: { bot: false } };
   const other = { id: otherId, user: { bot: false } };
   const state = {
