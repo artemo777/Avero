@@ -19,7 +19,7 @@ model MemberProfile {
   equippedBadgeItemId String?
   equippedFrameItemId String?
   equippedTitleId     String?
-  profileAccentColor  Int      @default(9149695)
+  profileAccentColor  Int      @default(9141503)
   profileBanner       String   @default("midnight")
   profileBio          String?
   equippedAvatarDecorationId String?
