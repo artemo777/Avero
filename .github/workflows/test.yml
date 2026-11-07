@@ -13,6 +13,7 @@ jobs:
   test:
     name: Node.js ${{ matrix.node-version }} tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -41,10 +42,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Generate Prisma client
         run: npm run db:generate
       - name: Apply database migrations
         run: npm run db:migrate:deploy
+      - name: Verify migration state
+        run: npx prisma migrate status
       - name: Run test suite
         run: npm test
