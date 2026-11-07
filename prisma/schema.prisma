@@ -303,10 +303,8 @@ model ActivityVoiceSession {
   guildId            String
   userId             String
   channelId          String
-  lastSettledAt      DateTime @default(now())
-  xpRemainderSeconds Int      @default(0)
-  xpMinutesAwarded   Int      @default(0)
-  createdAt          DateTime @default(now())
+  lastSettledAt DateTime @default(now())
+  createdAt     DateTime @default(now())
 
   @@unique([guildId, userId])
 }
@@ -314,7 +312,9 @@ model ActivityVoiceSession {
 model ActivityXpThrottle {
   guildId         String
   userId          String
-  lastMessageXpAt DateTime?
+  lastMessageXpAt       DateTime?
+  voiceRemainderSeconds Int      @default(0)
+  voiceMinutesAwarded   Int      @default(0)
 
   @@id([guildId, userId])
 }
