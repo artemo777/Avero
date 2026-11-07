@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildActivityBoardPayload } from "../src/bot/activity-leaderboards.js";
+import { buildActivityBoardPayload, isActivityVoiceSessionEligible } from "../src/bot/activity-leaderboards.js";
 import {
   calculateActivityScore, getActivityPeriodKey, recordActivityMessage, settleVoiceSession,
   updateActivitySettings, upsertActivityRewardRule
@@ -198,4 +198,34 @@ test("voice XP carries sub-minute eligible time across separate sessions", async
   assert.equal(progress.voiceMinutesAwarded, 1);
   assert.equal(awards.length, 1);
   assert.equal(awards[0].dedupeKey, "voice:" + guildId + ":" + userId + ":1");
+});
+
+test("voice session recovery closes missing, muted and under-populated sessions", () => {
+  const guildId = "12345678901234567";
+  const userId = "12345678901234569";
+  const channelId = "12345678901234568";
+  const otherId = "12345678901234570";
+  const channel = { members: new Map() };
+  const member = { id: userId, user: { bot: false } };
+  const other = { id: otherId, user: { bot: false } };
+  const state = {
+    channelId, channel, member,
+    selfMute: false, serverMute: false, selfDeaf: false, serverDeaf: false
+  };
+  member.voice = state;
+  channel.members.set(userId, member);
+  channel.members.set(otherId, other);
+  const guild = { afkChannelId: null, channels: { cache: new Map([[channelId, channel]]) } };
+  const client = { guilds: { cache: new Map([[guildId, guild]]) } };
+  const session = { guildId, userId, channelId };
+  const settings = { voiceMinParticipants: 2, ignoredChannelIds: [] };
+  assert.equal(isActivityVoiceSessionEligible(client, session, settings), true);
+  channel.members.delete(otherId);
+  assert.equal(isActivityVoiceSessionEligible(client, session, settings), false);
+  channel.members.set(otherId, other);
+  state.selfMute = true;
+  assert.equal(isActivityVoiceSessionEligible(client, session, settings), false);
+  state.selfMute = false;
+  guild.channels.cache.clear();
+  assert.equal(isActivityVoiceSessionEligible(client, session, settings), false);
 });
