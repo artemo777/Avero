@@ -8,7 +8,7 @@ import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../a
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame, updateProfileCustomization } from "../db/member-repository.js";
-import { renderProfilePayload, PROFILE_ACCENTS, PROFILE_DECORATIONS, PROFILE_FRAME_IDS } from "./commands/profile.js";
+import { renderProfilePayload, showProfileBioModal, PROFILE_ACCENTS, PROFILE_DECORATIONS, PROFILE_FRAME_IDS } from "./commands/profile.js";
 import { PROFILE_BANNERS } from "../../averoui/profile-card.js";
 import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
@@ -771,6 +771,9 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
       break;
     }
+    case "profile_bio":
+      await showProfileBioModal(interaction);
+      return true;
     case "profile_accent": {
       const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
       const current = PROFILE_ACCENTS.indexOf(profile?.profileAccentColor ?? PROFILE_ACCENTS[0]);
