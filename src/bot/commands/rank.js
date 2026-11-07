@@ -44,7 +44,7 @@ export const rankCommand = Object.freeze({
       return;
     }
     const target = interaction.options.getUser("member") ?? interaction.user;
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
     try {
       const member = await engauge.getMember(interaction.guildId, target.id);
       const stats = formatRankStats(member);
