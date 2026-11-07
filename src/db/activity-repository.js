@@ -158,19 +158,10 @@ function buildVoicePeriodBuckets(start, seconds, settings) {
 export async function settleVoiceSession(prisma, session, now = new Date(), close = false) {
   const elapsedMs = Math.max(0, Math.min(now.getTime() - session.lastSettledAt.getTime(), 120_000));
   const seconds = Math.floor(elapsedMs / 1000);
-  const priorRemainder = session.xpRemainderSeconds ?? 0;
-  const priorMinutesAwarded = session.xpMinutesAwarded ?? 0;
-  const totalXpSeconds = priorRemainder + seconds;
-  const earnedVoiceMinutes = Math.floor(totalXpSeconds / 60);
-  const nextRemainder = totalXpSeconds % 60;
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.activityVoiceSession.updateMany({
       where: { guildId: session.guildId, userId: session.userId, lastSettledAt: session.lastSettledAt },
-      data: {
-        lastSettledAt: now,
-        xpRemainderSeconds: close ? 0 : nextRemainder,
-        xpMinutesAwarded: { increment: earnedVoiceMinutes }
-      }
+      data: { lastSettledAt: now }
     });
     if (!claimed.count) return;
     if (seconds > 0) {
@@ -185,15 +176,37 @@ export async function settleVoiceSession(prisma, session, now = new Date(), clos
           });
         }
       }
-    }
-    for (let minute = 1; minute <= earnedVoiceMinutes; minute += 1) {
-      const sequence = priorMinutesAwarded + minute;
-      await tx.activityXpAward.create({
+      // Keep sub-minute eligible time across disconnects and channel changes.
+      const progress = await tx.activityXpThrottle.upsert({
+        where: { guildId_userId: { guildId: session.guildId, userId: session.userId } },
+        create: { guildId: session.guildId, userId: session.userId },
+        update: {}
+      });
+      const priorRemainder = progress.voiceRemainderSeconds ?? 0;
+      const priorMinutesAwarded = progress.voiceMinutesAwarded ?? 0;
+      const totalXpSeconds = priorRemainder + seconds;
+      const earnedVoiceMinutes = Math.floor(totalXpSeconds / 60);
+      const nextRemainder = totalXpSeconds % 60;
+      const progressClaim = await tx.activityXpThrottle.updateMany({
+        where: {
+          guildId: session.guildId, userId: session.userId,
+          voiceRemainderSeconds: priorRemainder, voiceMinutesAwarded: priorMinutesAwarded
+        },
         data: {
-          dedupeKey: "voice:" + session.id + ":" + sequence,
-          guildId: session.guildId, userId: session.userId, source: "voice", amount: 8
+          voiceRemainderSeconds: nextRemainder,
+          voiceMinutesAwarded: { increment: earnedVoiceMinutes }
         }
       });
+      if (!progressClaim.count) throw new Error("Voice XP progress changed concurrently; settlement rolled back.");
+      for (let minute = 1; minute <= earnedVoiceMinutes; minute += 1) {
+        const sequence = priorMinutesAwarded + minute;
+        await tx.activityXpAward.create({
+          data: {
+            dedupeKey: "voice:" + session.guildId + ":" + session.userId + ":" + sequence,
+            guildId: session.guildId, userId: session.userId, source: "voice", amount: 8
+          }
+        });
+      }
     }
     if (close) await tx.activityVoiceSession.deleteMany({ where: { guildId: session.guildId, userId: session.userId, lastSettledAt: now } });
   });
