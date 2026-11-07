@@ -1,6 +1,6 @@
 # Avero games and currency finish plan
 
-This roadmap keeps the games and economy focused, polished, and reliable. The currency is virtual, has no cash value, and is isolated per Discord server. Games remain free to play with no wagers.
+This roadmap keeps the games and economy focused, polished, and reliable. Currency is virtual, has no cash value, and is global per Discord member across servers. Games remain free to play with no wagers.
 
 ## Current foundation
 
@@ -24,7 +24,7 @@ Current earning rules:
 | Coinflip | +25 coins on a win | One reward every 10 minutes, shared with Guess, RPS, and Vault |
 | The Vault | +25 coins on a correct daily code | One reward every 10 minutes, shared with Guess, RPS, and Coinflip |
 
-Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`. The `/work shift` command and wallet Work button call this same transaction and share the same per-member 60-minute cooldown. The older random-reward Work button path is retired. Balance changes and purchases use the PostgreSQL transaction ledger. Purchases are unique per member and server, and balances cannot go below zero.
+Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`. The `/work shift` command and wallet Work button call this same transaction and share the same global per-member 60-minute cooldown. Balance changes and purchases use the PostgreSQL transaction ledger. Member-owned purchases and balances are global across servers, and balances cannot go below zero.
 
 ## Finish order
 
@@ -54,7 +54,7 @@ Implemented: `/scavenge` offers three themed expedition routes (Old Server Archi
 
 ### 6. Add useful currency sinks
 
-Add optional profile frames, themes, title styles, and color accents to the shop. These are cosmetic only: no pay-to-win boosts, no real-money value, and no paid entry to games.
+Implemented: owned badges and owned cosmetic collectibles can be equipped independently as a profile badge and profile frame. Equipment is global per member and can be removed from the item detail panel. Further theme and title-style options remain planned. Cosmetics never change gameplay rewards.
 
 ## Live acceptance checklist
 
@@ -72,7 +72,7 @@ After the branch stack is integrated and the database migrations are applied in 
 10. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
 11. Check coin, XP, games, coinflip, guess, RPS, and Vault leaderboards.
 12. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
-13. Repeat balance and inventory checks in a second server to confirm strict server isolation.
+13. Repeat balance and inventory checks in a second server to confirm the same global member wallet and inventory are visible there.
 
 Do not run production migrations, register global commands, deploy, or merge stacked PRs as part of this checklist without the repository owner's explicit go-ahead.
 
