@@ -299,14 +299,39 @@ model ActivityMessageReceipt {
 }
 
 model ActivityVoiceSession {
-  id            String   @id @default(cuid())
-  guildId       String
-  userId        String
-  channelId     String
-  lastSettledAt DateTime @default(now())
-  createdAt     DateTime @default(now())
+  id                 String   @id @default(cuid())
+  guildId            String
+  userId             String
+  channelId          String
+  lastSettledAt      DateTime @default(now())
+  xpRemainderSeconds Int      @default(0)
+  xpMinutesAwarded   Int      @default(0)
+  createdAt          DateTime @default(now())
 
   @@unique([guildId, userId])
+}
+
+model ActivityXpThrottle {
+  guildId         String
+  userId          String
+  lastMessageXpAt DateTime?
+
+  @@id([guildId, userId])
+}
+
+model ActivityXpAward {
+  id        String   @id @default(cuid())
+  dedupeKey String   @unique
+  guildId   String
+  userId    String
+  source    String
+  amount    Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([guildId, userId, createdAt])
 }
 
 model ActivityRewardRule {
