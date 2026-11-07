@@ -145,6 +145,16 @@ function isVoiceEligible(state, settings, guild) {
   const humans = channel?.members?.filter((member) => !member.user.bot).size ?? 0;
   return humans >= settings.voiceMinParticipants;
 }
+export function isActivityVoiceSessionEligible(client, session, settings) {
+  const guild = client.guilds.cache.get(session.guildId);
+  const channel = guild?.channels.cache.get(session.channelId);
+  const member = channel?.members?.get(session.userId);
+  const state = member?.voice;
+  return Boolean(
+    guild && channel && state?.channelId === session.channelId &&
+    isVoiceEligible(state, settings, guild)
+  );
+}
 async function syncVoiceChannel(prisma, guild, channel) {
   if (!channel) return;
   const now = new Date();
@@ -318,7 +328,16 @@ export function startActivityRuntime(client, prisma) {
   const timer = setInterval(() => {
     void (async () => {
       const sessions = await prisma.activityVoiceSession.findMany();
-      for (const session of sessions) await settleVoiceSession(prisma, session, new Date(), false);
+      const settingsByGuild = new Map();
+      for (const session of sessions) {
+        let settings = settingsByGuild.get(session.guildId);
+        if (!settings) {
+          settings = await getActivitySettings(prisma, session.guildId);
+          settingsByGuild.set(session.guildId, settings);
+        }
+        const stillEligible = isActivityVoiceSessionEligible(client, session, settings);
+        await settleVoiceSession(prisma, session, new Date(), !stillEligible);
+      }
       await deliverPendingActivityXp(prisma);
       await updateActivityBoards(client, prisma);
     })().catch((error) => console.error("Activity runtime tick failed:", error));
