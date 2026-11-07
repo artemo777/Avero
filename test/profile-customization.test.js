@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { updateProfileCustomization } from "../src/db/member-repository.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../averoui/profile-card.js";
+import { downloadProfileBanner } from "../src/bot/commands/profile.js";
 
 test("profile canvas customization persists the supported visual settings", async () => {
   let saved;
@@ -51,4 +52,50 @@ test("profile card renderer returns a PNG and exposes the supported banner prese
   assert.equal(png.toString("hex", 0, 8), "89504e470d0a1a0a");
   assert.ok(png.length > 1000);
   assert.deepEqual(PROFILE_BANNERS, ["midnight", "aurora", "sunset", "forest", "ocean", "graphite"]);
+});
+
+test("custom profile banner bytes and MIME type are persisted together", async () => {
+  let saved;
+  const bytes = Buffer.from("valid-test-image");
+  const prisma = {
+    memberProfile: {
+      upsert: async (args) => { saved = args.update; return args.update; }
+    }
+  };
+  const result = await updateProfileCustomization(prisma, "guild-1", "user-1", {
+    profileBannerImage: bytes,
+    profileBannerImageType: "image/webp"
+  });
+  assert.equal(result.updated, true);
+  assert.deepEqual(saved.profileBannerImage, bytes);
+  assert.equal(saved.profileBannerImageType, "image/webp");
+});
+
+test("custom profile banner can be cleared when switching back to a preset", async () => {
+  let saved;
+  const prisma = { memberProfile: { upsert: async (args) => { saved = args.update; return args.update; } } };
+  await updateProfileCustomization(prisma, "guild-1", "user-1", {
+    profileBanner: "aurora",
+    profileBannerImage: null,
+    profileBannerImageType: null
+  });
+  assert.equal(saved.profileBanner, "aurora");
+  assert.equal(saved.profileBannerImage, null);
+  assert.equal(saved.profileBannerImageType, null);
+});
+
+test("custom banner uploads reject non-Discord hosts and unsupported formats", async () => {
+  await assert.rejects(downloadProfileBanner({
+    url: "https://example.com/banner.png", contentType: "image/png", size: 1000
+  }), /uploaded directly to Discord/i);
+  await assert.rejects(downloadProfileBanner({
+    url: "https://cdn.discordapp.com/attachments/1/2/banner.gif", contentType: "image/gif", size: 1000
+  }), /PNG, JPEG, or WebP/i);
+});
+
+test("profile card renderer accepts a custom uploaded banner image", async () => {
+  const source = await renderProfileCard({ username: "Banner source" });
+  const card = await renderProfileCard({ username: "Custom banner", bannerImage: source });
+  assert.equal(card.toString("hex", 0, 8), "89504e470d0a1a0a");
+  assert.ok(card.length > 1000);
 });
