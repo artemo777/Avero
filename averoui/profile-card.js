@@ -45,6 +45,7 @@ export async function renderProfileCard({
   avatarUrl,
   level = 0,
   title = null,
+  bio = null,
   accentColor = 0x8b7cff,
   banner = "midnight",
   frame = null,
@@ -161,7 +162,14 @@ export async function renderProfileCard({
     ctx.fillText("No title equipped", textX + 2, 310);
   }
 
-  const statY = 390;
+  if (bio) {
+    ctx.fillStyle = "rgba(255,255,255,0.68)";
+    ctx.font = "500 18px sans-serif";
+    const safeBio = String(bio).replace(/[\\r\\n]+/g, " ").slice(0, 100);
+    ctx.fillText(safeBio, textX + 2, 350, 760);
+  }
+
+  const statY = 410;
   drawPill(ctx, textX, statY, Number(coins).toLocaleString("en-US") + " COINS", accent, 190);
   drawPill(ctx, textX + 206, statY, String(collectionCount) + " COLLECTIBLES", accent, 220);
 
