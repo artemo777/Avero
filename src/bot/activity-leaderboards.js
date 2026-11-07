@@ -265,7 +265,11 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         await engauge.getMember(guild.id, claim.userId);
         // Persist an in-flight marker before the non-idempotent API write. A crash after POST
         // must require verification rather than automatically awarding the same XP again.
-        await prisma.activityRewardClaim.update({ where: { id: claim.id }, data: { status: "xp_in_flight" } });
+        const xpClaim = await prisma.activityRewardClaim.updateMany({
+          where: { id: claim.id, status: claim.status },
+          data: { status: "xp_in_flight" }
+        });
+        if (!xpClaim.count) continue; // Another worker already owns this non-idempotent XP delivery.
         await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
         xpDelivered = true;
       } catch (error) {
