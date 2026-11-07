@@ -353,7 +353,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   };
   const user = { id: "user-1", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
   const selections = [
-    ["profile_accent_select", ["4382405"], () => assert.equal(profile.profileAccentColor, 0x42d6c5)],
+    ["profile_accent_select", ["4380357"], () => assert.equal(profile.profileAccentColor, 0x42d6c5)],
     ["profile_banner_select", ["aurora"], () => { assert.equal(profile.profileBanner, "aurora"); assert.equal(profile.profileBannerImage, null); }],
     ["profile_style_select", ["frame:aurora_frame"], () => assert.equal(profile.equippedFrameItemId, "aurora_frame")],
     ["profile_style_select", ["deco:halo_ring"], () => assert.equal(profile.equippedAvatarDecorationId, "halo_ring")],
