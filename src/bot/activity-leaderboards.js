@@ -39,7 +39,7 @@ export function buildActivityBoardPayload(periodType, periodKey, rows, settings)
   if (podium.length) sections.push(podium.join("\n"));
   if (remaining.length) sections.push("**THE RANKINGS**\n" + remaining.join("\n"));
   const body = rows.length ? sections.join("\n\n") : "-# No activity recorded yet. Be the first on the board.";
-  const container = new ContainerBuilder().setAccentColor(THEME.colors.primary);
+  const container = new ContainerBuilder().setAccentColor(0x3A3D45);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
     "## " + getAssetSymbol("brand-mark-svg") + " " + title + "\n" +
     "-# LIVE SERVER RANKING  ·  " + periodKey + "  ·  " + resetLabel
