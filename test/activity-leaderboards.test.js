@@ -21,6 +21,8 @@ test("weighted activity scoring keeps raw messages and voice separate", () => {
 test("message activity records daily and weekly rows once per Discord message", async () => {
   const receipts = new Set();
   const stats = new Map();
+  const xpAwards = [];
+  let lastMessageXpAt = null;
   const prisma = {
     activityBoardSetting: { upsert: async () => ({ timezone: "UTC", weeklyResetDay: 1, ignoredChannelIds: [] }) },
     $transaction: async (callback) => callback({
@@ -30,6 +32,18 @@ test("message activity records daily and weekly rows once per Discord message", 
           receipts.add(data.messageId);
         }
       },
+      activityXpThrottle: {
+        upsert: async () => ({}),
+        updateMany: async ({ where, data }) => {
+          const eligible = lastMessageXpAt === null || lastMessageXpAt <= where.OR[1].lastMessageXpAt.lte;
+          if (!eligible) return { count: 0 };
+          lastMessageXpAt = data.lastMessageXpAt ?? data.lastMessageXpAt;
+          // The repository writes the supplied event timestamp.
+          lastMessageXpAt = data.lastMessageXpAt;
+          return { count: 1 };
+        }
+      },
+      activityXpAward: { create: async ({ data }) => { xpAwards.push(data); } },
       activityStat: {
         upsert: async ({ where, create, update }) => {
           const key = [where.guildId_userId_periodType_periodKey.guildId, where.guildId_userId_periodType_periodKey.userId, where.guildId_userId_periodType_periodKey.periodType, where.guildId_userId_periodType_periodKey.periodKey].join(":");
@@ -45,6 +59,9 @@ test("message activity records daily and weekly rows once per Discord message", 
   assert.equal(await recordActivityMessage(prisma, message, new Date("2026-11-06T12:00:00Z")), false);
   assert.equal(stats.size, 2);
   assert.ok([...stats.values()].every((row) => row.messages === 1));
+  assert.equal(xpAwards.length, 1);
+  assert.equal(xpAwards[0].amount, 8);
+  assert.equal(xpAwards[0].source, "message");
 });
 
 test("activity settings validate weights, timezone and update intervals", async () => {
@@ -93,6 +110,7 @@ test("live leaderboard cards use a compact server-name-free layout without pingi
 
 test("voice sessions split seconds across local midnight and weekly reset boundaries", async () => {
   const rows = new Map();
+  const xpAwards = [];
   const sessionStart = new Date("2026-11-08T22:59:30.000Z"); // Sunday 23:59:30 in Stockholm
   const now = new Date("2026-11-08T23:01:30.000Z"); // Monday 00:01:30 in Stockholm
   const prisma = {
@@ -101,6 +119,7 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
       },
+      activityXpAward: { create: async ({ data }) => { xpAwards.push(data); } },
       activityBoardSetting: {
         upsert: async () => ({ timezone: "Europe/Stockholm", weeklyResetDay: 1 })
       },
@@ -115,12 +134,18 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
     })
   };
   await settleVoiceSession(prisma, {
+    id: "voice-session-1",
     guildId: "12345678901234567",
     userId: "12345678901234569",
-    lastSettledAt: sessionStart
+    lastSettledAt: sessionStart,
+    xpRemainderSeconds: 0,
+    xpMinutesAwarded: 0
   }, now, true);
   assert.equal(rows.get("daily:2026-11-08").voiceSeconds, 30);
   assert.equal(rows.get("daily:2026-11-09").voiceSeconds, 90);
   assert.equal(rows.get("weekly:2026-11-02").voiceSeconds, 30);
   assert.equal(rows.get("weekly:2026-11-09").voiceSeconds, 90);
+  assert.equal(xpAwards.length, 2);
+  assert.deepEqual(xpAwards.map((award) => award.amount), [8, 8]);
+  assert.deepEqual(xpAwards.map((award) => award.source), ["voice", "voice"]);
 });
