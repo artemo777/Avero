@@ -192,7 +192,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     // Every command except the two database-free utilities receives a shared Prisma client.
     // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
-    const needsDatabase = !["ping", "help"].includes(interaction.commandName);
+    const needsDatabase = !["ping", "help", "rank"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
     if (gameCommandNames.has(interaction.commandName) && !settings.gamesEnabled) {
