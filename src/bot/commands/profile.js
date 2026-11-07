@@ -1,10 +1,10 @@
 import {
   ActionRowBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder,
-  MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags, TextDisplayBuilder
+  MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, TextDisplayBuilder
 } from "discord.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../../../averoui/profile-card.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
-import { getMemberProfile } from "../../db/member-repository.js";
+import { getMemberProfile, updateProfileCustomization } from "../../db/member-repository.js";
 import { getMemberTitles } from "../../db/title-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { TITLE_CATALOG } from "../title-catalog.js";
@@ -46,6 +46,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     avatarUrl: target.displayAvatarURL({ extension: "png", size: 256 }),
     level: profile?.level ?? 0,
     title: equippedTitle?.name ?? null,
+    bio: profile?.profileBio ?? null,
     accentColor: accent,
     banner,
     frame: equippedFrame?.id ?? null,
@@ -75,6 +76,9 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
       profileButton(viewerId, "profile_avatar", "Avatar deco"),
       profileButton(viewerId, "profile_frame", "Frame"),
       profileButton(viewerId, "profile_badges", "Badge showcase")
+    ));
+    container.addActionRowComponents(new ActionRowBuilder().addComponents(
+      profileButton(viewerId, "profile_bio", "Edit bio")
     ));
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
       "-# Customize your canvas here · Equip titles with /titles · Collect cosmetics in /shop"
@@ -106,3 +110,30 @@ export const profileCommand = Object.freeze({
     await interaction.reply(await renderProfilePayload(prisma, interaction.guildId, target, interaction.user.id, target.id === interaction.user.id));
   }
 });
+
+export function showProfileBioModal(interaction) {
+  const input = new TextInputBuilder()
+    .setCustomId("bio")
+    .setLabel("Profile bio")
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(false)
+    .setMaxLength(120)
+    .setPlaceholder("A short line about you (120 characters max).");
+  const modal = new ModalBuilder()
+    .setCustomId("avero-profile-bio|" + interaction.user.id)
+    .setTitle("Customize your profile bio")
+    .addComponents(new ActionRowBuilder().addComponents(input));
+  return interaction.showModal(modal);
+}
+
+export async function handleProfileBioModal(interaction, prisma) {
+  const [, ownerId] = interaction.customId.split("|");
+  if (ownerId !== interaction.user.id) {
+    await interaction.reply({ content: "That profile editor belongs to another member.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  const bio = interaction.fields.getTextInputValue("bio");
+  await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileBio: bio.trim() || null });
+  await interaction.update(await renderProfilePayload(prisma, interaction.guildId, interaction.user));
+  return true;
+}
