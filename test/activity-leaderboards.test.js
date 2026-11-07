@@ -55,11 +55,13 @@ test("message activity records daily and weekly rows once per Discord message", 
   const message = { id: "message-1", guildId: "12345678901234567", channelId: "12345678901234568", author: { id: "12345678901234569", bot: false } };
   assert.equal(await recordActivityMessage(prisma, message, new Date("2026-11-06T12:00:00Z")), true);
   assert.equal(await recordActivityMessage(prisma, message, new Date("2026-11-06T12:00:00Z")), false);
+  assert.equal(await recordActivityMessage(prisma, { ...message, id: "message-2" }, new Date("2026-11-06T12:00:30Z")), true);
+  assert.equal(xpAwards.length, 1, "a second message inside 60 seconds must not grant XP");
+  assert.equal(await recordActivityMessage(prisma, { ...message, id: "message-3" }, new Date("2026-11-06T12:01:01Z")), true);
   assert.equal(stats.size, 2);
-  assert.ok([...stats.values()].every((row) => row.messages === 1));
-  assert.equal(xpAwards.length, 1);
-  assert.equal(xpAwards[0].amount, 8);
-  assert.equal(xpAwards[0].source, "message");
+  assert.ok([...stats.values()].every((row) => row.messages === 3));
+  assert.equal(xpAwards.length, 2);
+  assert.ok(xpAwards.every((award) => award.amount === 8 && award.source === "message"));
 });
 
 test("activity settings validate weights, timezone and update intervals", async () => {
