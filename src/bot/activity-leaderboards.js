@@ -74,8 +74,9 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
-export async function deliverPendingActivityXp(prisma, take = 25) {
-  if (!process.env.ENGAUGE_API_TOKEN) return 0;
+export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null) {
+  if (!apiClient && !process.env.ENGAUGE_API_TOKEN) return 0;
+  const api = apiClient ?? engauge;
   const staleBefore = new Date(Date.now() - 10 * 60_000);
   // A process that died after marking an award in-flight may have sent the POST.
   // Move it to manual review instead of risking a duplicate XP grant.
@@ -98,9 +99,9 @@ export async function deliverPendingActivityXp(prisma, take = 25) {
     let stage = "lookup";
     let status = "needs_review";
     try {
-      await engauge.getMember(award.guildId, award.userId);
+      await api.getMember(award.guildId, award.userId);
       stage = "award";
-      await engauge.addMemberXp(award.guildId, award.userId, award.amount);
+      await api.addMemberXp(award.guildId, award.userId, award.amount);
       status = "delivered";
       delivered += 1;
     } catch (error) {
