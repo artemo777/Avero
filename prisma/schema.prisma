@@ -21,6 +21,7 @@ model MemberProfile {
   equippedTitleId     String?
   profileAccentColor  Int      @default(9149695)
   profileBanner       String   @default("midnight")
+  profileBio          String?
   equippedAvatarDecorationId String?
   profileShowcaseBadgeIds String[] @default([])
   createdAt        DateTime @default(now())
