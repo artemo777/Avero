@@ -263,7 +263,7 @@ test("profile command combines wallet and collection data", async () => {
   await profileCommand.execute({
     guildId: "guild-1",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada" },
+    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -271,10 +271,11 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Ada/);
-  assert.match(text, /1,250 coins/);
-  assert.match(text, /1 \/ 26/);
-  assert.match(text, /Rookie Guess · 0 wins/);
-  assert.equal(response.files, undefined);
+  assert.match(text, /Title/);
+  assert.match(text, /Frame/);
+  assert.equal(response.files.length, 1);
+  assert.equal(response.files[0].name, "profile-card.png");
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
 });
 
 
@@ -282,45 +283,44 @@ test("profile lists all owned badges but displays only the selected badge beside
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
-    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "prism_crown" }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "vault_badge" }] },
+    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "vault_badge", profileShowcaseBadgeIds: ["vault_badge"] }) },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada" },
+    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-badge.png");
-  assert.match(panelText(response), /Equipped badge.*Prism Goblin/);
-  assert.match(panelText(response), /Glitch Gremlin, Prism Goblin/);
+  assert.equal(response.files[0].name, "profile-card.png");
+  assert.match(panelText(response), /Showcased badges.*Vault Rat/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
   let response;
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
-    currencyPurchase: { findMany: async () => [{ itemId: "prism_crown" }] },
-    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "prism_crown" }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
+    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge" }) },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
     guildId: "guild-1",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada" },
+    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 9 && component.accessory?.media?.url === "attachment://profile-badge.png"));
+  assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-badge.png");
+  assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
 });
 

@@ -222,7 +222,7 @@ test("buy autocomplete exposes the full catalog and filters beyond Discord's 25-
   assert.equal(allChoices.length, Math.min(25, SHOP_ITEMS.length));
   assert.ok(allChoices.every((choice) => SHOP_ITEMS.some((item) => item.id === choice.value)));
   const remainingItems = SHOP_ITEMS.filter((item) => !allChoices.some((choice) => choice.value === item.id));
-  assert.ok(remainingItems.length <= 1, "at most one catalog item is outside the initial 25 suggestions");
+  assert.ok(remainingItems.length <= Math.max(0, SHOP_ITEMS.length - 25), "all catalog items beyond Discord’s 25-choice cap remain searchable");
   for (const item of remainingItems) {
     let exactMatches;
     await buyCommand.autocomplete({

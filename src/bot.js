@@ -12,6 +12,7 @@ import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
 import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
+import { handleProfileBioModal } from "./bot/commands/profile.js";
 
 let config;
 try {
@@ -140,7 +141,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
       const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame", "equip_avatar_decoration", "unequip_avatar_decoration", "profile_accent", "profile_banner", "profile_avatar", "profile_frame", "profile_badges", "profile_bio"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;
@@ -153,6 +154,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } catch (error) {
       console.error("Game component failed:", error);
       const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith("avero-profile-bio|")) {
+    try {
+      if (!interaction.guildId) {
+        await interaction.reply({ content: "Profile customization is available inside a server.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      await handleProfileBioModal(interaction, getPrismaClient());
+    } catch (error) {
+      console.error("Profile bio update failed:", error);
+      const payload = { content: "Avero couldn't save your profile bio. Please try again.", flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }
