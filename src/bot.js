@@ -162,7 +162,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       await handleConfigModal(interaction, getPrismaClient());
     } catch (error) {
-      const payload = { content: "Settings could not be saved. Check the values and try again.", flags: MessageFlags.Ephemeral };
+      const message = error instanceof TypeError || error instanceof RangeError ? error.message : "Settings could not be saved. Check the values and try again.";
+      const payload = { content: message, flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }
