@@ -70,7 +70,7 @@ export const rankCommand = Object.freeze({
       });
     } catch (error) {
       const message = error?.status === 404
-        ? "That member has no Engauge rank data in this server yet."
+        ? "Engauge could not find this server or member. Make sure Engauge is installed in this server and recognizes the member."
         : "Rank data is temporarily unavailable. Check the Engauge API connection and try again.";
       await interaction.editReply({ content: message });
     }
