@@ -110,6 +110,23 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
     }
     data.profileBio = changes.profileBio === null ? null : changes.profileBio.trim();
   }
+  if (Object.hasOwn(changes, "profileBannerImage") || Object.hasOwn(changes, "profileBannerImageType")) {
+    const image = Object.hasOwn(changes, "profileBannerImage") ? changes.profileBannerImage : undefined;
+    const type = Object.hasOwn(changes, "profileBannerImageType") ? changes.profileBannerImageType : undefined;
+    if (image === null) {
+      data.profileBannerImage = null;
+      data.profileBannerImageType = null;
+    } else {
+      if (!(image instanceof Uint8Array) || image.byteLength < 1 || image.byteLength > 5 * 1024 * 1024) {
+        throw new RangeError("Profile banner images must be between 1 byte and 5 MB.");
+      }
+      if (!["image/png", "image/jpeg", "image/webp"].includes(type)) {
+        throw new TypeError("Profile banners must be PNG, JPEG, or WebP images.");
+      }
+      data.profileBannerImage = Buffer.from(image);
+      data.profileBannerImageType = type;
+    }
+  }
   if (Object.hasOwn(changes, "profileBanner")) {
     if (!PROFILE_BANNERS.has(changes.profileBanner)) throw new RangeError("Choose a supported Avero banner.");
     data.profileBanner = changes.profileBanner;

@@ -17,6 +17,7 @@ import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import { renderAchievementsPage } from "./commands/achievements.js";
 import { renderTitlesPage } from "./commands/titles.js";
+import { equipMemberTitle } from "../db/title-repository.js";
 import {
   DAILY_REWARD, DAILY_COOLDOWN_MS, SCAVENGE_COOLDOWN_MS,
   SCAVENGE_REWARD_MIN, SCAVENGE_REWARD_MAX,
@@ -769,6 +770,69 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
+      break;
+    }
+    case "profile_accent_select": {
+      if (!interaction.isStringSelectMenu()) return unavailable();
+      const color = Number(interaction.values[0]);
+      if (!PROFILE_ACCENTS.includes(color)) return unavailable();
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileAccentColor: color });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_banner_select": {
+      if (!interaction.isStringSelectMenu() || !PROFILE_BANNERS.includes(interaction.values[0])) return unavailable();
+      await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, {
+        profileBanner: interaction.values[0],
+        profileBannerImage: null,
+        profileBannerImageType: null
+      });
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_style_select": {
+      if (!interaction.isStringSelectMenu()) return unavailable();
+      const [kind, itemId] = String(interaction.values[0] ?? "").split(":");
+      if (kind === "frame") {
+        const result = itemId === "none"
+          ? (await unequipProfileFrame(prisma, interaction.guildId, interaction.user.id), { equipped: true })
+          : await equipProfileFrame(prisma, interaction.guildId, interaction.user.id, itemId);
+        if (!result.equipped) {
+          await interaction.reply({ content: "You can only equip a profile frame you own.", flags: MessageFlags.Ephemeral });
+          return true;
+        }
+      } else if (kind === "deco") {
+        const result = await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, {
+          equippedAvatarDecorationId: itemId === "none" ? null : itemId
+        });
+        if (!result.updated) {
+          await interaction.reply({ content: "You can only equip an avatar decoration you own.", flags: MessageFlags.Ephemeral });
+          return true;
+        }
+      } else return unavailable();
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_title_select": {
+      if (!interaction.isStringSelectMenu()) return unavailable();
+      const titleId = interaction.values[0] === "none" ? null : interaction.values[0];
+      const result = await equipMemberTitle(prisma, interaction.guildId, interaction.user.id, titleId);
+      if (!result.equipped) {
+        await interaction.reply({ content: "You need to unlock that title before equipping it.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
+      break;
+    }
+    case "profile_badges_select": {
+      if (!interaction.isStringSelectMenu()) return unavailable();
+      const badgeIds = interaction.values.filter((id) => id !== "none");
+      const result = await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileShowcaseBadgeIds: badgeIds });
+      if (!result.updated) {
+        await interaction.reply({ content: "You can only showcase badges you own.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
       break;
     }
     case "profile_bio":

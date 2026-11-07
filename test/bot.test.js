@@ -258,6 +258,7 @@ test("profile command combines wallet and collection data", async () => {
     currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
     memberProfile: { findUnique: async () => null },
+    memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
@@ -276,6 +277,11 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
+  const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
+  assert.equal(selectorRows.length, 5);
+  assert.deepEqual(selectorRows.map((row) => row.components[0].custom_id.split("|")[2]), [
+    "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"
+  ]);
 });
 
 
@@ -285,6 +291,7 @@ test("profile lists all owned badges but displays only the selected badge beside
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "vault_badge" }] },
     memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "vault_badge", profileShowcaseBadgeIds: ["vault_badge"] }) },
+    memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
@@ -307,6 +314,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
     memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge" }) },
+    memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
@@ -322,6 +330,53 @@ test("profile shows the actual equipped collectible artwork beside the username"
   assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
+});
+
+test("profile editor selections persist and refresh accent, banner, frame, decoration, title, and badges", async () => {
+  let profile = { profileAccentColor: 0x8b7cff, profileBanner: "midnight", profileShowcaseBadgeIds: [] };
+  const ownedIds = new Set(["halo_ring", "aurora_frame", "neon_badge"]);
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 250, dailyStreak: 2 }) },
+    currencyPurchase: {
+      findMany: async () => [...ownedIds].map((itemId) => ({ itemId })),
+      findUnique: async ({ where }) => ownedIds.has(where.guildId_userId_itemId.itemId) ? { itemId: where.guildId_userId_itemId.itemId } : null
+    },
+    currencyTransaction: { groupBy: async () => [] },
+    memberProfile: {
+      findUnique: async () => profile,
+      upsert: async ({ create, update }) => { profile = { ...create, ...profile, ...update }; return profile; }
+    },
+    memberTitle: {
+      findMany: async () => [{ titleId: "lobby_menace" }],
+      findUnique: async () => ({ titleId: "lobby_menace" })
+    }
+  };
+  const user = { id: "user-1", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
+  const selections = [
+    ["profile_accent_select", ["4380357"], () => assert.equal(profile.profileAccentColor, 0x42d6c5)],
+    ["profile_banner_select", ["aurora"], () => { assert.equal(profile.profileBanner, "aurora"); assert.equal(profile.profileBannerImage, null); }],
+    ["profile_style_select", ["frame:aurora_frame"], () => assert.equal(profile.equippedFrameItemId, "aurora_frame")],
+    ["profile_style_select", ["deco:halo_ring"], () => assert.equal(profile.equippedAvatarDecorationId, "halo_ring")],
+    ["profile_title_select", ["lobby_menace"], () => assert.equal(profile.equippedTitleId, "lobby_menace")],
+    ["profile_badges_select", ["neon_badge"], () => assert.deepEqual(profile.profileShowcaseBadgeIds, ["neon_badge"])],
+    ["profile_badges_select", [], () => assert.deepEqual(profile.profileShowcaseBadgeIds, [])]
+  ];
+  for (const [action, values, verify] of selections) {
+    let response;
+    const handled = await handleGameComponent({
+      customId: "avero|user-1|" + action,
+      user,
+      guildId: "guild-1",
+      values,
+      isStringSelectMenu: () => true,
+      update: async (payload) => { response = payload; },
+      reply: async (payload) => { response = payload; }
+    }, { prisma });
+    assert.equal(handled, true);
+    verify();
+    assert.equal(response.files[0].name, "profile-card.png");
+    assert.deepEqual(response.attachments, []);
+  }
 });
 
 test("leaderboard sorts server members by the requested category", async () => {

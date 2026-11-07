@@ -48,6 +48,7 @@ export async function renderProfileCard({
   bio = null,
   accentColor = 0x8b7cff,
   banner = "midnight",
+  bannerImage = null,
   frame = null,
   avatarDecoration = null,
   badges = [],
@@ -58,12 +59,33 @@ export async function renderProfileCard({
   const ctx = canvas.getContext("2d");
   const colors = BANNERS[banner] ?? BANNERS.midnight;
   const accent = colorHex(accentColor);
-  const bg = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  bg.addColorStop(0, colors[0]);
-  bg.addColorStop(0.55, colors[1]);
-  bg.addColorStop(1, colors[2]);
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  let customBanner = false;
+  if (bannerImage) {
+    try {
+      const image = await loadImage(Buffer.from(bannerImage));
+      if (image.width > 0 && image.height > 0 && image.width <= 4096 && image.height <= 4096) {
+        const scale = Math.max(WIDTH / image.width, HEIGHT / image.height);
+        const sourceWidth = WIDTH / scale;
+        const sourceHeight = HEIGHT / scale;
+        ctx.drawImage(image, (image.width - sourceWidth) / 2, (image.height - sourceHeight) / 2,
+          sourceWidth, sourceHeight, 0, 0, WIDTH, HEIGHT);
+        customBanner = true;
+      }
+    } catch {
+      customBanner = false;
+    }
+  }
+  if (!customBanner) {
+    const bg = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+    bg.addColorStop(0, colors[0]);
+    bg.addColorStop(0.55, colors[1]);
+    bg.addColorStop(1, colors[2]);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  } else {
+    ctx.fillStyle = "rgba(7,10,16,0.48)";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  }
 
   ctx.save();
   ctx.globalAlpha = 0.22;
