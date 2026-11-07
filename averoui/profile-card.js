@@ -188,6 +188,8 @@ export async function renderProfileCard({
   drawPill(ctx, textX, statY, Number(coins).toLocaleString("en-US") + " COINS", accent, 190);
   drawPill(ctx, textX + 206, statY, String(collectionCount) + " COLLECTIBLES", accent, 220);
 
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#f1f3f8";
   ctx.font = "700 18px sans-serif";
   ctx.fillText("BADGE SHOWCASE", 68, 505);
