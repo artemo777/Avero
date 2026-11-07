@@ -89,7 +89,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   if (new Set(customIds).size !== customIds.length) {
     throw new RangeError("Avero panel contains duplicate interactive component IDs.");
   }
-  const container = new ContainerBuilder().setAccentColor(color);
+  const container = new ContainerBuilder().setAccentColor(0x3A3D45);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# " + eyebrow + "\n## " + title + "\n" + description));
   if (separators && (sections.length || buttons.length)) container.addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small));
   for (const [index, section] of sections.entries()) {
@@ -104,7 +104,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     const sectionRow = sectionButtons[index];
     if (sectionRow?.length) {
       const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
-        const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(entry.style ?? ButtonStyle.Secondary);
+        const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(ButtonStyle.Secondary);
         if (entry.emoji) builder.setEmoji(entry.emoji);
         if (entry.disabled) builder.setDisabled(true);
         return builder;
@@ -116,7 +116,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   if (selectMenus.length) container.addActionRowComponents(...selectMenus);
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
-      const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(button.style ?? ButtonStyle.Secondary);
+      const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(ButtonStyle.Secondary);
       if (button.emoji) builder.setEmoji(button.emoji);
       if (button.disabled) builder.setDisabled(true);
       return builder;
