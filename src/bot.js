@@ -190,7 +190,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    // Every command except the two database-free utilities receives a shared Prisma client.
+    // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
     // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
     const needsDatabase = !["ping", "help", "rank"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
