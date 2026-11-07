@@ -74,8 +74,66 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
+export async function deliverPendingActivityXp(prisma, take = 25) {
+  if (!process.env.ENGAUGE_API_TOKEN) return 0;
+  const staleBefore = new Date(Date.now() - 10 * 60_000);
+  // A process that died after marking an award in-flight may have sent the POST.
+  // Move it to manual review instead of risking a duplicate XP grant.
+  await prisma.activityXpAward.updateMany({
+    where: { status: "in_flight", updatedAt: { lt: staleBefore } },
+    data: { status: "needs_review" }
+  });
+  const pending = await prisma.activityXpAward.findMany({
+    where: { status: "pending" },
+    orderBy: { createdAt: "asc" },
+    take
+  });
+  let delivered = 0;
+  for (const award of pending) {
+    const claim = await prisma.activityXpAward.updateMany({
+      where: { id: award.id, status: "pending" },
+      data: { status: "in_flight" }
+    });
+    if (!claim.count) continue;
+    let stage = "lookup";
+    let status = "needs_review";
+    try {
+      await engauge.getMember(award.guildId, award.userId);
+      stage = "award";
+      await engauge.addMemberXp(award.guildId, award.userId, award.amount);
+      status = "delivered";
+      delivered += 1;
+    } catch (error) {
+      if (error instanceof EngaugeApiError && error.committed) {
+        status = "delivered";
+        delivered += 1;
+      } else if (error instanceof EngaugeApiError && [400, 403, 404].includes(error.status)) {
+        // These responses are known not to have committed an XP write.
+        // Keep them visible for configuration/member repair, but do not hot-loop.
+        status = "rejected";
+      } else {
+        status = "needs_review";
+      }
+      console.error(
+        "Engauge activity XP " + status + " for " + award.source + " award " + award.id +
+        " during " + stage + (error?.message ? ": " + error.message : "")
+      );
+    }
+    await prisma.activityXpAward.update({
+      where: { id: award.id },
+      data: { status }
+    });
+  }
+  return delivered;
+}
 export async function recordMessageActivity(message, prisma) {
-  return recordActivityMessage(prisma, message);
+  const recorded = await recordActivityMessage(prisma, message);
+  if (recorded) {
+    void deliverPendingActivityXp(prisma).catch((error) => {
+      console.error("Engauge message XP delivery failed:", error);
+    });
+  }
+  return recorded;
 }
 function isVoiceEligible(state, settings, guild) {
   if (!state?.channelId || !state.member || state.member.user?.bot) return false;
@@ -251,6 +309,7 @@ export function startActivityRuntime(client, prisma) {
     void (async () => {
       const sessions = await prisma.activityVoiceSession.findMany();
       for (const session of sessions) await settleVoiceSession(prisma, session, new Date(), false);
+      await deliverPendingActivityXp(prisma);
       await updateActivityBoards(client, prisma);
     })().catch((error) => console.error("Activity runtime tick failed:", error));
   }, 30_000);
