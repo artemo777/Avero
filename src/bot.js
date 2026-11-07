@@ -69,7 +69,7 @@ client.on(Events.MessageCreate, async (message) => {
   }
 
   if (client.user && message.mentions.users.has(client.user.id)) {
-    const intro = new ContainerBuilder().setAccentColor(THEME.colors.primary);
+    const intro = new ContainerBuilder().setAccentColor(0x3A3D45);
     intro.addTextDisplayComponents(new TextDisplayBuilder().setContent(
       "-# AVERO • SERVER ASSISTANT\n## Hey, I'm Avero.\nGames, coins, collectibles. The good stuff.\n-# Start with **/games**, **/daily** or **/shop**."
     ));

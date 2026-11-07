@@ -3,7 +3,7 @@ const ROLE_ID = /^\d{17,20}$/;
 const DEFAULTS = Object.freeze({
   dailyChannelId: null, dailyMessageId: null, weeklyChannelId: null, weeklyMessageId: null,
   messageWeight: 1, voiceWeight: 1, timezone: "UTC", weeklyResetDay: 1,
-  updateIntervalSeconds: 60, voiceMinParticipants: 2, ignoredChannelIds: []
+  updateIntervalSeconds: 300, voiceMinParticipants: 2, ignoredChannelIds: []
 });
 function validGuildId(value) {
   if (typeof value !== "string" || !/^\d{17,20}$/.test(value)) throw new TypeError("A valid guild ID is required.");

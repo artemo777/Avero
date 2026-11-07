@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { deliverPendingActivityXp } from "../src/bot/activity-leaderboards.js";
+import { EngaugeApiError } from "../src/bot/engauge-api.js";
 
 function createPrisma(initialAward) {
   let status = "pending";
@@ -49,4 +50,24 @@ test("ambiguous Engauge failures go to manual review and are never auto-retried"
   assert.equal(getStatus(), "needs_review");
   assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
   assert.equal(writes, 1);
+});
+
+
+test("Engauge lookup 404 rejects an XP award without attempting the XP write", async () => {
+  const { prisma, getStatus } = createPrisma({
+    id: "award-404", guildId: "12345678901234567", userId: "12345678901234568",
+    source: "message", amount: 8, status: "pending"
+  });
+  let writes = 0;
+  const api = {
+    getMember: async () => {
+      throw new EngaugeApiError("Engauge API request failed (HTTP 404).", {
+        status: 404, responseBody: "Member or server not found."
+      });
+    },
+    addMemberXp: async () => { writes += 1; }
+  };
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
+  assert.equal(getStatus(), "rejected");
+  assert.equal(writes, 0);
 });

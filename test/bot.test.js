@@ -10,6 +10,7 @@ import { profileCommand } from "../src/bot/commands/profile.js";
 import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
 import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
+import { buildConfigPanel } from "../src/bot/commands/config.js";
 
 test("bot configuration requires a token without exposing its value", () => {
   assert.throws(() => loadBotConfig({}), /DISCORD_TOKEN is required/);
@@ -62,7 +63,7 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
   assert.equal(panel.type, 17);
-  assert.equal(panel.accent_color, 0x2DD4BF);
+  assert.equal(panel.accent_color, 0x3A3D45);
   assert.equal(panel.components.length, 1);
   assert.match(panel.components[0].content, /Pong/);
   assert.match(panel.components[0].content, /Interaction/);
@@ -530,4 +531,25 @@ test("title purchases return a compact ephemeral Components V2 panel", async () 
   assert.match(text, /Main Character/);
   assert.match(text, /2,500 coins/);
   assert.equal(response.embeds, undefined);
+});
+
+test("config dashboard groups compact monochrome controls inside its Components V2 container", () => {
+  const settings = {
+    gamesEnabled: true, currencyEnabled: true, dailyReward: 100,
+    workMinReward: 20, workMaxReward: 80, boosterRoleId: null,
+    funderRoleId: null, voterRoleId: null, profileName: null,
+    profileBio: null, profileTheme: "mono"
+  };
+  const payload = buildConfigPanel(settings, "Test Server");
+  assert.equal(payload.flags, MessageFlags.IsComponentsV2);
+  const panel = payload.components[0].toJSON();
+  assert.equal(panel.type, 17);
+  assert.equal(panel.accent_color, 0x3A3D45);
+  const rows = panel.components.filter((component) => component.type === 1);
+  assert.equal(rows.length, 6);
+  const buttons = rows.flatMap((row) => row.components);
+  assert.equal(buttons.length, 13);
+  assert.ok(buttons.every((button) => button.style === 2));
+  assert.ok(buttons.some((button) => button.custom_id === "avero-config|activity"));
+  assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
 });

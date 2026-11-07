@@ -32,7 +32,7 @@ test("Components V2 panels default to one compact text display", () => {
   const payload = panel.toJSON();
 
   assert.equal(payload.type, 17);
-  assert.equal(payload.accent_color, THEME.colors.success);
+  assert.equal(payload.accent_color, 0x3A3D45);
   assert.equal(payload.components.length, 1);
   assert.equal(payload.components[0].type, 10);
   assert.match(payload.components[0].content, /Ready/);

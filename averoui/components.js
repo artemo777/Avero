@@ -47,7 +47,7 @@ export function createPanel({
     throw new TypeError("A panel must contain at least one text block.");
   }
 
-  const container = new ContainerBuilder().setAccentColor(accentColor);
+  const container = new ContainerBuilder().setAccentColor(0x3A3D45);
   const blocks = [];
   if (safeEyebrow) blocks.push("-# " + safeEyebrow);
   if (safeTitle) blocks.push("## " + safeTitle);
