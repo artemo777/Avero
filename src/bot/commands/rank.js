@@ -1,5 +1,9 @@
-import { MessageFlags } from "discord.js";
-import { createGamePanel, gamePayload } from "../game-ui.js";
+import {
+  AttachmentBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags,
+  SectionBuilder, TextDisplayBuilder, ThumbnailBuilder
+} from "discord.js";
+import { renderRankCard } from "../../../averoui/rank-card.js";
+import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
 import { createEngaugeClient } from "../engauge-api.js";
 
 const engauge = createEngaugeClient();
@@ -18,15 +22,47 @@ export function formatRankStats(member) {
   const filled = Math.round(progress * 12);
   const bar = "▰".repeat(filled) + "▱".repeat(12 - filled);
   return {
-    level,
-    xp,
-    messages,
-    voiceMinutes,
+    level, xp, messages, voiceMinutes,
     progressPercent: Math.round(progress * 100),
     progressBar: bar,
     nextLevelXp
   };
 }
+
+export async function buildRankPayload(target, member, { levelUp = false, previousLevel = null } = {}) {
+  const stats = formatRankStats(member);
+  const card = await renderRankCard({
+    username: target.globalName ?? target.username,
+    avatarUrl: target.displayAvatarURL?.({ extension: "png", size: 256 }) ?? null,
+    ...stats
+  });
+  const professor = await renderRegisteredAsset("mascot-professor", 64);
+  const heading = levelUp
+    ? "## LEVEL UP · " + previousLevel + " → " + stats.level
+    : "## " + (target.globalName ?? target.username) + " · Rank";
+  const container = new (await import("discord.js")).ContainerBuilder().setAccentColor(0x3A3D45);
+  container.addSectionComponents(new SectionBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(
+      "-# AVERO / LEVELING\n" + heading
+    ))
+    .setThumbnailAccessory(new ThumbnailBuilder().setURL("attachment://avero-professor.png")));
+  container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
+    new MediaGalleryItemBuilder().setURL("attachment://rank-card.png").setDescription("Avero compact rank card")
+  ));
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
+    "-# " + (levelUp ? "KEEP GOING · NEXT LEVEL AWAITS" : "LEVELS & XP POWERED BY ENGAUGE")
+  ));
+  return {
+    flags: MessageFlags.IsComponentsV2,
+    components: [container],
+    files: [
+      new AttachmentBuilder(card, { name: "rank-card.png" }),
+      new AttachmentBuilder(professor, { name: "avero-professor.png" })
+    ],
+    allowedMentions: { parse: [] }
+  };
+}
+
 export const rankCommand = Object.freeze({
   data: Object.freeze({
     name: "rank",
@@ -47,27 +83,7 @@ export const rankCommand = Object.freeze({
     await interaction.deferReply();
     try {
       const member = await engauge.getMember(interaction.guildId, target.id);
-      const stats = formatRankStats(member);
-      const description = [
-        "**LEVEL** · " + stats.level,
-        "**TOTAL XP** · " + stats.xp.toLocaleString("en-US"),
-        stats.nextLevelXp > 0
-          ? stats.progressBar + "  " + stats.progressPercent + "% to next level · " + stats.nextLevelXp.toLocaleString("en-US") + " XP"
-          : "Maximum level progress unavailable",
-        "",
-        "**MESSAGES SENT** · " + stats.messages.toLocaleString("en-US"),
-        "**VOICE TIME** · " + stats.voiceMinutes.toLocaleString("en-US") + " minutes"
-      ].join("\n");
-      await interaction.editReply({
-        ...gamePayload(createGamePanel({
-          title: target.username + " · Rank",
-          eyebrow: "AVERO / LEVELING",
-          description,
-          footer: "LEVELS & XP POWERED BY ENGAUGE",
-          separators: true
-        })),
-        allowedMentions: { parse: [] }
-      });
+      await interaction.editReply(await buildRankPayload(target, member));
     } catch (error) {
       const message = error?.status === 404
         ? "Engauge could not find this server or member. Make sure Engauge is installed in this server and recognizes the member."
