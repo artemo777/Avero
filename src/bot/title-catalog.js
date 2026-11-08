@@ -10,7 +10,15 @@ export const TITLE_CATALOG = Object.freeze([
   Object.freeze({ id: "main_character", name: "Main Character", description: "A little dramatic. A lot iconic.", price: 2500 }),
   Object.freeze({ id: "professional_yapper", name: "Professional Yapper", description: "Has something to say. Always.", price: 1800 }),
   Object.freeze({ id: "low_battery_legend", name: "Low Battery Legend", description: "Running on 2% and pure confidence.", price: 1200 }),
-  Object.freeze({ id: "button_masher", name: "Professional Button Masher", description: "The button was asking for it.", price: 2200 })
+  Object.freeze({ id: "button_masher", name: "Professional Button Masher", description: "The button was asking for it.", price: 2200 }),
+  Object.freeze({ id: "fresh_spawn", name: "Fresh Spawn", description: "New here. Already iconic.", price: 100 }),
+  Object.freeze({ id: "side_quester", name: "Side Quester", description: "Main story? Never heard of it.", price: 250 }),
+  Object.freeze({ id: "tiny_legend", name: "Tiny Legend", description: "Small title. Big energy.", price: 400 }),
+  Object.freeze({ id: "snack_break", name: "Snack Break", description: "Temporarily unavailable. Snacks.", price: 550 }),
+  Object.freeze({ id: "pixel_pioneer", name: "Pixel Pioneer", description: "Exploring one pixel at a time.", price: 800 }),
+  Object.freeze({ id: "certified_cozy", name: "Certified Cozy", description: "Comfort is a competitive advantage.", price: 950 }),
+  Object.freeze({ id: "blue_hour", name: "Blue Hour", description: "Avero after dark.", price: 1400 }),
+  Object.freeze({ id: "archive_ghost", name: "Archive Ghost", description: "A familiar presence in forgotten places.", price: 1750 })
 ]);
 
 export function getEligibleMilestoneTitles(stats, completedSets) {
