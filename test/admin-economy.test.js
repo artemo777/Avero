@@ -38,6 +38,7 @@ function fakePrisma() {
       async create({ data }) { purchases.set(composite(data), data); },
       async delete({ where }) { purchases.delete(composite(where.guildId_userId_itemId)); }
     },
+    memberProfile: { async findUnique() { return null; } },
     currencyTransaction: { async create({ data }) { transactions.push(data); } },
     adminEconomyAudit: { async create({ data }) { audits.push(data); } }
   };
