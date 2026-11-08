@@ -66,9 +66,11 @@ export async function renderRankCard({
 
   const name = String(username).slice(0, 42);
   ctx.fillStyle = "#f7f8fc";
-  ctx.font = "700 54px sans-serif";
-  while (ctx.measureText(name).width > 800 && parseInt(ctx.font, 10) > 28) {
-    ctx.font = "700 " + (parseInt(ctx.font, 10) - 2) + "px sans-serif";
+  let nameSize = 54;
+  ctx.font = "700 " + nameSize + "px sans-serif";
+  while (ctx.measureText(name).width > 800 && nameSize > 28) {
+    nameSize -= 2;
+    ctx.font = "700 " + nameSize + "px sans-serif";
   }
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(name, 300, 178, 820);
