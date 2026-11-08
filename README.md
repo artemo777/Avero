@@ -204,7 +204,9 @@ Reward claims are unique per guild, period, period key, and placement. Coin rewa
 
 Avero stores XP, level, lifetime message count, and lifetime voice seconds in its own global `MemberProfile` records. Engauge is used only by the one-time importer and is not contacted by the running bot.
 
-1. Apply the database migration with `npm run db:migrate:deploy`.
+Stop the Avero bot while importing so new activity cannot race with the snapshot import. Do not paste the API token into chat or commit it.
+
+1. Regenerate Prisma and apply the database migration with `npm run db:generate && npm run db:migrate:deploy`.
 2. Temporarily set `ENGAUGE_API_TOKEN` and `ENGAUGE_SERVER_ID` in the migration environment. The token must be authorized to read the old server's member list.
 3. Run `npm run import:engauge`. The importer reads every available member page and imports XP, level, messages, and voice seconds by Discord user ID. It refuses to overwrite a completed import marker for the same server.
 4. Verify several member ranks and the XP/message/voice leaderboards in Discord.
