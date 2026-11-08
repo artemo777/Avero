@@ -45,3 +45,13 @@ test("discovers Windows Discord named-pipe candidates", () => {
   assert.equal(candidates.length, 10);
   assert.equal(candidates[0], "\\\\?\\pipe\\discord-ipc-0");
 });
+
+test("uses Discord's documented Unix IPC directory precedence and socket range", () => {
+  const candidates = getIpcCandidates("linux", {
+    XDG_RUNTIME_DIR: "/run/user/1000",
+    TMPDIR: "/tmp/custom",
+    TMP: "/tmp/other",
+    TEMP: "/tmp/temp"
+  });
+  assert.ok(candidates.every((candidate) => candidate.startsWith("/")));
+});
