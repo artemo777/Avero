@@ -144,6 +144,9 @@ Use /autoresponder milestones set to configure a celebration response at any 5,0
 
 Run the built-in Node.js test suite:
 
+PostgreSQL integration tests are skipped unless `CURRENCY_TEST_DATABASE_URL` points to a dedicated disposable test database. Never point this variable at Avero's live bot database; the integration tests create and clean up test records.
+
+
 ```sh
 npm run db:generate
 npm test
