@@ -1,5 +1,5 @@
 import {
-  AttachmentBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags,
+  AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags,
   SectionBuilder, TextDisplayBuilder, ThumbnailBuilder
 } from "discord.js";
 import { renderRankCard } from "../../../averoui/rank-card.js";
@@ -40,7 +40,7 @@ export async function buildRankPayload(target, member, { levelUp = false, previo
   const heading = levelUp
     ? "## LEVEL UP · " + previousLevel + " → " + stats.level
     : "## " + (target.globalName ?? target.username) + " · Rank";
-  const container = new (await import("discord.js")).ContainerBuilder().setAccentColor(0x3A3D45);
+  const container = new ContainerBuilder().setAccentColor(0x3A3D45);
   container.addSectionComponents(new SectionBuilder()
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(
       "-# AVERO / LEVELING\n" + heading
