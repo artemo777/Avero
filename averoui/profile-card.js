@@ -121,7 +121,9 @@ export async function renderProfileCard({
   const frameColors = {
     aurora_frame: "#70e4d0", nebula_cape: "#bd9cff", moonlit_token: "#9bd5ff",
     prism_crown: "#f3d477", pixel_cape: "#a8b7ff", cloud_specs: "#d5e8ff",
-    comet_trail: "#ffad82", mossy_mug: "#9bd29c", paper_crown: "#e8d7a6"
+    comet_trail: "#ffad82", mossy_mug: "#9bd29c", paper_crown: "#e8d7a6",
+    blueprint_frame: "#74baff", mono_frame: "#aeb5c0", chibi_frame: "#78b8ff",
+    cobalt_frame: "#4c9dff", frost_frame: "#b7e4ff", ember_frame: "#ff986c", starlight_frame: "#b8a7ff"
   };
   ctx.strokeStyle = frame ? (frameColors[frame] ?? accent) : accent;
   ctx.lineWidth = frame ? 13 : 7;
