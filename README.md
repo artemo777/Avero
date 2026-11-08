@@ -210,6 +210,7 @@ Stop the Avero bot while importing so new activity cannot race with the snapshot
 2. Temporarily set `ENGAUGE_API_TOKEN` and `ENGAUGE_SERVER_ID` in the migration environment. The token must be authorized to read the old server's member list.
 3. Run `npm run import:engauge`. The importer reads every available member page and imports XP, level, messages, and voice seconds by Discord user ID. It refuses to overwrite a completed import marker for the same server.
 4. Verify several member ranks and the XP/message/voice leaderboards in Discord.
-5. Remove the Engauge token and server ID from the runtime environment, then restart Avero.
+5. Run `npm run register:commands` to publish the updated rank and leaderboard descriptions/options.
+6. Remove the Engauge token and server ID from the runtime environment, then start Avero.
 
 The importer writes snapshot values rather than adding XP twice. Run it before Avero resumes activity tracking; do not rerun after new Avero XP has been earned unless you intentionally want to replace those totals. After import, Avero advances levels using 1,000-XP steps from each member's imported next-level threshold. Historical Engauge thresholds are not assumed to match Avero's progression rule.
