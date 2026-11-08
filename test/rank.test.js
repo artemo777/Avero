@@ -1,4 +1,5 @@
 import test from "node:test";
+import { MessageFlags } from "discord.js";
 import assert from "node:assert/strict";
 import { buildRankPayload, formatRankStats } from "../src/bot/commands/rank.js";
 
@@ -32,7 +33,7 @@ test("rank payload uses the compact canvas card and Professor component thumbnai
   const payload = await buildRankPayload({
     id: "12345678901234567", username: "Avero Tester", displayAvatarURL: () => null
   }, { level: 12, xp: 5400, levelXp: 8000, messages: 240, voiceSeconds: 3600 });
-  assert.equal(payload.flags, 32768);
+  assert.equal(payload.flags, MessageFlags.IsComponentsV2);
   assert.deepEqual(payload.files.map((file) => file.name).sort(), ["avero-professor.png", "rank-card.png"]);
   assert.ok(payload.components[0].toJSON().components.some((component) => component.type === 9));
   const card = payload.files.find((file) => file.name === "rank-card.png");
