@@ -2,6 +2,7 @@ import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createEngaugeClient } from "../engauge-api.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { adjustAdminCurrency, adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
+import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 
 const engauge = createEngaugeClient();
 const ACTION_CHOICES = [
@@ -57,6 +58,12 @@ export const adminCommand = Object.freeze({
         ]
       },
       {
+        type: 1, name: "inspect", description: "Inspect a member's saved wallet and inventory records.",
+        options: [
+          { type: 6, name: "member", description: "Member whose economy records to inspect.", required: true }
+        ]
+      },
+      {
         type: 1, name: "xp", description: "Grant XP through Engauge (levels update naturally).",
         options: [
           { type: 6, name: "member", description: "Member to award XP to.", required: true },
@@ -88,6 +95,25 @@ export const adminCommand = Object.freeze({
     const subcommand = interaction.options.getSubcommand();
     const target = interaction.options.getUser("member", true);
     const reason = interaction.options.getString("reason") ?? null;
+
+    if (subcommand === "inspect") {
+      const [account, purchases] = await Promise.all([
+        getCurrencyAccount(prisma, interaction.guildId, target.id),
+        getCurrencyPurchases(prisma, interaction.guildId, target.id)
+      ]);
+      const updated = account?.updatedAt
+        ? new Date(account.updatedAt).toISOString().replace("T", " ").slice(0, 16) + " UTC"
+        : "no wallet row";
+      await interaction.reply(response(
+        "**Economy records · " + target.username + "**\\n" +
+        "Coins: **" + (account?.balance ?? 0).toLocaleString("en-US") + "** · Gems: **" +
+        (account?.gemBalance ?? 0).toLocaleString("en-US") + "**\\n" +
+        "Inventory records: **" + purchases.length + "**\\n" +
+        "Wallet last updated: **" + updated + "**\\n" +
+        (account ? "Wallet row exists in the global member scope." : "No wallet row exists in the current database.")
+      ));
+      return;
+    }
 
     if (subcommand === "coins") {
       const action = interaction.options.getString("action", true);
