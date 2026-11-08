@@ -1,3 +1,5 @@
+import { applyMemberXpInTransaction } from "./xp-repository.js";
+
 const GLOBAL_SCOPE_ID = "__avero_global__";
 
 function memberKey(guildId, userId) {
@@ -68,10 +70,9 @@ export async function recordAdminXpGrant(prisma, guildId, targetUserId, actorUse
   memberKey(guildId, targetUserId);
   memberKey(guildId, actorUserId);
   requireAmount(amount);
-  await prisma.adminEconomyAudit.create({
-    data: {
-      guildId, targetUserId, actorUserId, action: "xp_add",
-      currency: "xp", amount, reason: requireReason(reason)
-    }
+  return prisma.$transaction(async (tx) => {
+    const result = await applyMemberXpInTransaction(tx, targetUserId, amount);
+    await tx.adminEconomyAudit.create({ data: { guildId, targetUserId, actorUserId, action: "xp_add", currency: "xp", amount, reason: requireReason(reason) } });
+    return result.profile;
   });
 }
