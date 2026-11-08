@@ -36,7 +36,7 @@ export const SHOP_ITEMS = Object.freeze([
   Object.freeze({ id: "golden_owl", name: "Golden Owl", category: "badges", price: 25, currency: "gems", icon: "🦉", rarity: "MYTHIC", description: "A tiny symbol of Avero wisdom." }),
   Object.freeze({ id: "archive_key", name: "Archive Key", category: "tools", price: 6, currency: "gems", icon: "🗝️", rarity: "RARE", description: "A collectible key from the old server archive." }),
   Object.freeze({ id: "coin_pouch", name: "Coin Pouch", category: "coins", price: 250, currency: "coins", icon: "👛", rarity: "COMMON", description: "A compact coin-themed collectible." }),
-  Object.freeze({ id: "mint_token", name: "Mint Token", category: "coins", price: 600, currency: "coins", icon: "🪙", rarity: "UNCOMMON", description: "A polished token for your collection." })
+  Object.freeze({ id: "mint_token", name: "Mint Token", category: "coins", price: 600, currency: "coins", icon: "🪙", rarity: "UNCOMMON", description: "A polished token for your collection." }),
   Object.freeze({ id: "starter_badge", name: "Tiny Trailblazer", category: "badges", price: 35, currency: "coins", icon: "🌱", rarity: "COMMON", description: "Your first little mark on the Avero map." }),
   Object.freeze({ id: "paper_star", name: "Paper Star", category: "badges", price: 60, currency: "coins", icon: "⭐", rarity: "COMMON", description: "Folded by hand. Shines anyway." }),
   Object.freeze({ id: "sleepy_cloud", name: "Sleepy Cloud", category: "badges", price: 90, currency: "coins", icon: "☁️", rarity: "COMMON", description: "A soft badge for low-energy legends." }),
