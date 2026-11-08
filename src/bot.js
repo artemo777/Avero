@@ -13,6 +13,7 @@ import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
 import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 import { handleProfileBioModal } from "./bot/commands/profile.js";
+import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
 
 let config;
 try {
@@ -85,6 +86,14 @@ client.on(Events.MessageCreate, async (message) => {
     }).catch((error) => console.error("Mention intro panel failed:", error));
   }
 
+});
+
+client.on(Events.MessageCreate, async (message) => {
+  try {
+    await handleAveroPrefixMessage(message, commands);
+  } catch (error) {
+    console.error("Avero prefix router failed:", error);
+  }
 });
 
 client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
