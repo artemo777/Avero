@@ -44,7 +44,6 @@ export async function adjustAdminCurrency(prisma, guildId, targetUserId, actorUs
     if (!Number.isSafeInteger(next) || next > 2_000_000_000) {
       throw new RangeError("The resulting balance would be outside the supported range.");
     }
-    const delta = next - previous;
     const where = operation === "remove" ? { ...key, [field]: { gte: amount } } : key;
     const data = operation === "add"
       ? { [field]: { increment: amount } }
