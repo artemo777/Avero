@@ -78,48 +78,19 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
 });
 
 
-test("Engauge XP leaderboard uses paginated server member data", async () => {
-  let requested;
-  let response;
-  await leaderboardCommand.execute({
-    guildId: "12345678901234567",
-    options: { getString: () => "xp" },
-    reply: async (payload) => { response = payload; }
-  }, {
-    prisma: {},
-    engaugeClient: {
-      async getAllMembers(serverId, options) {
-        requested = { serverId, options };
-        return [
-          { id: "12345678901234568", xp: "20662", level: 99 },
-          { id: "12345678901234569", xp: "15000", level: 80 }
-        ];
-      }
-    }
-  });
-  assert.deepEqual(requested, {
-    serverId: "12345678901234567",
-    options: { order: "xp", direction: "desc" }
-  });
-  assert.match(panelText(response), /<@12345678901234568> — \*\*20,662 XP\*\*/);
-  assert.match(panelText(response), /<@12345678901234569> — \*\*15,000 XP\*\*/);
+test("Avero XP leaderboard reads saved global member profiles", async () => {
+  let query, response;
+  const prisma = { memberProfile: { async findMany(args) { query = args; return [{ userId: "12345678901234568", xp: 20662, totalMessages: 12, totalVoiceSeconds: 3600 }, { userId: "12345678901234569", xp: 15000, totalMessages: 10, totalVoiceSeconds: 1800 }]; } } };
+  await leaderboardCommand.execute({ guildId: "12345678901234567", options: { getString: () => "xp" }, reply: async (payload) => { response = payload; } }, { prisma });
+  assert.equal(query.where.guildId, "__avero_global__");
+  assert.equal(query.orderBy.xp, "desc");
+  assert.match(panelText(response), /20,662 XP/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
-test("Engauge voice leaderboard displays voice minutes from server member data", async () => {
+test("Avero voice leaderboard uses persisted lifetime voice seconds", async () => {
   let response;
-  await leaderboardCommand.execute({
-    guildId: "12345678901234567",
-    options: { getString: () => "voice" },
-    reply: async (payload) => { response = payload; }
-  }, {
-    prisma: {},
-    engaugeClient: {
-      async getAllMembers(_serverId, options) {
-        assert.equal(options.order, "voice");
-        return [{ id: "12345678901234568", voiceSeconds: 7260 }];
-      }
-    }
-  });
-  assert.match(panelText(response), /2,? 121 voice minutes|121 voice minutes/);
+  const prisma = { memberProfile: { async findMany() { return [{ userId: "12345678901234568", xp: 0, totalMessages: 0, totalVoiceSeconds: 7260 }]; } } };
+  await leaderboardCommand.execute({ guildId: "12345678901234567", options: { getString: () => "voice" }, reply: async (payload) => { response = payload; } }, { prisma });
+  assert.match(panelText(response), /121 voice minutes/);
 });
