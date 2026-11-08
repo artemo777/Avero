@@ -110,19 +110,17 @@ export function createEngaugeClient({
         const page = await request("GET", "/api/v1/servers/" + server + "/members", {
           query: validateMemberQuery({ order, direction, start, limit: pageSize, name })
         });
-        if (!Array.isArray(page)) {
-          throw new Error("Engauge returned an unexpected member-list response.");
-        }
+        if (!Array.isArray(page)) throw new Error("Engauge returned an unexpected member-list response.");
+        let added = 0;
         for (const member of page) {
           const id = String(member?.id ?? "");
           if (!id || seen.has(id)) continue;
           seen.add(id);
           all.push(member);
+          added += 1;
         }
         if (page.length < pageSize) break;
-        if (all.length === 0 || page.every((member) => !member?.id || !seen.has(String(member.id)))) {
-          throw new Error("Engauge member pagination did not advance.");
-        }
+        if (added === 0) throw new Error("Engauge member pagination did not advance.");
       }
       return all;
     },
