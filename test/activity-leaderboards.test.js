@@ -26,6 +26,7 @@ test("message activity records daily and weekly rows once per Discord message", 
   const prisma = {
     activityBoardSetting: { upsert: async () => ({ timezone: "UTC", weeklyResetDay: 1, ignoredChannelIds: [] }) },
     $transaction: async (callback) => callback({
+      memberProfile: { upsert: async () => ({}) },
       activityMessageReceipt: {
         create: async ({ data }) => {
           if (receipts.has(data.messageId)) { const error = new Error("duplicate"); error.code = "P2002"; throw error; }
@@ -120,6 +121,7 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
   const now = new Date("2026-11-08T23:01:30.000Z"); // Monday 00:01:30 in Stockholm
   const prisma = {
     $transaction: async (callback) => callback({
+      memberProfile: { upsert: async () => ({}) },
       activityVoiceSession: {
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
