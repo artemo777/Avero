@@ -177,6 +177,7 @@ test("global command list includes new economy features and has no duplicate nam
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
   assert.ok(names.includes("profile"));
+  assert.ok(names.includes("rank"));
   assert.ok(names.includes("leaderboard"));
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
@@ -190,7 +191,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("autoresponder"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 26);
+  assert.equal(names.length, 27);
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
 });
