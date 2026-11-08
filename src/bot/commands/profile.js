@@ -1,9 +1,10 @@
 import {
   ActionRowBuilder, AttachmentBuilder, ContainerBuilder, MediaGalleryBuilder,
-  MediaGalleryItemBuilder, MessageFlags, ModalBuilder, StringSelectMenuBuilder,
-  TextDisplayBuilder, TextInputBuilder, TextInputStyle
+  MediaGalleryItemBuilder, MessageFlags, ModalBuilder, SectionBuilder, StringSelectMenuBuilder,
+  TextDisplayBuilder, TextInputBuilder, TextInputStyle, ThumbnailBuilder
 } from "discord.js";
 import { loadImage } from "@napi-rs/canvas";
+import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../../../averoui/profile-card.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, updateProfileCustomization } from "../../db/member-repository.js";
@@ -101,10 +102,13 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     coins: account?.balance ?? 0,
     collectionCount: ownedItems.length
   });
+  const professor = await renderRegisteredAsset("mascot-professor", 72);
   const container = new ContainerBuilder().setAccentColor(accent);
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# AVERO / PROFILE CANVAS\n## " + (target.globalName ?? target.username) + "\nA customizable snapshot of your Avero identity."
-  ));
+  container.addSectionComponents(new SectionBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(
+      "-# AVERO / PROFILE CANVAS\n## " + (target.globalName ?? target.username) + "\nA customizable snapshot of your Avero identity."
+    ))
+    .setThumbnailAccessory(new ThumbnailBuilder().setURL("attachment://avero-professor.png")));
   container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
     new MediaGalleryItemBuilder().setURL("attachment://profile-card.png").setDescription("Avero member profile card")
   ));
@@ -166,7 +170,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   return {
     flags: MessageFlags.IsComponentsV2,
     components: [container],
-    files: [new AttachmentBuilder(card, { name: "profile-card.png" })],
+    files: [new AttachmentBuilder(card, { name: "profile-card.png" }), new AttachmentBuilder(professor, { name: "avero-professor.png" })],
     allowedMentions: { parse: [] }
   };
 }
