@@ -18,7 +18,10 @@ export const TITLE_CATALOG = Object.freeze([
   Object.freeze({ id: "pixel_pioneer", name: "Pixel Pioneer", description: "Exploring one pixel at a time.", price: 800 }),
   Object.freeze({ id: "certified_cozy", name: "Certified Cozy", description: "Comfort is a competitive advantage.", price: 950 }),
   Object.freeze({ id: "blue_hour", name: "Blue Hour", description: "Avero after dark.", price: 1400 }),
-  Object.freeze({ id: "archive_ghost", name: "Archive Ghost", description: "A familiar presence in forgotten places.", price: 1750 })
+  Object.freeze({ id: "archive_ghost", name: "Archive Ghost", description: "A familiar presence in forgotten places.", price: 1750 }),
+  Object.freeze({ id: "career_pro", name: "Career Pro", description: "Completed 25 career shifts.", unlock: { stat: "workShifts", target: 25 } }),
+  Object.freeze({ id: "coin_architect", name: "Coin Architect", description: "Earned 10,000 virtual coins over time.", unlock: { stat: "lifetimeEarned", target: 10000 } }),
+  Object.freeze({ id: "arcade_regular", name: "Arcade Regular", description: "Played 50 free game rounds.", unlock: { stat: "gamesPlayed", target: 50 } })
 ]);
 
 export function getEligibleMilestoneTitles(stats, completedSets) {
