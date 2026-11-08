@@ -22,19 +22,16 @@ export function getIpcCandidates(platform = process.platform, env = process.env,
     return Array.from({ length: 10 }, (_, index) => `\\\\?\\pipe\\discord-ipc-${index}`);
   }
 
-  const candidates = [];
-  if (platform === "darwin") {
-    for (const channel of ["discord", "discordcanary", "discordptb"]) {
-      candidates.push(path.join(home, "Library", "Application Support", channel, "discord-ipc-0"));
-    }
-  } else {
-    const runtime = env.XDG_RUNTIME_DIR || (env.USER ? `/run/user/${process.getuid?.() ?? ""}` : "");
-    if (runtime) candidates.push(path.join(runtime, "discord-ipc-0"));
-    for (const channel of ["discord", "discordcanary", "discordptb", "discorddevelopment"]) {
-      candidates.push(path.join(home, ".config", channel, "discord-ipc-0"));
-    }
-    candidates.push("/tmp/discord-ipc-0");
-  }
+  const directories = [
+    env.XDG_RUNTIME_DIR,
+    env.TMPDIR,
+    env.TMP,
+    env.TEMP,
+    "/tmp"
+  ].filter(Boolean);
+  const candidates = directories.flatMap((directory) =>
+    Array.from({ length: 10 }, (_, index) => path.join(directory, `discord-ipc-${index}`))
+  );
   return [...new Set(candidates)].filter((candidate) => fs.existsSync(candidate));
 }
 
