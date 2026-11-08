@@ -188,13 +188,26 @@ npm test
 └── test/
 ```
 
-RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, and Engauge-backed leveling are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, and Avero-native leveling are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
 
 
 ## Activity leaderboards
 
-Avero can maintain two persistent server-scoped Components V2 activity boards: daily and weekly. Message activity is counted once per Discord message ID; voice time is settled from persisted sessions while a non-bot member is unmuted and undeafened in a voice channel with the configured minimum number of humans. Voice-state events do not expose actual speaking activity, so this is an eligible-presence measure rather than proof that a member is speaking. The current Engauge server rates are mirrored with **8 XP per message** (one award per member per rolling 60 seconds) and **8 XP per complete eligible voice minute**. XP awards are persisted in an outbox, delivered to Engauge, and never blindly retried after an ambiguous response.
+Avero can maintain two persistent server-scoped Components V2 activity boards: daily and weekly. Message activity is counted once per Discord message ID; voice time is settled from persisted sessions while a non-bot member is unmuted and undeafened in a voice channel with the configured minimum number of humans. Voice-state events do not expose actual speaking activity, so this is an eligible-presence measure rather than proof that a member is speaking. Avero awards **8 XP per message** (one award per member per rolling 60 seconds) and **8 XP per complete eligible voice minute**. XP awards are persisted in a local outbox and applied atomically to Avero's own PostgreSQL member profiles. Lifetime messages, voice seconds, XP, and levels are saved by Avero; Engauge is not needed at runtime.
 
 Use **/rank [member]** for an Engauge-backed level card with separate total XP, message count, and voice minutes. The existing **/leaderboard** command also offers Engauge XP, message, voice-time, and currency rankings; these read the full server member list through the paginated API. Configure the boards from /config → **Activity leaderboards**. Set each text-channel ID, weighted message and voice-minute scores, timezone, weekly reset day, voice eligibility, and placement reward rules (daily and weekly positions 1–10). Configuring channels publishes the boards; subsequent updates edit the stored messages every five minutes, and missing messages are recreated. /activity shows a compact private summary.
 
 Reward claims are unique per guild, period, period key, and placement. Coin rewards are credited to the existing global wallet and logged as currency transactions; role delivery is retried when permissions or hierarchy prevent it. XP rewards are sent directly to Engauge through its member lookup and XP-award API, so Engauge remains the source of truth for its configured level formula. Set `ENGAUGE_API_TOKEN` as a secret in the environment that actually runs `npm run bot`; Avero reads it from `process.env` at startup and logs only whether it is present, never the token. A GitHub Actions repository secret is not automatically passed to a separately hosted bot: a workflow must explicitly map it into the process environment, or the bot host must have the secret configured there. The client defaults to `https://engau.ge` and Bearer authorization, with `ENGAUGE_API_BASE_URL`, `ENGAUGE_API_AUTH_HEADER`, and `ENGAUGE_API_AUTH_SCHEME` available for deployments using a different API host or token header format. A documented Engauge HTTP 502 after the XP POST is treated as committed; ambiguous network/5xx outcomes are held for manual verification rather than automatically paid twice. Voice tracking requires the GuildVoiceStates gateway intent. Avero needs View Channel and Send Messages in each configured board channel, and Manage Server to edit activity settings.
+
+
+## Moving leveling from Engauge to Avero
+
+Avero stores XP, level, lifetime message count, and lifetime voice seconds in its own global `MemberProfile` records. Engauge is used only by the one-time importer and is not contacted by the running bot.
+
+1. Apply the database migration with `npm run db:migrate:deploy`.
+2. Temporarily set `ENGAUGE_API_TOKEN` and `ENGAUGE_SERVER_ID` in the migration environment. The token must be authorized to read the old server's member list.
+3. Run `npm run import:engauge`. The importer reads every available member page and imports XP, level, messages, and voice seconds by Discord user ID. It refuses to overwrite a completed import marker for the same server.
+4. Verify several member ranks and the XP/message/voice leaderboards in Discord.
+5. Remove the Engauge token and server ID from the runtime environment, then restart Avero.
+
+The importer writes snapshot values rather than adding XP twice. Run it before Avero resumes activity tracking; do not rerun after new Avero XP has been earned unless you intentionally want to replace those totals. After import, Avero advances levels using 1,000-XP steps from each member's imported next-level threshold. Historical Engauge thresholds are not assumed to match Avero's progression rule.
