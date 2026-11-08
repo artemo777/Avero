@@ -84,7 +84,7 @@ export async function renderRankCard({
   ctx.fillStyle = "rgba(255,255,255,0.55)";
   ctx.font = "500 17px sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText(nextLevelXp > 0 ? format(nextLevelXp) + " XP TO NEXT LEVEL" : "MAX LEVEL", 1115, 264);
+  ctx.fillText(nextLevelXp > 0 ? format(nextLevelXp) + " XP NEXT LEVEL AT" : "MAX LEVEL", 1115, 264);
 
   const barX = 302, barY = 284, barW = 810, barH = 18;
   ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 9);
