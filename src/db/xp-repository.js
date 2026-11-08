@@ -2,7 +2,7 @@ const GLOBAL_SCOPE_ID = "__avero_global__";
 const MAX_XP = 2_147_483_647;
 
 function validateMemberXp(userId, amount) {
-  if (typeof userId !== "string" || !/^\\d{17,20}$/.test(userId)) throw new TypeError("A valid Discord member ID is required.");
+  if (typeof userId !== "string" || !/^\d{17,20}$/.test(userId)) throw new TypeError("A valid Discord member ID is required.");
   if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000) throw new RangeError("XP amount must be an integer from 1 to 1,000,000.");
 }
 
