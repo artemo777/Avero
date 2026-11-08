@@ -2,7 +2,6 @@ import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createEngaugeClient } from "../engauge-api.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { adjustAdminCurrency, adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
-import { getCurrencyAccount, getCurrencyPurchases } from "../../db/currency-repository.js";
 
 const engauge = createEngaugeClient();
 const ACTION_CHOICES = [
@@ -97,20 +96,36 @@ export const adminCommand = Object.freeze({
     const reason = interaction.options.getString("reason") ?? null;
 
     if (subcommand === "inspect") {
-      const [account, purchases] = await Promise.all([
-        getCurrencyAccount(prisma, interaction.guildId, target.id),
-        getCurrencyPurchases(prisma, interaction.guildId, target.id)
+      const [accounts, purchases] = await Promise.all([
+        prisma.currencyAccount.findMany({
+          where: { userId: target.id },
+          select: { guildId: true, balance: true, gemBalance: true, updatedAt: true }
+        }),
+        prisma.currencyPurchase.findMany({
+          where: { userId: target.id },
+          select: { guildId: true, itemId: true, purchasedAt: true }
+        })
       ]);
-      const updated = account?.updatedAt
-        ? new Date(account.updatedAt).toISOString().replace("T", " ").slice(0, 16) + " UTC"
-        : "no wallet row";
+      const globalAccount = accounts.find((account) => account.guildId === "__avero_global__");
+      const globalItems = purchases.filter((item) => item.guildId === "__avero_global__");
+      const legacyWallets = accounts.filter((account) => account.guildId !== "__avero_global__");
+      const legacyItems = purchases.filter((item) => item.guildId !== "__avero_global__");
+      const updated = globalAccount?.updatedAt
+        ? new Date(globalAccount.updatedAt).toISOString().replace("T", " ").slice(0, 16) + " UTC"
+        : "no global wallet row";
       await interaction.reply(response(
         "**Economy records · " + target.username + "**\\n" +
-        "Coins: **" + (account?.balance ?? 0).toLocaleString("en-US") + "** · Gems: **" +
-        (account?.gemBalance ?? 0).toLocaleString("en-US") + "**\\n" +
-        "Inventory records: **" + purchases.length + "**\\n" +
-        "Wallet last updated: **" + updated + "**\\n" +
-        (account ? "Wallet row exists in the global member scope." : "No wallet row exists in the current database.")
+        "Global wallet: **" + (globalAccount?.balance ?? 0).toLocaleString("en-US") + "** coins · **" +
+        (globalAccount?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n" +
+        "Global inventory items: **" + globalItems.length + "**\\n" +
+        "Legacy wallet rows: **" + legacyWallets.length + "** · Legacy inventory rows: **" + legacyItems.length + "**\\n" +
+        "Global wallet last updated: **" + updated + "**\\n" +
+        (globalAccount || globalItems.length
+          ? "Global economy records exist in the active database."
+          : "No global economy records exist in the active database.") +
+        ((legacyWallets.length || legacyItems.length)
+          ? "\\nLegacy-scoped records were found. Do not delete them; they may be recoverable."
+          : "")
       ));
       return;
     }
