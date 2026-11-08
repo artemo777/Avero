@@ -70,7 +70,11 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
 });
 
 function panelText(response) {
-  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+  const collect = (components) => components.flatMap((component) => {
+    if (component.type === 10) return [component.content];
+    return component.components ? collect(component.components) : [];
+  });
+  return collect(response.components[0].toJSON().components).join("\n");
 }
 
 test("RPS is free to play and rewards wins without wagers", async () => {
@@ -274,8 +278,8 @@ test("profile command combines wallet and collection data", async () => {
   assert.match(text, /Ada/);
   assert.match(text, /Title/);
   assert.match(text, /Frame/);
-  assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-card.png");
+  assert.equal(response.files.length, 2);
+  assert.deepEqual(response.files.map((file) => file.name).sort(), ["avero-professor.png", "profile-card.png"]);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
   assert.equal(selectorRows.length, 5);
