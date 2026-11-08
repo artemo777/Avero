@@ -44,7 +44,11 @@ export async function adjustAdminCurrency(prisma, guildId, targetUserId, actorUs
     if (!Number.isSafeInteger(next) || next > 2_000_000_000) {
       throw new RangeError("The resulting balance would be outside the supported range.");
     }
-    const where = operation === "remove" ? { ...key, [field]: { gte: amount } } : key;
+    const where = operation === "remove"
+      ? { ...key, [field]: { gte: amount } }
+      : operation === "set"
+        ? { ...key, [field]: previous }
+        : key;
     const data = operation === "add"
       ? { [field]: { increment: amount } }
       : operation === "remove"
@@ -53,10 +57,15 @@ export async function adjustAdminCurrency(prisma, guildId, targetUserId, actorUs
     const changed = await tx.currencyAccount.updateMany({ where, data });
     if (changed.count !== 1) {
       const latest = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-      return { updated: false, reason: "insufficient_balance", previous: latest?.[field] ?? 0, next: latest?.[field] ?? 0 };
+      return {
+        updated: false,
+        reason: operation === "set" ? "balance_changed" : "insufficient_balance",
+        previous: latest?.[field] ?? 0,
+        next: latest?.[field] ?? 0
+      };
     }
     const updatedAccount = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-    const actualDelta = (updatedAccount?.[field] ?? next) - previous;
+    const actualDelta = operation === "add" ? amount : operation === "remove" ? -amount : amount - previous;
     await tx.currencyTransaction.create({
       data: { ...key, amount: actualDelta, currency, type: "admin_adjustment", createdAt: new Date() }
     });
