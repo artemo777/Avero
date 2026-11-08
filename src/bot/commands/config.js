@@ -229,7 +229,7 @@ export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
     eyebrow: "AVERO / CONTROL CENTER",
     description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
     sections: [
-      "**ENGAUGE XP DELIVERY**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
+      "**AVERO XP QUEUE**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
       "**ACTIVITY REWARDS**\nClaims requiring XP review · " + display(rewardReview),
       "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules),
       "**LEADERBOARDS**\nDaily channel · " + (activity?.dailyChannelId ? "Configured" : "Not configured") +
