@@ -74,3 +74,55 @@ test("Engauge client rejects unsafe inputs and missing token", async () => {
   assert.throws(() => ready.addMemberXp(serverId, memberId, 0), /XP amount/);
   assert.throws(() => ready.getMember("not-a-server", memberId), /serverId/);
 });
+
+
+test("Engauge member list uses documented sorting and paging parameters", async () => {
+  let captured;
+  const client = createEngaugeClient({
+    token: "test-token",
+    fetchImpl: async (url) => {
+      captured = new URL(url);
+      return new Response(JSON.stringify([{ id: memberId, xp: "20662", messages: 12, voiceSeconds: 3600, currency: "90" }]), { status: 200 });
+    }
+  });
+  const result = await client.getMembers(serverId, { order: "messages", direction: "asc", start: 5, limit: 20 });
+  assert.equal(result[0].id, memberId);
+  assert.equal(captured.pathname, "/api/v1/servers/" + serverId + "/members");
+  assert.equal(captured.searchParams.get("order"), "messages");
+  assert.equal(captured.searchParams.get("direction"), "asc");
+  assert.equal(captured.searchParams.get("start"), "5");
+  assert.equal(captured.searchParams.get("limit"), "20");
+});
+
+test("Engauge getAllMembers walks every page until the final partial page", async () => {
+  const starts = [];
+  const members = [
+    { id: memberId, xp: "300", level: 4 },
+    { id: "12345678901234569", xp: "200", level: 3 },
+    { id: "12345678901234570", xp: "100", level: 2 }
+  ];
+  const client = createEngaugeClient({
+    token: "test-token",
+    fetchImpl: async (url) => {
+      const parsed = new URL(url);
+      starts.push(parsed.searchParams.get("start"));
+      const start = Number(parsed.searchParams.get("start"));
+      const limit = Number(parsed.searchParams.get("limit"));
+      return new Response(JSON.stringify(members.slice(start, start + limit)), { status: 200 });
+    }
+  });
+  const result = await client.getAllMembers(serverId, { pageSize: 2, order: "xp" });
+  assert.deepEqual(starts, ["0", "2"]);
+  assert.deepEqual(result.map((member) => member.id), members.map((member) => member.id));
+});
+
+test("Engauge member pagination rejects repeated full pages instead of looping forever", async () => {
+  const client = createEngaugeClient({
+    token: "test-token",
+    fetchImpl: async () => new Response(JSON.stringify([
+      { id: memberId, xp: "100" },
+      { id: "12345678901234569", xp: "90" }
+    ]), { status: 200 })
+  });
+  await assert.rejects(client.getAllMembers(serverId, { pageSize: 2 }), /pagination did not advance/);
+});
