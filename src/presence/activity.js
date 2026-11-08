@@ -48,7 +48,7 @@ export function buildActivity(env = process.env, startedAt = Date.now()) {
 
   const buttonLabel = clean(env.AVERO_RPC_BUTTON_LABEL, 32);
   const buttonUrl = optionalUrl(env.AVERO_RPC_BUTTON_URL);
-  if (buttonLabel && buttonUrl) activity.buttons = [buttonLabel], activity.metadata = { button_urls: [buttonUrl] };
+  if (buttonLabel && buttonUrl) activity.buttons = [{ label: buttonLabel, url: buttonUrl }];
 
   return activity;
 }
