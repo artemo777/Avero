@@ -90,6 +90,19 @@ export async function adjustAdminInventory(prisma, guildId, targetUserId, actorU
     } else {
       if (!existing) return { updated: false, reason: "not_owned" };
       await tx.currencyPurchase.delete({ where: { guildId_userId_itemId: composite } });
+      const profile = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
+      if (profile) {
+        const changes = {};
+        if (profile.equippedBadgeItemId === itemId) changes.equippedBadgeItemId = null;
+        if (profile.equippedFrameItemId === itemId) changes.equippedFrameItemId = null;
+        if (profile.equippedAvatarDecorationId === itemId) changes.equippedAvatarDecorationId = null;
+        if (profile.profileShowcaseBadgeIds?.includes(itemId)) {
+          changes.profileShowcaseBadgeIds = profile.profileShowcaseBadgeIds.filter((id) => id !== itemId);
+        }
+        if (Object.keys(changes).length) {
+          await tx.memberProfile.update({ where: { guildId_userId: key }, data: changes });
+        }
+      }
     }
     await tx.adminEconomyAudit.create({
       data: { guildId, targetUserId, actorUserId, action: "item_" + operation, itemId, reason: cleanReason }
