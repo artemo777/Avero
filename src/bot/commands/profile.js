@@ -17,7 +17,8 @@ export const PROFILE_ACCENTS = Object.freeze([
 export const PROFILE_DECORATIONS = Object.freeze(["halo_ring", "orbit_spark", "pixel_wings"]);
 export const PROFILE_FRAME_IDS = Object.freeze([
   "aurora_frame", "nebula_cape", "moonlit_token", "prism_crown", "pixel_cape",
-  "cloud_specs", "comet_trail", "mossy_mug", "paper_crown"
+  "cloud_specs", "comet_trail", "mossy_mug", "paper_crown", "blueprint_frame",
+  "mono_frame", "chibi_frame", "cobalt_frame", "frost_frame", "ember_frame", "starlight_frame"
 ]);
 const ACCENT_LABELS = new Map([
   [0x8b7cff, "Violet"], [0x42d6c5, "Mint"], [0x65a9ff, "Sky"],
@@ -35,7 +36,9 @@ const PROFILE_DECORATION_NAMES = new Map([
 const PROFILE_FRAME_NAMES = new Map([
   ["aurora_frame", "Aurora Frame"], ["nebula_cape", "Nebula Cape"], ["moonlit_token", "Moonlit Token"],
   ["prism_crown", "Prism Crown"], ["pixel_cape", "Pixel Cape"], ["cloud_specs", "Cloud Specs"],
-  ["comet_trail", "Comet Trail"], ["mossy_mug", "Mossy Mug"], ["paper_crown", "Paper Crown"]
+  ["comet_trail", "Comet Trail"], ["mossy_mug", "Mossy Mug"], ["paper_crown", "Paper Crown"],
+  ["blueprint_frame", "Blueprint Frame"], ["mono_frame", "Mono Frame"], ["chibi_frame", "Professor Chibi Frame"],
+  ["cobalt_frame", "Cobalt Orbit Frame"], ["frost_frame", "Frostline Frame"], ["ember_frame", "Ember Frame"], ["starlight_frame", "Starlight Frame"]
 ]);
 
 function profileSelect(userId, action, placeholder, options, { minValues = 1, maxValues = 1, disabled = false } = {}) {
