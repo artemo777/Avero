@@ -72,8 +72,16 @@ test("rejects text, multiple emoji and malformed custom emoji", () => {
 test("does nothing on messages without actual user mentions", async () => {
   const { message, added } = makeMessage({ mentions: 0, roles: ["staff"] });
   const prisma = makePrisma({ perks: [{ roleId: "staff", emoji: "🛡️" }] });
-  assert.equal(await handleAutoReactionMessage(message, prisma), false);
+  const originalWarn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args.join(" "));
+  try {
+    assert.equal(await handleAutoReactionMessage(message, prisma), false);
+  } finally {
+    console.warn = originalWarn;
+  }
   assert.deepEqual(added, []);
+  assert.equal(warnings.length, 0);
 });
 
 test("adds every matching role emoji to a user-mention message", async () => {
@@ -125,9 +133,18 @@ test("does not add an emoji already applied by Avero", async () => {
   assert.deepEqual(added, []);
 });
 
-test("skips reaction attempts when Avero lacks Add Reactions", async () => {
+test("skips reaction attempts and reports missing Add Reactions permission", async () => {
   const { message, added } = makeMessage({ roles: ["staff"], permission: false });
   const prisma = makePrisma({ perks: [{ roleId: "staff", emoji: "🛡️" }] });
-  assert.equal(await handleAutoReactionMessage(message, prisma), false);
+  const originalWarn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args.join(" "));
+  try {
+    assert.equal(await handleAutoReactionMessage(message, prisma), false);
+  } finally {
+    console.warn = originalWarn;
+  }
   assert.deepEqual(added, []);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /needs Add Reactions/);
 });
