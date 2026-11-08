@@ -191,7 +191,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("autoresponder"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 27);
+  assert.equal(names.length, 28);
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
 });
