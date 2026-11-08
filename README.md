@@ -49,6 +49,21 @@ Avero can operate in any Discord server where it is installed and has the requir
 
 The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
 
+## Natural-language prefix and AI assistant
+
+Members can use `avero` as a message prefix as well as the existing slash commands:
+
+- `avero help` — run the regular help command.
+- `avero balance` — run the matching Avero command.
+- `avero profile @member` — pass command options as positional arguments.
+- `avero` followed by a question — ask the Gemini-powered Avero assistant for command guidance.
+
+Prefix commands are routed to the same command implementations as slash commands, with the same server feature switches and command-level permission checks. Arguments are positional; quote multi-word values, for example `avero profile bio "Hello there"`. Commands requiring interactive Discord-only inputs or complex option types may still need their slash-command form.
+
+To enable AI answers, create a Gemini API key in Google AI Studio and set `GEMINI_API_KEY` in the bot's environment (never commit the key). The default model is `gemini-3.1-flash-lite`; `GEMINI_MODEL` can override it. If no key is configured, prefix command execution and `avero help` continue to work, while natural-language questions explain that AI setup is missing.
+
+The assistant receives the member's question and Avero's public command catalogue. Do not send passwords, private member information, or sensitive server data through it. Gemini's free tier may use submitted content to improve Google's products; review Google's current API terms and pricing before enabling it for a public server.
+
 ## Included commands
 
 - `/ping` — checks interaction and gateway latency.
