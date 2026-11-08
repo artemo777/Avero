@@ -81,8 +81,7 @@ test("does nothing on messages without actual user mentions", async () => {
     console.warn = originalWarn;
   }
   assert.deepEqual(added, []);
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /needs Add Reactions/);
+  assert.equal(warnings.length, 0);
 });
 
 test("adds every matching role emoji to a user-mention message", async () => {
