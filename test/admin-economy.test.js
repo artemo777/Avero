@@ -44,7 +44,7 @@ function fakePrisma() {
     currencyTransaction: { async create({ data }) { transactions.push(data); } },
     adminEconomyAudit: { async create({ data }) { audits.push(data); } }
   };
-  return { $transaction: (fn) => fn(tx), accounts, purchases, audits, transactions, tx };
+  return { $transaction: (fn) => fn(tx), accounts, purchases, audits, transactions, adminEconomyAudit: tx.adminEconomyAudit, tx };
 }
 
 test("admin currency add, remove and set keep a signed ledger and audit record", async () => {
