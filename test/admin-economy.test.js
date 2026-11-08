@@ -25,6 +25,8 @@ function fakePrisma() {
         if (!account) return { count: 0 };
         if (where.balance?.gte !== undefined && account.balance < where.balance.gte) return { count: 0 };
         if (where.gemBalance?.gte !== undefined && account.gemBalance < where.gemBalance.gte) return { count: 0 };
+        if (typeof where.balance === "number" && account.balance !== where.balance) return { count: 0 };
+        if (typeof where.gemBalance === "number" && account.gemBalance !== where.gemBalance) return { count: 0 };
         for (const [field, value] of Object.entries(data)) {
           if (value?.increment !== undefined) account[field] += value.increment;
           else if (value?.decrement !== undefined) account[field] -= value.decrement;
