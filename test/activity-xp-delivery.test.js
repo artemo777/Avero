@@ -34,7 +34,7 @@ test("activity XP outbox marks successful Engauge awards delivered exactly once"
   };
   assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 1);
   assert.equal(getStatus(), "delivered");
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
   assert.equal(writes, 1);
 });
 
@@ -48,9 +48,9 @@ test("ambiguous Engauge failures go to manual review and are never auto-retried"
     getMember: async () => ({ level: 1 }),
     addMemberXp: async () => { writes += 1; throw new Error("connection lost after request"); }
   };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
   assert.equal(getStatus(), "needs_review");
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
   assert.equal(writes, 1);
 });
 
@@ -69,7 +69,7 @@ test("Engauge lookup 404 rejects an XP award without attempting the XP write", a
     },
     addMemberXp: async () => { writes += 1; }
   };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
   assert.equal(getStatus(), "rejected");
   assert.equal(writes, 0);
 });
