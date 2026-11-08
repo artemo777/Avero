@@ -266,6 +266,17 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
       if (!applied) continue;
       xpDelivered = true;
       nextStatus = "delivered";
+      if (applied.profile.level > applied.previousLevel && typeof guild.systemChannel?.send === "function") {
+        try {
+          const member = await guild.members.fetch(claim.userId).catch(() => null);
+          if (member) {
+            const payload = await buildRankPayload(member.user, { ...applied.profile, messages: applied.profile.totalMessages, voiceSeconds: applied.profile.totalVoiceSeconds }, { levelUp: true, previousLevel: applied.previousLevel });
+            await guild.systemChannel.send(payload);
+          }
+        } catch (notificationError) {
+          console.error("Avero activity reward level-up announcement failed for member " + claim.userId + ":", notificationError?.message ?? notificationError);
+        }
+      }
     }
     if (roleDelivered) {
       if (xpDelivered) nextStatus = "delivered";
