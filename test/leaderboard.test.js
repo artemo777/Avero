@@ -76,3 +76,50 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
   assert.match(panelText(replies[0]), /8W \/ 2L · 80% win rate/);
   assert.match(panelText(replies[1]), /2W \/ 1L \/ 1T · 50% win rate/);
 });
+
+
+test("Engauge XP leaderboard uses paginated server member data", async () => {
+  let requested;
+  let response;
+  await leaderboardCommand.execute({
+    guildId: "12345678901234567",
+    options: { getString: () => "xp" },
+    reply: async (payload) => { response = payload; }
+  }, {
+    prisma: {},
+    engaugeClient: {
+      async getAllMembers(serverId, options) {
+        requested = { serverId, options };
+        return [
+          { id: "12345678901234568", xp: "20662", level: 99 },
+          { id: "12345678901234569", xp: "15000", level: 80 }
+        ];
+      }
+    }
+  });
+  assert.deepEqual(requested, {
+    serverId: "12345678901234567",
+    options: { order: "xp", direction: "desc" }
+  });
+  assert.match(panelText(response), /<@12345678901234568> — \*\*20,662 XP\*\*/);
+  assert.match(panelText(response), /<@12345678901234569> — \*\*15,000 XP\*\*/);
+  assert.deepEqual(response.allowedMentions, { parse: [] });
+});
+
+test("Engauge voice leaderboard displays voice minutes from server member data", async () => {
+  let response;
+  await leaderboardCommand.execute({
+    guildId: "12345678901234567",
+    options: { getString: () => "voice" },
+    reply: async (payload) => { response = payload; }
+  }, {
+    prisma: {},
+    engaugeClient: {
+      async getAllMembers(_serverId, options) {
+        assert.equal(options.order, "voice");
+        return [{ id: "12345678901234568", voiceSeconds: 7260 }];
+      }
+    }
+  });
+  assert.match(panelText(response), /2,? 121 voice minutes|121 voice minutes/);
+});
