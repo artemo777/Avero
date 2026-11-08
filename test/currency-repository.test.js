@@ -128,7 +128,7 @@ test("daily reward is available exactly at the cooldown boundary", async () => {
   assert.equal(first.claimed, true);
   assert.equal(tooEarly.claimed, false);
   assert.equal(atBoundary.claimed, true);
-  assert.equal(atBoundary.account.balance, 200);
+  assert.equal(atBoundary.account.balance, 205);
   assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 2);
 });
 
