@@ -71,3 +71,26 @@ test("Engauge lookup 404 rejects an XP award without attempting the XP write", a
   assert.equal(getStatus(), "rejected");
   assert.equal(writes, 0);
 });
+
+
+test("successful XP delivery announces a level-up with the compact rank card", async () => {
+  const { prisma, getStatus } = createPrisma({
+    id: "award-level-up", guildId: "12345678901234567", userId: "12345678901234568",
+    source: "message", amount: 8, status: "pending"
+  });
+  let level = 4;
+  let announcement;
+  const api = {
+    getMember: async () => ({ level, xp: 1200, levelXp: 2000, messages: 80, voiceSeconds: 600 }),
+    addMemberXp: async () => { level = 5; }
+  };
+  const author = { id: "12345678901234568", username: "Level Tester", displayAvatarURL: () => null };
+  const message = {
+    guildId: "12345678901234567", author,
+    channel: { send: async (payload) => { announcement = payload; } }
+  };
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, message), 1);
+  assert.equal(getStatus(), "delivered");
+  assert.ok(announcement);
+  assert.deepEqual(announcement.files.map((file) => file.name).sort(), ["avero-professor.png", "rank-card.png"]);
+});
