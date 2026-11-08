@@ -128,13 +128,14 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
         const afterMember = await api.getMember(award.guildId, award.userId);
         const nextLevel = Math.floor(Number(afterMember?.level) || 0);
         if (nextLevel > previousLevel) {
+          const client = context?.guilds ? context : context?.client;
           const messageTarget = context?.guildId === award.guildId && context?.author?.id === award.userId
             ? context.channel
-            : context?.guilds?.cache?.get(award.guildId)?.systemChannel;
+            : client?.guilds?.cache?.get(award.guildId)?.systemChannel;
           if (typeof messageTarget?.send === "function") {
             const user = context?.author?.id === award.userId
               ? context.author
-              : await context?.guilds?.cache?.get(award.guildId)?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
+              : await client?.guilds?.cache?.get(award.guildId)?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
             if (user) {
               const payload = await buildRankPayload(user, afterMember, { levelUp: true, previousLevel });
               await messageTarget.send(payload);
