@@ -1,7 +1,7 @@
 import { createEngaugeClient } from "../src/bot/engauge-api.js";
 import { getPrismaClient, disconnectPrismaClient } from "../src/db/client.js";
 
-const ID = /^\\d{17,20}$/;
+const ID = /^\d{17,20}$/;
 const MAX_INT = 2_147_483_647;
 function integer(value, fallback = 0) {
   const parsed = Number(value ?? fallback);
