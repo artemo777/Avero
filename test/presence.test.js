@@ -31,8 +31,7 @@ test("only accepts HTTPS activity button URLs", () => {
     AVERO_RPC_BUTTON_LABEL: "Source code",
     AVERO_RPC_BUTTON_URL: "https://github.com/artemo777/Avero"
   });
-  assert.deepEqual(safe.buttons, ["Source code"]);
-  assert.deepEqual(safe.metadata, { button_urls: ["https://github.com/artemo777/Avero/"] });
+  assert.deepEqual(safe.buttons, [{ label: "Source code", url: "https://github.com/artemo777/Avero/" }]);
 
   const unsafe = buildActivity({
     AVERO_RPC_BUTTON_LABEL: "Open",
