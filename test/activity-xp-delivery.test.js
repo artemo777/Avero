@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { deliverPendingActivityXp } from "../src/bot/activity-leaderboards.js";
 import { EngaugeApiError } from "../src/bot/engauge-api.js";
 
+const silentLogger = { error() {}, warn() {} };
+
 function createPrisma(initialAward) {
   let status = "pending";
   const prisma = {
@@ -30,7 +32,7 @@ test("activity XP outbox marks successful Engauge awards delivered exactly once"
     getMember: async () => ({ level: 1 }),
     addMemberXp: async (_guild, _user, amount) => { writes += 1; assert.equal(amount, 8); }
   };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api), 1);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 1);
   assert.equal(getStatus(), "delivered");
   assert.equal(await deliverPendingActivityXp(prisma, 25, api), 0);
   assert.equal(writes, 1);
@@ -89,7 +91,7 @@ test("successful XP delivery announces a level-up with the compact rank card", a
     guildId: "12345678901234567", author,
     channel: { send: async (payload) => { announcement = payload; } }
   };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, message), 1);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, api, message, silentLogger), 1);
   assert.equal(getStatus(), "delivered");
   assert.ok(announcement);
   assert.deepEqual(announcement.files.map((file) => file.name).sort(), ["avero-professor.png", "rank-card.png"]);
