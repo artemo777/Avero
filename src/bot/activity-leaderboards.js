@@ -3,7 +3,7 @@ import {
 } from "discord.js";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol } from "../../averoui/assets.js";
-import { createEngaugeClient, EngaugeApiError } from "./engauge-api.js";
+import { applyMemberXpInTransaction } from "../db/xp-repository.js";
 import { buildRankPayload } from "./commands/rank.js";
 import {
   getActivitySettings, getActivityPeriodKey, getActivityRanking, recordActivityMessage,
@@ -13,7 +13,6 @@ import {
 const SYMBOLS = Object.freeze(["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ"]);
 const lastBoardUpdate = new Map();
 export const ACTIVITY_BOARD_REFRESH_INTERVAL_MS = 5 * 60_000;
-const engauge = createEngaugeClient();
 const fmt = (value) => Math.round(value).toLocaleString("en-US");
 const fmtScore = (value) => Number(value.toFixed(2)).toLocaleString("en-US", { maximumFractionDigits: 2 });
 export function buildActivityBoardPayload(periodType, periodKey, rows, settings) {
@@ -92,85 +91,36 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
-export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null, context = null, logger = console) {
-  if (!apiClient && !process.env.ENGAUGE_API_TOKEN) return 0;
-  const api = apiClient ?? engauge;
-  const staleBefore = new Date(Date.now() - 10 * 60_000);
-  // A process that died after marking an award in-flight may have sent the POST.
-  // Move it to manual review instead of risking a duplicate XP grant.
-  await prisma.activityXpAward.updateMany({
-    where: { status: "in_flight", updatedAt: { lt: staleBefore } },
-    data: { status: "needs_review" }
-  });
-  const pending = await prisma.activityXpAward.findMany({
-    where: { status: "pending" },
-    orderBy: { createdAt: "asc" },
-    take
-  });
+export async function deliverPendingActivityXp(prisma, take = 25, _unusedApiClient = null, context = null, logger = console) {
+  const pending = await prisma.activityXpAward.findMany({ where: { status: "pending" }, orderBy: { createdAt: "asc" }, take });
   let delivered = 0;
   for (const award of pending) {
-    const claim = await prisma.activityXpAward.updateMany({
-      where: { id: award.id, status: "pending" },
-      data: { status: "in_flight" }
-    });
-    if (!claim.count) continue;
-    let stage = "lookup";
-    let status = "needs_review";
     try {
-      const beforeMember = await api.getMember(award.guildId, award.userId);
-      const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
-      stage = "award";
-      await api.addMemberXp(award.guildId, award.userId, award.amount);
-      status = "delivered";
+      const result = await prisma.$transaction(async (tx) => {
+        const claim = await tx.activityXpAward.updateMany({ where: { id: award.id, status: "pending" }, data: { status: "in_flight" } });
+        if (!claim.count) return null;
+        const applied = await applyMemberXpInTransaction(tx, award.userId, award.amount);
+        await tx.activityXpAward.update({ where: { id: award.id }, data: { status: "delivered" } });
+        return applied;
+      });
+      if (!result) continue;
       delivered += 1;
-      // Level-up announcements are best-effort and never change XP delivery status.
-      try {
-        const afterMember = await api.getMember(award.guildId, award.userId);
-        const nextLevel = Math.floor(Number(afterMember?.level) || 0);
-        if (nextLevel > previousLevel) {
+      if (result.profile.level > result.previousLevel) {
+        try {
           const client = context?.guilds ? context : context?.client;
-          const messageTarget = context?.guildId === award.guildId && context?.author?.id === award.userId
-            ? context.channel
-            : client?.guilds?.cache?.get(award.guildId)?.systemChannel;
-          if (typeof messageTarget?.send === "function") {
-            const user = context?.author?.id === award.userId
-              ? context.author
-              : await client?.guilds?.cache?.get(award.guildId)?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
-            if (user) {
-              const payload = await buildRankPayload(user, afterMember, { levelUp: true, previousLevel });
-              await messageTarget.send(payload);
-            }
+          const guild = client?.guilds?.cache?.get(award.guildId);
+          const messageTarget = context?.guildId === award.guildId && context?.author?.id === award.userId ? context.channel : guild?.systemChannel;
+          const user = context?.author?.id === award.userId ? context.author : await guild?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
+          if (user && typeof messageTarget?.send === "function") {
+            const payload = await buildRankPayload(user, { ...result.profile, messages: result.profile.totalMessages, voiceSeconds: result.profile.totalVoiceSeconds }, { levelUp: true, previousLevel: result.previousLevel });
+            await messageTarget.send(payload);
           }
-        }
-      } catch (notificationError) {
-        logger.error?.("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError);
+        } catch (notificationError) { logger.error?.("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError); }
       }
     } catch (error) {
-      if (error instanceof EngaugeApiError && error.committed) {
-        status = "delivered";
-        delivered += 1;
-      } else if (error instanceof EngaugeApiError && [400, 403, 404].includes(error.status)) {
-        // These responses are known not to have committed an XP write.
-        // Keep them visible for configuration/member repair, but do not hot-loop.
-        status = "rejected";
-      } else {
-        status = "needs_review";
-      }
-      const lookupHint = stage === "lookup" && error instanceof EngaugeApiError && error.status === 404
-        ? " Engauge could not find this Discord server or member; verify that Engauge is installed in this server and recognizes this member."
-        : "";
-      const responseDetail = error instanceof EngaugeApiError && error.responseBody
-        ? " Response: " + error.responseBody
-        : "";
-      logger.error?.(
-        "Engauge activity XP " + status + " for " + award.source + " award " + award.id +
-        " during " + stage + (error?.message ? ": " + error.message : "") + lookupHint + responseDetail
-      );
+      // XP and the outbox status share one transaction, so failed writes are safe to retry.
+      logger.error?.("Avero local activity XP delivery failed for award " + award.id + ":", error?.message ?? error);
     }
-    await prisma.activityXpAward.update({
-      where: { id: award.id },
-      data: { status }
-    });
   }
   return delivered;
 }
@@ -178,7 +128,7 @@ export async function recordMessageActivity(message, prisma) {
   const recorded = await recordActivityMessage(prisma, message);
   if (recorded) {
     void deliverPendingActivityXp(prisma, 25, null, message).catch((error) => {
-      console.error("Engauge message XP delivery failed:", error);
+      console.error("Avero message XP delivery failed:", error);
     });
   }
   return recorded;
@@ -289,8 +239,7 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         where: { guildId_periodType_periodKey_position: claimKey }
       });
     }
-    if (!claim || claim.status === "delivered" || ["pending_xp_review", "xp_in_flight"].includes(claim.status) ||
-        (claim.status === "pending_xp_config" && !process.env.ENGAUGE_API_TOKEN)) continue;
+    if (!claim || claim.status === "delivered" || ["pending_xp_review", "xp_in_flight"].includes(claim.status)) continue;
     let roleDelivered = !claim.roleId;
     if (claim.roleId) {
       try {
@@ -307,57 +256,16 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
     let xpDelivered = claim.xp <= 0;
     let nextStatus = !roleDelivered ? "pending_role" : "delivered";
     if (roleDelivered && claim.xp > 0) {
-      try {
-        // Read first to validate token scope and confirm the member exists in the configured Engauge server.
-        const beforeMember = await engauge.getMember(guild.id, claim.userId);
-        // Persist an in-flight marker before the non-idempotent API write. A crash after POST
-        // must require verification rather than automatically awarding the same XP again.
-        const xpClaim = await prisma.activityRewardClaim.updateMany({
-          where: { id: claim.id, status: claim.status },
-          data: { status: "xp_in_flight" }
-        });
-        if (!xpClaim.count) continue; // Another worker already owns this non-idempotent XP delivery.
-        await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
-        xpDelivered = true;
-        try {
-          const afterMember = await engauge.getMember(guild.id, claim.userId);
-          const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
-          const nextLevel = Math.floor(Number(afterMember?.level) || 0);
-          if (nextLevel > previousLevel && typeof guild.systemChannel?.send === "function") {
-            const member = await guild.members.fetch(claim.userId).catch(() => null);
-            if (member) {
-              await guild.systemChannel.send(await buildRankPayload(member.user, afterMember, {
-                levelUp: true, previousLevel
-              }));
-            }
-          }
-        } catch (notificationError) {
-          console.error("Avero activity reward level-up announcement failed for member " + claim.userId + ":", notificationError?.message ?? notificationError);
-        }
-      } catch (error) {
-        if (error instanceof EngaugeApiError && error.committed) {
-          // Engauge explicitly documents that 502 may happen after the XP write commits.
-          xpDelivered = true;
-          console.error("Engauge reported a post-commit level-up notification failure for guild " + guild.id + ".");
-        } else if (error instanceof EngaugeApiError && error.status === 0 && /ENGAUGE_API_TOKEN/.test(error.message)) {
-          nextStatus = "pending_xp_config";
-          console.error("Engauge XP reward is waiting for ENGAUGE_API_TOKEN.");
-        } else if (error instanceof EngaugeApiError && [400, 403, 404].includes(error.status)) {
-          nextStatus = "pending_xp_retry";
-          console.error(
-            "Engauge XP reward rejected for guild " + guild.id + " (HTTP " + error.status + ")." +
-            (error.responseBody ? " Response: " + error.responseBody : "")
-          );
-        } else {
-          // Network/5xx outcomes can be ambiguous; never automatically repeat a possibly committed XP award.
-          nextStatus = "pending_xp_review";
-          console.error(
-            "Engauge XP reward needs manual verification for guild " + guild.id + ":",
-            error.message,
-            error instanceof EngaugeApiError && error.responseBody ? error.responseBody : ""
-          );
-        }
-      }
+      const applied = await prisma.$transaction(async (tx) => {
+        const xpClaim = await tx.activityRewardClaim.updateMany({ where: { id: claim.id, status: claim.status }, data: { status: "xp_in_flight" } });
+        if (!xpClaim.count) return null;
+        const result = await applyMemberXpInTransaction(tx, claim.userId, claim.xp);
+        await tx.activityRewardClaim.update({ where: { id: claim.id }, data: { status: "delivered", deliveredAt: new Date() } });
+        return result;
+      });
+      if (!applied) continue;
+      xpDelivered = true;
+      nextStatus = "delivered";
     }
     if (roleDelivered) {
       if (xpDelivered) nextStatus = "delivered";
