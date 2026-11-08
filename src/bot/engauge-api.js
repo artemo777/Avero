@@ -1,6 +1,8 @@
 const DEFAULT_BASE_URL = "https://engau.ge";
 const ID_PATTERN = /^\d{17,20}$/;
 const ERROR_BODY_LIMIT = 300;
+const MEMBER_ORDERS = new Set(["xp", "currency", "messages", "voice"]);
+const MEMBER_DIRECTIONS = new Set(["asc", "desc"]);
 
 function requireId(value, name) {
   const id = String(value ?? "");
@@ -46,10 +48,13 @@ export function createEngaugeClient({
   if (!/^https:\/\//i.test(root)) throw new TypeError("Engauge API base URL must use HTTPS.");
   if (!/^[A-Za-z0-9-]+$/.test(authHeader)) throw new TypeError("Engauge auth header name is invalid.");
 
-  async function request(method, path, { amount } = {}) {
+  async function request(method, path, { amount, query } = {}) {
     if (!apiToken) throw new EngaugeApiError("ENGAUGE_API_TOKEN is not configured.");
     const url = new URL(root + path);
     if (amount !== undefined) url.searchParams.set("amount", String(amount));
+    for (const [key, value] of Object.entries(query ?? {})) {
+      if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, String(value));
+    }
     const authValue = authScheme ? authScheme + " " + apiToken : apiToken;
     let response;
     try {
@@ -72,11 +77,52 @@ export function createEngaugeClient({
     return parseJson(response, raw);
   }
 
+  function validateMemberQuery({ order = "xp", direction = "desc", start = 0, limit = 50, name = "" } = {}) {
+    if (!MEMBER_ORDERS.has(order)) throw new TypeError("Engauge member order must be xp, currency, messages, or voice.");
+    if (!MEMBER_DIRECTIONS.has(direction)) throw new TypeError("Engauge member direction must be asc or desc.");
+    if (!Number.isSafeInteger(start) || start < 0) throw new RangeError("Engauge member start must be a non-negative integer.");
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new RangeError("Engauge member limit must be from 1 to 50.");
+    return { order, direction, start, limit, name: String(name ?? "").trim() };
+  }
+
   return Object.freeze({
     getMember(serverId, memberId) {
       const server = requireId(serverId, "serverId");
       const member = requireId(memberId, "memberId");
       return request("GET", "/api/v1/servers/" + server + "/members/" + member);
+    },
+    getMembers(serverId, options = {}) {
+      const server = requireId(serverId, "serverId");
+      const query = validateMemberQuery(options);
+      return request("GET", "/api/v1/servers/" + server + "/members", { query });
+    },
+    async getAllMembers(serverId, options = {}) {
+      const server = requireId(serverId, "serverId");
+      const { order = "xp", direction = "desc", name = "", pageSize = 50 } = options;
+      if (!MEMBER_ORDERS.has(order)) throw new TypeError("Engauge member order must be xp, currency, messages, or voice.");
+      if (!MEMBER_DIRECTIONS.has(direction)) throw new TypeError("Engauge member direction must be asc or desc.");
+      if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 50) {
+        throw new RangeError("Engauge member pageSize must be from 1 to 50.");
+      }
+      const all = [];
+      const seen = new Set();
+      for (let start = 0; ; start += pageSize) {
+        const page = await request("GET", "/api/v1/servers/" + server + "/members", {
+          query: validateMemberQuery({ order, direction, start, limit: pageSize, name })
+        });
+        if (!Array.isArray(page)) throw new Error("Engauge returned an unexpected member-list response.");
+        let added = 0;
+        for (const member of page) {
+          const id = String(member?.id ?? "");
+          if (!id || seen.has(id)) continue;
+          seen.add(id);
+          all.push(member);
+          added += 1;
+        }
+        if (page.length < pageSize) break;
+        if (added === 0) throw new Error("Engauge member pagination did not advance.");
+      }
+      return all;
     },
     addMemberXp(serverId, memberId, amount) {
       const server = requireId(serverId, "serverId");

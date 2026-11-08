@@ -39,6 +39,7 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
+  console.log("[Avero Engauge] API token configured in this runtime: " + (process.env.ENGAUGE_API_TOKEN?.trim() ? "yes" : "no"));
   startActivityRuntime(readyClient, getPrismaClient());
 });
 

@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import { renderRankCard } from "../../../averoui/rank-card.js";
 import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
-import { createEngaugeClient } from "../engauge-api.js";
+import { createEngaugeClient, EngaugeApiError } from "../engauge-api.js";
 
 const engauge = createEngaugeClient();
 const number = (value) => {
@@ -85,9 +85,13 @@ export const rankCommand = Object.freeze({
       const member = await engauge.getMember(interaction.guildId, target.id);
       await interaction.editReply(await buildRankPayload(target, member));
     } catch (error) {
-      const message = error?.status === 404
-        ? "Engauge could not find this server or member. Make sure Engauge is installed in this server and recognizes the member."
-        : "Rank data is temporarily unavailable. Check the Engauge API connection and try again.";
+      const message = error instanceof EngaugeApiError && error.status === 403
+        ? "The Engauge API token does not have access to this Discord server."
+        : error instanceof EngaugeApiError && error.status === 404
+          ? "Engauge could not find this server or member record. Check that Avero is using the correct server ID and that the member has Engauge stats."
+          : error instanceof EngaugeApiError && error.status === 0 && /ENGAUGE_API_TOKEN/.test(error.message)
+            ? "ENGAUGE_API_TOKEN is not available in Avero's running environment. Add it to the environment that starts the bot, then restart Avero."
+            : "Rank data is temporarily unavailable. Check the Engauge API connection and try again.";
       await interaction.editReply({ content: message });
     }
   }
