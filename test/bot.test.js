@@ -307,7 +307,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 1);
+  assert.equal(response.files.length, 2);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Showcased badges.*Vault Rat/);
 });
@@ -331,7 +331,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 1);
+  assert.equal(response.files.length, 2);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
 });
