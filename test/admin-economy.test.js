@@ -17,7 +17,12 @@ function fakePrisma() {
       async create({ data }) { purchases.set(composite(data), data); },
       async delete({ where }) { purchases.delete(composite(where.guildId_userId_itemId)); }
     },
-    memberProfile: { async findUnique() { return null; } },
+    memberProfile: {
+      profiles: new Map(),
+      async findUnique() { return null; },
+      async upsert({ where, create, update }) { const k = key(where.guildId_userId); const old = this.profiles.get(k); const value = old ? { ...old, xp: old.xp + update.xp.increment } : { ...create }; this.profiles.set(k, value); return { ...value }; },
+      async update({ where, data }) { const k = key(where.guildId_userId); const value = { ...this.profiles.get(k), ...data }; this.profiles.set(k, value); return { ...value }; }
+    },
     adminEconomyAudit: { async create({ data }) { audits.push(data); } }
   };
   return {
@@ -38,9 +43,10 @@ test("admin inventory grants once and removes only owned items", async () => {
   assert.equal(prisma.audits.length, 2);
 });
 
-test("admin XP audit validates the amount and stores the actor", async () => {
+test("admin XP grants update Avero profile and audit the actor", async () => {
   const prisma = fakePrisma();
-  await recordAdminXpGrant(prisma, guildId, userId, adminId, 500, "staff event");
+  const profile = await recordAdminXpGrant(prisma, guildId, userId, adminId, 500, "staff event");
+  assert.equal(profile.xp, 500);
   assert.equal(prisma.audits[0].action, "xp_add");
   assert.equal(prisma.audits[0].actorUserId, adminId);
   await assert.rejects(recordAdminXpGrant(prisma, guildId, userId, adminId, 0), /Amount/);

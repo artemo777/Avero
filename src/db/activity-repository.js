@@ -93,7 +93,12 @@ export async function recordActivityMessage(prisma, message, now = new Date()) {
           update: { messages: { increment: 1 } }
         });
       }
-      // Match Engauge's configured one-message-per-60-second XP cooldown.
+      await tx.memberProfile.upsert({
+        where: { guildId_userId: { guildId: "__avero_global__", userId: message.author.id } },
+        create: { guildId: "__avero_global__", userId: message.author.id, totalMessages: 1 },
+        update: { totalMessages: { increment: 1 } }
+      });
+      // Award 8 Avero XP for one message per rolling 60-second window.
       await tx.activityXpThrottle.upsert({
         where: { guildId_userId: { guildId: message.guildId, userId: message.author.id } },
         create: { guildId: message.guildId, userId: message.author.id },
@@ -165,6 +170,11 @@ export async function settleVoiceSession(prisma, session, now = new Date(), clos
     });
     if (!claimed.count) return;
     if (seconds > 0) {
+      await tx.memberProfile.upsert({
+        where: { guildId_userId: { guildId: "__avero_global__", userId: session.userId } },
+        create: { guildId: "__avero_global__", userId: session.userId, totalVoiceSeconds: seconds },
+        update: { totalVoiceSeconds: { increment: seconds } }
+      });
       const settings = await getActivitySettings(tx, session.guildId);
       const buckets = buildVoicePeriodBuckets(session.lastSettledAt, seconds, settings);
       for (const bucket of buckets) {
