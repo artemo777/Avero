@@ -92,7 +92,7 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
-export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null, context = null) {
+export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null, context = null, logger = console) {
   if (!apiClient && !process.env.ENGAUGE_API_TOKEN) return 0;
   const api = apiClient ?? engauge;
   const staleBefore = new Date(Date.now() - 10 * 60_000);
@@ -143,7 +143,7 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
           }
         }
       } catch (notificationError) {
-        console.error("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError);
+        logger.error?.("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError);
       }
     } catch (error) {
       if (error instanceof EngaugeApiError && error.committed) {
@@ -162,7 +162,7 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
       const responseDetail = error instanceof EngaugeApiError && error.responseBody
         ? " Response: " + error.responseBody
         : "";
-      console.error(
+      logger.error?.(
         "Engauge activity XP " + status + " for " + award.source + " award " + award.id +
         " during " + stage + (error?.message ? ": " + error.message : "") + lookupHint + responseDetail
       );
