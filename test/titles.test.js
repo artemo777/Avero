@@ -4,10 +4,10 @@ import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../src/bot/title-cata
 
 test("milestone titles unlock at their configured game and economy thresholds", () => {
   const eligible = getEligibleMilestoneTitles({
-    gamesPlayed: 25,
+    gamesPlayed: 50,
     gameWins: 10,
-    lifetimeEarned: 5000,
-    workShifts: 10,
+    lifetimeEarned: 10000,
+    workShifts: 25,
     scavenges: 10,
     dailyStreak: 30
   }, 3);
@@ -21,11 +21,14 @@ test("milestone titles unlock at their configured game and economy thresholds", 
     "bin_diver_deluxe",
     "shelf_lord",
     "seven_day_streak",
-    "thirty_day_streak"
+    "thirty_day_streak",
+    "career_pro",
+    "coin_architect",
+    "arcade_regular"
   ]) {
     assert.ok(ids.has(id), id + " should be unlocked");
   }
-  assert.equal(eligible.length, 8);
+  assert.equal(eligible.length, 11);
 });
 
 test("shop titles are separate from milestone titles", () => {
