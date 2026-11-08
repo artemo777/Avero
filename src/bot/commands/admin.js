@@ -123,7 +123,10 @@ export const adminCommand = Object.freeze({
         prisma, interaction.guildId, target.id, interaction.user.id, currency, action, amount, reason
       );
       if (!result.updated) {
-        await interaction.reply(response("That member only has " + result.previous.toLocaleString("en-US") + " " + currency + ". Nothing was changed."));
+        const message = result.reason === "balance_changed"
+          ? "That wallet changed while the Set action was being applied. Please run the command again."
+          : "That member only has " + result.previous.toLocaleString("en-US") + " " + currency + ". Nothing was changed.";
+        await interaction.reply(response(message));
         return;
       }
       await interaction.reply(response(
