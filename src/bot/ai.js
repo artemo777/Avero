@@ -15,7 +15,7 @@ function commandGuide(commands) {
 export async function answerAveroQuestion({ message, commands, env = process.env, fetchImpl = fetch }) {
   const apiKey = env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    return "AI help isn't configured yet. I can still show the command list with `avero help`, or try `avero commands`. An administrator needs to add GEMINI_API_KEY to Avero's environment.";
+    return "AI help isn't configured yet. I can still show the command list with `avero help`, . An administrator needs to add GEMINI_API_KEY to Avero's environment.";
   }
 
   const now = Date.now();
