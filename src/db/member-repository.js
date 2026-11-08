@@ -51,7 +51,8 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
 
 const PROFILE_FRAME_ITEM_IDS = new Set([
   "aurora_frame", "nebula_cape", "moonlit_token", "prism_crown", "pixel_cape",
-  "cloud_specs", "comet_trail", "mossy_mug", "paper_crown"
+  "cloud_specs", "comet_trail", "mossy_mug", "paper_crown", "blueprint_frame",
+  "mono_frame", "chibi_frame", "cobalt_frame", "frost_frame", "ember_frame", "starlight_frame"
 ]);
 
 export async function equipProfileFrame(prisma, guildId, userId, itemId) {
@@ -90,9 +91,9 @@ export async function unequipProfileBadge(prisma, guildId, userId) {
 }
 
 const PROFILE_ACCENT_COLORS = new Set([0x8b7cff, 0x42d6c5, 0x65a9ff, 0xff9b70, 0xf078a8, 0xe5c45d, 0x9ba5b4, 0xffffff]);
-const PROFILE_BANNERS = new Set(["midnight", "aurora", "sunset", "forest", "ocean", "graphite"]);
+const PROFILE_BANNERS = new Set(["midnight", "aurora", "sunset", "forest", "ocean", "graphite", "cobalt", "rose", "ember", "frost"]);
 const AVATAR_DECORATIONS = new Set(["halo_ring", "orbit_spark", "pixel_wings"]);
-const SHOWCASE_BADGES = new Set(["neon_badge", "vault_badge", "starlight_badge", "avero_relic", "star_pin", "tiny_trophy", "crystal_badge", "golden_owl"]);
+const SHOWCASE_BADGES = new Set(["neon_badge", "vault_badge", "starlight_badge", "avero_relic", "star_pin", "tiny_trophy", "crystal_badge", "golden_owl", "starter_badge", "paper_star", "sleepy_cloud", "professor_badge", "night_owl_badge"]);
 
 export async function updateProfileCustomization(prisma, guildId, userId, changes) {
   const key = memberWhere(guildId, userId).guildId_userId;

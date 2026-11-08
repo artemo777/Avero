@@ -479,7 +479,7 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
   }
   return gamePayload(createGamePanel({
     title: "Daily claimed.",
-    description: "## ✨ +" + reward + " coins\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
+    description: "## ✨ +" + (result.amount ?? reward) + " coins" + (result.streakBonus ? " · +" + result.streakBonus + " streak bonus" : "") + "\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
       "\n🔥 Streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." +
       (result.gemsAwarded ? "\n◆ **+" + result.gemsAwarded + " gem** · 7-day streak reward." : "") + perkLine +
       "\n\nSee you tomorrow.",

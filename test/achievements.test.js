@@ -38,7 +38,7 @@ test("achievements show global milestone progress and unique collection counts",
   assert.match(text, /Ada's achievements/);
   assert.match(text, /7 \/ 12 unlocked/);
   assert.match(text, /Curator[\s\S]*Unlocked/);
-  assert.match(text, /Full Set[\s\S]*3 \/ 29/);
+  assert.match(text, /Full Set[\s\S]*3 \/ 41/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
   const secondPage = await renderAchievementsPage(prisma, "guild-1", { id: "user-1", username: "Ada" }, "user-1", 1);
   const secondText = panelText(secondPage);

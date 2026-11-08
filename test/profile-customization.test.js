@@ -51,7 +51,7 @@ test("profile card renderer returns a PNG and exposes the supported banner prese
   const png = await renderProfileCard({ username: "Avero Tester", banner: "aurora", badges: [{ name: "Glitch Gremlin", icon: "👾" }] });
   assert.equal(png.toString("hex", 0, 8), "89504e470d0a1a0a");
   assert.ok(png.length > 1000);
-  assert.deepEqual(PROFILE_BANNERS, ["midnight", "aurora", "sunset", "forest", "ocean", "graphite"]);
+  assert.deepEqual(PROFILE_BANNERS, ["midnight", "aurora", "sunset", "forest", "ocean", "graphite", "cobalt", "rose", "ember", "frost"]);
 });
 
 test("custom profile banner bytes and MIME type are persisted together", async () => {

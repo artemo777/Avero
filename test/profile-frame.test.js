@@ -5,7 +5,7 @@ import { equipProfileFrame, unequipProfileFrame } from "../src/db/member-reposit
 test("profile frame equip requires ownership and persists the global selection", async () => {
   let upsertArgs;
   const prisma = {
-    currencyPurchase: { findUnique: async ({ where }) => where.guildId_userId_itemId.itemId === "aurora_frame" ? { itemId: "aurora_frame" } : null },
+    currencyPurchase: { findUnique: async ({ where }) => ["aurora_frame", "chibi_frame"].includes(where.guildId_userId_itemId.itemId) ? { itemId: where.guildId_userId_itemId.itemId } : null },
     memberProfile: { upsert: async (args) => { upsertArgs = args; return { ...args.create, ...args.update }; } }
   };
   assert.deepEqual(await equipProfileFrame(prisma, "guild-1", "user-1", "nebula_cape"), { equipped: false, reason: "not_owned" });
@@ -13,6 +13,9 @@ test("profile frame equip requires ownership and persists the global selection",
   assert.equal(result.equipped, true);
   assert.equal(result.profile.equippedFrameItemId, "aurora_frame");
   assert.equal(upsertArgs.update.equippedFrameItemId, "aurora_frame");
+  const chibi = await equipProfileFrame(prisma, "guild-1", "user-1", "chibi_frame");
+  assert.equal(chibi.equipped, true);
+  assert.equal(chibi.profile.equippedFrameItemId, "chibi_frame");
 });
 
 test("profile frame rejects a non-frame collectible", async () => {

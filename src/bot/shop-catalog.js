@@ -36,5 +36,17 @@ export const SHOP_ITEMS = Object.freeze([
   Object.freeze({ id: "golden_owl", name: "Golden Owl", category: "badges", price: 25, currency: "gems", icon: "🦉", rarity: "MYTHIC", description: "A tiny symbol of Avero wisdom." }),
   Object.freeze({ id: "archive_key", name: "Archive Key", category: "tools", price: 6, currency: "gems", icon: "🗝️", rarity: "RARE", description: "A collectible key from the old server archive." }),
   Object.freeze({ id: "coin_pouch", name: "Coin Pouch", category: "coins", price: 250, currency: "coins", icon: "👛", rarity: "COMMON", description: "A compact coin-themed collectible." }),
-  Object.freeze({ id: "mint_token", name: "Mint Token", category: "coins", price: 600, currency: "coins", icon: "🪙", rarity: "UNCOMMON", description: "A polished token for your collection." })
+  Object.freeze({ id: "mint_token", name: "Mint Token", category: "coins", price: 600, currency: "coins", icon: "🪙", rarity: "UNCOMMON", description: "A polished token for your collection." }),
+  Object.freeze({ id: "starter_badge", name: "Tiny Trailblazer", category: "badges", price: 35, currency: "coins", icon: "🌱", rarity: "COMMON", description: "Your first little mark on the Avero map." }),
+  Object.freeze({ id: "paper_star", name: "Paper Star", category: "badges", price: 60, currency: "coins", icon: "⭐", rarity: "COMMON", description: "Folded by hand. Shines anyway." }),
+  Object.freeze({ id: "sleepy_cloud", name: "Sleepy Cloud", category: "badges", price: 90, currency: "coins", icon: "☁️", rarity: "COMMON", description: "A soft badge for low-energy legends." }),
+  Object.freeze({ id: "blueprint_frame", name: "Blueprint Frame", category: "cosmetics", price: 120, currency: "coins", icon: "🧊", rarity: "COMMON", effect: "profile_frame", description: "A crisp blue double-line frame for your profile avatar." }),
+  Object.freeze({ id: "mono_frame", name: "Mono Frame", category: "cosmetics", price: 160, currency: "coins", icon: "⬛", rarity: "COMMON", effect: "profile_frame", description: "A clean graphite frame with subtle corner marks." }),
+  Object.freeze({ id: "chibi_frame", name: "Professor Chibi Frame", category: "cosmetics", price: 240, currency: "coins", icon: "🧑‍🏫", rarity: "UNCOMMON", effect: "profile_frame", description: "A playful mascot-inspired frame with tiny side stars." }),
+  Object.freeze({ id: "cobalt_frame", name: "Cobalt Orbit Frame", category: "cosmetics", price: 420, currency: "coins", icon: "🔷", rarity: "RARE", effect: "profile_frame", description: "A blue orbital ring with bright accent nodes." }),
+  Object.freeze({ id: "frost_frame", name: "Frostline Frame", category: "cosmetics", price: 580, currency: "coins", icon: "❄️", rarity: "RARE", effect: "profile_frame", description: "A cool silver-blue halo with frosted corners." }),
+  Object.freeze({ id: "ember_frame", name: "Ember Frame", category: "cosmetics", price: 760, currency: "coins", icon: "🔥", rarity: "EPIC", effect: "profile_frame", description: "A warm ember ring with a soft outer glow." }),
+  Object.freeze({ id: "starlight_frame", name: "Starlight Frame", category: "cosmetics", price: 950, currency: "coins", icon: "🌠", rarity: "EPIC", effect: "profile_frame", description: "A constellation orbit around your avatar." }),
+  Object.freeze({ id: "professor_badge", name: "Professor's Assistant", category: "badges", price: 180, currency: "coins", icon: "🎓", rarity: "UNCOMMON", description: "An official-looking assistant badge. The Professor approves." }),
+  Object.freeze({ id: "night_owl_badge", name: "Night Owl", category: "badges", price: 260, currency: "coins", icon: "🦉", rarity: "UNCOMMON", description: "For the ones who keep the late-night lights on." }),
 ]);

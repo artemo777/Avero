@@ -128,7 +128,7 @@ test("daily reward is available exactly at the cooldown boundary", async () => {
   assert.equal(first.claimed, true);
   assert.equal(tooEarly.claimed, false);
   assert.equal(atBoundary.claimed, true);
-  assert.equal(atBoundary.account.balance, 200);
+  assert.equal(atBoundary.account.balance, 205);
   assert.equal(prisma.transactions.filter((transaction) => transaction.type === "daily").length, 2);
 });
 
@@ -147,6 +147,8 @@ test("daily streak increments on consecutive UTC days and resets after a missed 
 
   assert.equal(first.dailyStreak, 1);
   assert.equal(second.dailyStreak, 2);
+  assert.equal(second.streakBonus, 5);
+  assert.equal(second.amount, 105);
   assert.equal(afterGap.dailyStreak, 1);
   assert.equal(afterGap.account.dailyStreak, 1);
 });
@@ -173,7 +175,9 @@ test("a seven-day daily streak grants one gem without mixing coin and gem ledger
   }
   assert.equal(result.dailyStreak, 7);
   assert.equal(result.gemsAwarded, 1);
-  assert.equal(result.account.balance, 700);
+  assert.equal(result.account.balance, 805);
+  assert.equal(result.amount, 130);
+  assert.equal(result.streakBonus, 30);
   assert.equal(result.account.gemBalance, 1);
   assert.equal(prisma.transactions.filter((entry) => entry.currency === "gems").length, 1);
 });

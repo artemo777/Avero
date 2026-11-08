@@ -55,6 +55,9 @@ export async function claimDailyReward(
       ? Math.floor((utcDay(now) - utcDay(accountBefore.lastDailyAt)) / 86_400_000)
       : null;
     const dailyStreak = daysSinceLastClaim === 1 ? (accountBefore.dailyStreak ?? 0) + 1 : 1;
+    // Small consistency bonus: +5 coins per consecutive day after day one, capped at +40.
+    const streakBonus = Math.min(40, Math.max(0, dailyStreak - 1) * 5);
+    const totalReward = amount + streakBonus;
 
     const updated = await tx.currencyAccount.updateMany({
       where: {
@@ -65,7 +68,7 @@ export async function claimDailyReward(
         ]
       },
       data: {
-        balance: { increment: amount },
+        balance: { increment: totalReward },
         ...(dailyStreak % 7 === 0 ? { gemBalance: { increment: 1 } } : {}),
         lastDailyAt: now,
         dailyStreak
@@ -80,7 +83,7 @@ export async function claimDailyReward(
     }
 
     await tx.currencyTransaction.create({
-      data: { ...key, amount, currency: "coins", type: "daily", createdAt: now }
+      data: { ...key, amount: totalReward, currency: "coins", type: "daily", createdAt: now }
     });
     const gemsAwarded = dailyStreak > 0 && dailyStreak % 7 === 0 ? 1 : 0;
     if (gemsAwarded) {
@@ -91,7 +94,7 @@ export async function claimDailyReward(
     const finalAccount = gemsAwarded
       ? await tx.currencyAccount.findUnique({ where: { guildId_userId: key } })
       : account;
-    return { claimed: true, amount, account: finalAccount, dailyStreak, gemsAwarded };
+    return { claimed: true, amount: totalReward, baseAmount: amount, streakBonus, account: finalAccount, dailyStreak, gemsAwarded };
   });
 }
 

@@ -35,6 +35,7 @@ export const commands = Object.freeze([
   perksCommand,
   achievementsCommand,
   profileCommand,
+  rankCommand,
   leaderboardCommand,
   balanceCommand,
   askCommand,

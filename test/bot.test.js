@@ -70,7 +70,11 @@ test("ping command uses a compact shared AveroUI Components V2 panel", async () 
 });
 
 function panelText(response) {
-  return response.components[0].toJSON().components.filter((component) => component.type === 10).map((component) => component.content).join("\n");
+  const collect = (components) => components.flatMap((component) => {
+    if (component.type === 10) return [component.content];
+    return component.components ? collect(component.components) : [];
+  });
+  return collect(response.components[0].toJSON().components).join("\n");
 }
 
 test("RPS is free to play and rewards wins without wagers", async () => {
@@ -173,6 +177,7 @@ test("global command list includes new economy features and has no duplicate nam
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
   assert.ok(names.includes("profile"));
+  assert.ok(names.includes("rank"));
   assert.ok(names.includes("leaderboard"));
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
@@ -186,7 +191,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("autoresponder"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 26);
+  assert.equal(names.length, 27);
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
 });
@@ -274,8 +279,8 @@ test("profile command combines wallet and collection data", async () => {
   assert.match(text, /Ada/);
   assert.match(text, /Title/);
   assert.match(text, /Frame/);
-  assert.equal(response.files.length, 1);
-  assert.equal(response.files[0].name, "profile-card.png");
+  assert.equal(response.files.length, 2);
+  assert.deepEqual(response.files.map((file) => file.name).sort(), ["avero-professor.png", "profile-card.png"]);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
   assert.equal(selectorRows.length, 5);
@@ -303,7 +308,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 1);
+  assert.equal(response.files.length, 2);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Showcased badges.*Vault Rat/);
 });
@@ -327,7 +332,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 1);
+  assert.equal(response.files.length, 2);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
 });

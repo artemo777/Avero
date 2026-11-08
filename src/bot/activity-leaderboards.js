@@ -4,6 +4,7 @@ import {
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol } from "../../averoui/assets.js";
 import { createEngaugeClient, EngaugeApiError } from "./engauge-api.js";
+import { buildRankPayload } from "./commands/rank.js";
 import {
   getActivitySettings, getActivityPeriodKey, getActivityRanking, recordActivityMessage,
   settleVoiceSession, upsertVoiceSession
@@ -91,7 +92,7 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
-export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null) {
+export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null, context = null) {
   if (!apiClient && !process.env.ENGAUGE_API_TOKEN) return 0;
   const api = apiClient ?? engauge;
   const staleBefore = new Date(Date.now() - 10 * 60_000);
@@ -116,11 +117,34 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
     let stage = "lookup";
     let status = "needs_review";
     try {
-      await api.getMember(award.guildId, award.userId);
+      const beforeMember = await api.getMember(award.guildId, award.userId);
+      const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
       stage = "award";
       await api.addMemberXp(award.guildId, award.userId, award.amount);
       status = "delivered";
       delivered += 1;
+      // Level-up announcements are best-effort and never change XP delivery status.
+      try {
+        const afterMember = await api.getMember(award.guildId, award.userId);
+        const nextLevel = Math.floor(Number(afterMember?.level) || 0);
+        if (nextLevel > previousLevel) {
+          const client = context?.guilds ? context : context?.client;
+          const messageTarget = context?.guildId === award.guildId && context?.author?.id === award.userId
+            ? context.channel
+            : client?.guilds?.cache?.get(award.guildId)?.systemChannel;
+          if (typeof messageTarget?.send === "function") {
+            const user = context?.author?.id === award.userId
+              ? context.author
+              : await client?.guilds?.cache?.get(award.guildId)?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
+            if (user) {
+              const payload = await buildRankPayload(user, afterMember, { levelUp: true, previousLevel });
+              await messageTarget.send(payload);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError);
+      }
     } catch (error) {
       if (error instanceof EngaugeApiError && error.committed) {
         status = "delivered";
@@ -153,7 +177,7 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
 export async function recordMessageActivity(message, prisma) {
   const recorded = await recordActivityMessage(prisma, message);
   if (recorded) {
-    void deliverPendingActivityXp(prisma).catch((error) => {
+    void deliverPendingActivityXp(prisma, 25, null, message).catch((error) => {
       console.error("Engauge message XP delivery failed:", error);
     });
   }
@@ -285,7 +309,7 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
     if (roleDelivered && claim.xp > 0) {
       try {
         // Read first to validate token scope and confirm the member exists in the configured Engauge server.
-        await engauge.getMember(guild.id, claim.userId);
+        const beforeMember = await engauge.getMember(guild.id, claim.userId);
         // Persist an in-flight marker before the non-idempotent API write. A crash after POST
         // must require verification rather than automatically awarding the same XP again.
         const xpClaim = await prisma.activityRewardClaim.updateMany({
@@ -295,6 +319,21 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         if (!xpClaim.count) continue; // Another worker already owns this non-idempotent XP delivery.
         await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
         xpDelivered = true;
+        try {
+          const afterMember = await engauge.getMember(guild.id, claim.userId);
+          const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
+          const nextLevel = Math.floor(Number(afterMember?.level) || 0);
+          if (nextLevel > previousLevel && typeof guild.systemChannel?.send === "function") {
+            const member = await guild.members.fetch(claim.userId).catch(() => null);
+            if (member) {
+              await guild.systemChannel.send(await buildRankPayload(member.user, afterMember, {
+                levelUp: true, previousLevel
+              }));
+            }
+          }
+        } catch (notificationError) {
+          console.error("Avero activity reward level-up announcement failed for member " + claim.userId + ":", notificationError?.message ?? notificationError);
+        }
       } catch (error) {
         if (error instanceof EngaugeApiError && error.committed) {
           // Engauge explicitly documents that 502 may happen after the XP write commits.
@@ -365,7 +404,7 @@ export function startActivityRuntime(client, prisma) {
         const stillEligible = isActivityVoiceSessionEligible(client, session, settings);
         await settleVoiceSession(prisma, session, new Date(), !stillEligible);
       }
-      await deliverPendingActivityXp(prisma);
+      await deliverPendingActivityXp(prisma, 25, null, client);
       await updateActivityBoards(client, prisma);
     })().catch((error) => console.error("Activity runtime tick failed:", error));
   }, 30_000);

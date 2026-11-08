@@ -8,7 +8,11 @@ const BANNERS = Object.freeze({
   sunset: ["#38202b", "#653d45", "#28233b"],
   forest: ["#142c27", "#29473a", "#172a2b"],
   ocean: ["#10283b", "#214a68", "#17283d"],
-  graphite: ["#17191d", "#30343a", "#1d2026"]
+  graphite: ["#17191d", "#30343a", "#1d2026"],
+  cobalt: ["#0b1d38", "#174a7a", "#101a32"],
+  rose: ["#321d30", "#653a59", "#211b32"],
+  ember: ["#351c19", "#75402b", "#211b25"],
+  frost: ["#172a3b", "#46677d", "#202a3b"]
 });
 
 function colorHex(value) {
@@ -117,7 +121,9 @@ export async function renderProfileCard({
   const frameColors = {
     aurora_frame: "#70e4d0", nebula_cape: "#bd9cff", moonlit_token: "#9bd5ff",
     prism_crown: "#f3d477", pixel_cape: "#a8b7ff", cloud_specs: "#d5e8ff",
-    comet_trail: "#ffad82", mossy_mug: "#9bd29c", paper_crown: "#e8d7a6"
+    comet_trail: "#ffad82", mossy_mug: "#9bd29c", paper_crown: "#e8d7a6",
+    blueprint_frame: "#74baff", mono_frame: "#aeb5c0", chibi_frame: "#78b8ff",
+    cobalt_frame: "#4c9dff", frost_frame: "#b7e4ff", ember_frame: "#ff986c", starlight_frame: "#b8a7ff"
   };
   ctx.strokeStyle = frame ? (frameColors[frame] ?? accent) : accent;
   ctx.lineWidth = frame ? 13 : 7;
@@ -126,15 +132,25 @@ export async function renderProfileCard({
     ctx.strokeStyle = "rgba(255,255,255,0.78)";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 20, 0, Math.PI * 2); ctx.stroke();
-    if (frame === "pixel_cape" || frame === "paper_crown") {
+    if (frame === "pixel_cape" || frame === "paper_crown" || frame === "mono_frame" || frame === "blueprint_frame") {
       ctx.fillStyle = frameColors[frame];
       for (const [dx, dy] of [[-120, -42], [120, -42], [-112, 54], [112, 54]]) {
         ctx.fillRect(avatarX + dx - 5, avatarY + dy - 5, 10, 10);
       }
-    } else if (frame === "nebula_cape" || frame === "comet_trail") {
+    } else if (frame === "nebula_cape" || frame === "comet_trail" || frame === "cobalt_frame" || frame === "starlight_frame" || frame === "frost_frame") {
       ctx.strokeStyle = frameColors[frame];
       ctx.lineWidth = 3;
       ctx.beginPath(); ctx.ellipse(avatarX, avatarY, 126, 48, -0.42, 0, Math.PI * 2); ctx.stroke();
+      if (frame === "starlight_frame" || frame === "cobalt_frame") {
+        for (const [dx, dy] of [[-118, -44], [118, -44], [-118, 44], [118, 44]]) {
+          ctx.beginPath(); ctx.arc(avatarX + dx, avatarY + dy, 5, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    } else if (frame === "ember_frame" || frame === "chibi_frame") {
+      ctx.fillStyle = frameColors[frame];
+      for (const [dx, dy] of [[-120, -72], [120, -72], [-120, 72], [120, 72]]) {
+        ctx.beginPath(); ctx.arc(avatarX + dx, avatarY + dy, frame === "chibi_frame" ? 7 : 5, 0, Math.PI * 2); ctx.fill();
+      }
     }
   }
 
