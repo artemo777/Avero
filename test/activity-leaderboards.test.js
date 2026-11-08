@@ -170,6 +170,7 @@ test("voice XP carries sub-minute eligible time across separate sessions", async
   const awards = [];
   const prisma = {
     $transaction: async (callback) => callback({
+      memberProfile: { upsert: async () => ({}) },
       activityVoiceSession: {
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
