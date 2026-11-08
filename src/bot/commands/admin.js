@@ -162,8 +162,13 @@ export const adminCommand = Object.freeze({
       const amount = interaction.options.getInteger("amount", true);
       const before = await engauge.getMember(interaction.guildId, target.id);
       await engauge.addMemberXp(interaction.guildId, target.id, amount);
-      const after = await engauge.getMember(interaction.guildId, target.id);
       await recordAdminXpGrant(prisma, interaction.guildId, target.id, interaction.user.id, amount, reason);
+      let after = before;
+      try {
+        after = await engauge.getMember(interaction.guildId, target.id);
+      } catch (error) {
+        console.warn("Avero admin XP was granted, but the follow-up Engauge lookup failed:", error?.message ?? error);
+      }
       const level = Number(after?.level ?? before?.level ?? 0);
       const xp = Number(after?.xp ?? after?.totalXp ?? before?.xp ?? before?.totalXp ?? 0);
       await interaction.reply(response(
