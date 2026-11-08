@@ -10,10 +10,9 @@ function memberKey(guildId, userId) {
   return { guildId: GLOBAL_SCOPE_ID, userId };
 }
 
-function requireAmount(amount, { allowZero = false } = {}) {
-  const minimum = allowZero ? 0 : 1;
-  if (!Number.isSafeInteger(amount) || amount < minimum || amount > 1_000_000) {
-    throw new RangeError("Amount must be an integer from " + minimum + " to 1,000,000.");
+function requireAmount(amount) {
+  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000) {
+    throw new RangeError("Amount must be an integer from 1 to 1,000,000.");
   }
 }
 
@@ -23,60 +22,6 @@ function requireReason(reason) {
     throw new RangeError("Reason must be 200 characters or fewer.");
   }
   return reason?.trim() || null;
-}
-
-export async function adjustAdminCurrency(prisma, guildId, targetUserId, actorUserId, currency, operation, amount, reason = null) {
-  const key = memberKey(guildId, targetUserId);
-  memberKey(guildId, actorUserId);
-  if (!["coins", "gems"].includes(currency)) throw new TypeError("Currency must be coins or gems.");
-  if (!["add", "remove", "set"].includes(operation)) throw new TypeError("Choose add, remove, or set.");
-  requireAmount(amount, { allowZero: operation === "set" });
-  const cleanReason = requireReason(reason);
-  return prisma.$transaction(async (tx) => {
-    await tx.currencyAccount.upsert({
-      where: { guildId_userId: key }, create: key, update: {}
-    });
-    const before = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-    const field = currency === "gems" ? "gemBalance" : "balance";
-    const previous = before?.[field] ?? 0;
-    const next = operation === "set" ? amount : operation === "add" ? previous + amount : previous - amount;
-    if (next < 0) return { updated: false, reason: "insufficient_balance", previous, next: previous };
-    if (!Number.isSafeInteger(next) || next > 2_000_000_000) {
-      throw new RangeError("The resulting balance would be outside the supported range.");
-    }
-    const where = operation === "remove"
-      ? { ...key, [field]: { gte: amount } }
-      : operation === "set"
-        ? { ...key, [field]: previous }
-        : key;
-    const data = operation === "add"
-      ? { [field]: { increment: amount } }
-      : operation === "remove"
-        ? { [field]: { decrement: amount } }
-        : { [field]: amount };
-    const changed = await tx.currencyAccount.updateMany({ where, data });
-    if (changed.count !== 1) {
-      const latest = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-      return {
-        updated: false,
-        reason: operation === "set" ? "balance_changed" : "insufficient_balance",
-        previous: latest?.[field] ?? 0,
-        next: latest?.[field] ?? 0
-      };
-    }
-    const updatedAccount = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-    const actualDelta = operation === "add" ? amount : operation === "remove" ? -amount : amount - previous;
-    await tx.currencyTransaction.create({
-      data: { ...key, amount: actualDelta, currency, type: "admin_adjustment", createdAt: new Date() }
-    });
-    await tx.adminEconomyAudit.create({
-      data: {
-        guildId, targetUserId, actorUserId,
-        action: "currency_" + operation, currency, amount: actualDelta, reason: cleanReason
-      }
-    });
-    return { updated: true, currency, previous, balance: updatedAccount[field], delta: actualDelta };
-  });
 }
 
 export async function adjustAdminInventory(prisma, guildId, targetUserId, actorUserId, itemId, operation, reason = null) {
