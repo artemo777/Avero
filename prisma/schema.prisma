@@ -15,6 +15,9 @@ model MemberProfile {
   userId           String
   xp               Int      @default(0)
   level            Int      @default(0)
+  nextLevelXp      Int      @default(1000)
+  totalMessages    Int      @default(0)
+  totalVoiceSeconds Int     @default(0)
   lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
   equippedFrameItemId String?
@@ -31,6 +34,14 @@ model MemberProfile {
 
   @@unique([guildId, userId])
   @@index([guildId, xp])
+  @@index([guildId, totalMessages])
+  @@index([guildId, totalVoiceSeconds])
+}
+
+model EngaugeImportMarker {
+  serverId    String   @id
+  memberCount Int
+  importedAt  DateTime @default(now())
 }
 
 model CurrencyAccount {
