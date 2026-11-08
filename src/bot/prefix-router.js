@@ -1,4 +1,4 @@
-import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { MessageFlags } from "discord.js";
 import { getPrismaClient } from "../db/client.js";
 import { getGuildSettings } from "../db/guild-settings-repository.js";
 import { answerAveroQuestion } from "./ai.js";
@@ -106,7 +106,7 @@ function parseCommandArguments(command, input, message) {
   }
 
   const missing = activeDefinitions.find((option, index) => option.required && tokens[index] === undefined);
-  if (missing) throw new Error("Missing required argument: " + missing.name + ". Use `/ " + command.data.name + "` in Discord to see its options.");
+  if (missing) throw new Error("Missing required argument: " + missing.name + ". Use `/" + command.data.name + "` in Discord to see its options.");
   const options = buildOptions(activeDefinitions, tokens, message, subcommand, group);
   return { options, subcommand, group };
 }
