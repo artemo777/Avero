@@ -9,6 +9,7 @@ test("all Avero slash commands have unique valid names and executable handlers",
 
   assert.ok(definitions.length > 0);
   assert.ok(map.has("rank"), "the /rank command must be registered globally");
+  assert.ok(map.has("admin"), "the admin economy controls must be registered globally");
   assert.equal(map.size, definitions.length);
   assert.equal(new Set(definitions.map((command) => command.name)).size, definitions.length);
 
