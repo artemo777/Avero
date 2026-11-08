@@ -45,19 +45,29 @@ export async function adjustAdminCurrency(prisma, guildId, targetUserId, actorUs
       throw new RangeError("The resulting balance would be outside the supported range.");
     }
     const delta = next - previous;
-    await tx.currencyAccount.update({
-      where: { guildId_userId: key }, data: { [field]: next }
-    });
+    const where = operation === "remove" ? { ...key, [field]: { gte: amount } } : key;
+    const data = operation === "add"
+      ? { [field]: { increment: amount } }
+      : operation === "remove"
+        ? { [field]: { decrement: amount } }
+        : { [field]: amount };
+    const changed = await tx.currencyAccount.updateMany({ where, data });
+    if (changed.count !== 1) {
+      const latest = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+      return { updated: false, reason: "insufficient_balance", previous: latest?.[field] ?? 0, next: latest?.[field] ?? 0 };
+    }
+    const updatedAccount = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+    const actualDelta = (updatedAccount?.[field] ?? next) - previous;
     await tx.currencyTransaction.create({
-      data: { ...key, amount: delta, currency, type: "admin_adjustment", createdAt: new Date() }
+      data: { ...key, amount: actualDelta, currency, type: "admin_adjustment", createdAt: new Date() }
     });
     await tx.adminEconomyAudit.create({
       data: {
         guildId, targetUserId, actorUserId,
-        action: "currency_" + operation, currency, amount: delta, reason: cleanReason
+        action: "currency_" + operation, currency, amount: actualDelta, reason: cleanReason
       }
     });
-    return { updated: true, currency, previous, balance: next, delta };
+    return { updated: true, currency, previous, balance: updatedAccount[field], delta: actualDelta };
   });
 }
 
