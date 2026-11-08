@@ -7,6 +7,9 @@ UPDATE "MemberProfile" SET "nextLevelXp" = LEAST(2147483647::BIGINT, "xp"::BIGIN
 
 -- Earlier Engauge rejections were confirmed not to have committed; deliver them locally.
 UPDATE "ActivityXpAward" SET "status" = 'pending' WHERE "status" = 'rejected';
+-- In-flight writes may have committed before the old process stopped; surface them for review.
+UPDATE "ActivityXpAward" SET "status" = 'needs_review' WHERE "status" = 'in_flight';
+UPDATE "ActivityRewardClaim" SET "status" = 'pending_xp_review' WHERE "status" = 'xp_in_flight';
 
 CREATE INDEX "MemberProfile_guildId_totalMessages_idx" ON "MemberProfile"("guildId", "totalMessages");
 CREATE INDEX "MemberProfile_guildId_totalVoiceSeconds_idx" ON "MemberProfile"("guildId", "totalVoiceSeconds");
