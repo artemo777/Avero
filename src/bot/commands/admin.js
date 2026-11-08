@@ -1,23 +1,13 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createEngaugeClient } from "../engauge-api.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
-import { adjustAdminCurrency, adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
+import { adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
 
 const engauge = createEngaugeClient();
-const ACTION_CHOICES = [
-  { name: "Add", value: "add" },
-  { name: "Remove", value: "remove" },
-  { name: "Set", value: "set" }
-];
 const ITEM_ACTION_CHOICES = [
   { name: "Grant", value: "grant" },
   { name: "Remove", value: "remove" }
 ];
-const CURRENCY_CHOICES = [
-  { name: "Coins", value: "coins" },
-  { name: "Gems", value: "gems" }
-];
-
 function canManageEconomy(interaction) {
   const permissions = interaction.memberPermissions ?? interaction.member?.permissions;
   return Boolean(
@@ -33,20 +23,10 @@ function response(content) {
 export const adminCommand = Object.freeze({
   data: Object.freeze({
     name: "admin",
-    description: "Admin-only Avero economy controls.",
+    description: "Admin-only Avero progression and inventory controls.",
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [
-      {
-        type: 1, name: "coins", description: "Add, remove or set a member's coins or gems.",
-        options: [
-          { type: 6, name: "member", description: "Member to adjust.", required: true },
-          { type: 3, name: "action", description: "Choose how to adjust the balance.", required: true, choices: ACTION_CHOICES },
-          { type: 4, name: "amount", description: "Amount (0–1,000,000 for Set; otherwise 1–1,000,000).", required: true, min_value: 0, max_value: 1_000_000 },
-          { type: 3, name: "currency", description: "Wallet currency.", required: false, choices: CURRENCY_CHOICES },
-          { type: 3, name: "reason", description: "Optional audit note.", required: false, max_length: 200 }
-        ]
-      },
       {
         type: 1, name: "item", description: "Grant or remove a shop collectible.",
         options: [
@@ -126,28 +106,6 @@ export const adminCommand = Object.freeze({
         ((legacyWallets.length || legacyItems.length)
           ? "\\nLegacy-scoped records were found. Do not delete them; they may be recoverable."
           : "")
-      ));
-      return;
-    }
-
-    if (subcommand === "coins") {
-      const action = interaction.options.getString("action", true);
-      const amount = interaction.options.getInteger("amount", true);
-      const currency = interaction.options.getString("currency") ?? "coins";
-      const result = await adjustAdminCurrency(
-        prisma, interaction.guildId, target.id, interaction.user.id, currency, action, amount, reason
-      );
-      if (!result.updated) {
-        const message = result.reason === "balance_changed"
-          ? "That wallet changed while the Set action was being applied. Please run the command again."
-          : "That member only has " + result.previous.toLocaleString("en-US") + " " + currency + ". Nothing was changed.";
-        await interaction.reply(response(message));
-        return;
-      }
-      await interaction.reply(response(
-        (action === "set" ? "Set " : action === "add" ? "Added " : "Removed ") +
-        Math.abs(result.delta).toLocaleString("en-US") + " " + currency + " for " + target.username +
-        ". New balance: **" + result.balance.toLocaleString("en-US") + "**. This action was recorded."
       ));
       return;
     }
