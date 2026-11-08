@@ -308,7 +308,7 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
     if (roleDelivered && claim.xp > 0) {
       try {
         // Read first to validate token scope and confirm the member exists in the configured Engauge server.
-        await engauge.getMember(guild.id, claim.userId);
+        const beforeMember = await engauge.getMember(guild.id, claim.userId);
         // Persist an in-flight marker before the non-idempotent API write. A crash after POST
         // must require verification rather than automatically awarding the same XP again.
         const xpClaim = await prisma.activityRewardClaim.updateMany({
@@ -318,6 +318,21 @@ async function processClosedPeriodRewards(client, prisma, guild, periodType, now
         if (!xpClaim.count) continue; // Another worker already owns this non-idempotent XP delivery.
         await engauge.addMemberXp(guild.id, claim.userId, claim.xp);
         xpDelivered = true;
+        try {
+          const afterMember = await engauge.getMember(guild.id, claim.userId);
+          const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
+          const nextLevel = Math.floor(Number(afterMember?.level) || 0);
+          if (nextLevel > previousLevel && typeof guild.systemChannel?.send === "function") {
+            const member = await guild.members.fetch(claim.userId).catch(() => null);
+            if (member) {
+              await guild.systemChannel.send(await buildRankPayload(member.user, afterMember, {
+                levelUp: true, previousLevel
+              }));
+            }
+          }
+        } catch (notificationError) {
+          console.error("Avero activity reward level-up announcement failed for member " + claim.userId + ":", notificationError?.message ?? notificationError);
+        }
       } catch (error) {
         if (error instanceof EngaugeApiError && error.committed) {
           // Engauge explicitly documents that 502 may happen after the XP write commits.
