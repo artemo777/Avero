@@ -20,7 +20,18 @@ function fakePrisma() {
         if (!accounts.has(k)) accounts.set(k, { ...create, balance: 0, gemBalance: 0 });
       },
       async findUnique({ where }) { return accounts.get(key(where.guildId_userId)) ?? null; },
-      async update({ where, data }) { Object.assign(accounts.get(key(where.guildId_userId)), data); }
+      async updateMany({ where, data }) {
+        const account = accounts.get(key(where));
+        if (!account) return { count: 0 };
+        if (where.balance?.gte !== undefined && account.balance < where.balance.gte) return { count: 0 };
+        if (where.gemBalance?.gte !== undefined && account.gemBalance < where.gemBalance.gte) return { count: 0 };
+        for (const [field, value] of Object.entries(data)) {
+          if (value?.increment !== undefined) account[field] += value.increment;
+          else if (value?.decrement !== undefined) account[field] -= value.decrement;
+          else account[field] = value;
+        }
+        return { count: 1 };
+      }
     },
     currencyPurchase: {
       async findUnique({ where }) { return purchases.get(composite(where.guildId_userId_itemId)) ?? null; },
