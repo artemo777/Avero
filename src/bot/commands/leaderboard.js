@@ -34,7 +34,7 @@ export const leaderboardCommand = Object.freeze({
       ]
     }]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async execute(interaction, { prisma, engaugeClient = engauge } = {}) {
     if (!prisma) throw new Error("Leaderboard command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Leaderboards are available inside a server.", flags: MessageFlags.Ephemeral });
@@ -50,7 +50,7 @@ export const leaderboardCommand = Object.freeze({
     if (["xp", "messages", "voice", "engauge-currency"].includes(category)) {
       try {
         const order = category === "engauge-currency" ? "currency" : category;
-        const members = await engauge.getAllMembers(interaction.guildId, { order, direction: "desc" });
+        const members = await engaugeClient.getAllMembers(interaction.guildId, { order, direction: "desc" });
         const rows = members
           .filter((member) => /^\d{17,20}$/.test(String(member?.id ?? "")))
           .map((member) => ({
