@@ -4,6 +4,7 @@ import {
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol } from "../../averoui/assets.js";
 import { createEngaugeClient, EngaugeApiError } from "./engauge-api.js";
+import { buildRankPayload } from "./commands/rank.js";
 import {
   getActivitySettings, getActivityPeriodKey, getActivityRanking, recordActivityMessage,
   settleVoiceSession, upsertVoiceSession
@@ -91,7 +92,7 @@ export async function publishActivityBoards(client, prisma, guild) {
   ]);
   return results;
 }
-export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null) {
+export async function deliverPendingActivityXp(prisma, take = 25, apiClient = null, context = null) {
   if (!apiClient && !process.env.ENGAUGE_API_TOKEN) return 0;
   const api = apiClient ?? engauge;
   const staleBefore = new Date(Date.now() - 10 * 60_000);
@@ -116,11 +117,33 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
     let stage = "lookup";
     let status = "needs_review";
     try {
-      await api.getMember(award.guildId, award.userId);
+      const beforeMember = await api.getMember(award.guildId, award.userId);
+      const previousLevel = Math.floor(Number(beforeMember?.level) || 0);
       stage = "award";
       await api.addMemberXp(award.guildId, award.userId, award.amount);
       status = "delivered";
       delivered += 1;
+      // Level-up announcements are best-effort and never change XP delivery status.
+      try {
+        const afterMember = await api.getMember(award.guildId, award.userId);
+        const nextLevel = Math.floor(Number(afterMember?.level) || 0);
+        if (nextLevel > previousLevel) {
+          const messageTarget = context?.guildId === award.guildId && context?.author?.id === award.userId
+            ? context.channel
+            : context?.guilds?.cache?.get(award.guildId)?.systemChannel;
+          if (typeof messageTarget?.send === "function") {
+            const user = context?.author?.id === award.userId
+              ? context.author
+              : await context?.guilds?.cache?.get(award.guildId)?.members?.fetch(award.userId).then((member) => member.user).catch(() => null);
+            if (user) {
+              const payload = await buildRankPayload(user, afterMember, { levelUp: true, previousLevel });
+              await messageTarget.send(payload);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error("Avero level-up announcement failed for member " + award.userId + ":", notificationError?.message ?? notificationError);
+      }
     } catch (error) {
       if (error instanceof EngaugeApiError && error.committed) {
         status = "delivered";
@@ -153,7 +176,7 @@ export async function deliverPendingActivityXp(prisma, take = 25, apiClient = nu
 export async function recordMessageActivity(message, prisma) {
   const recorded = await recordActivityMessage(prisma, message);
   if (recorded) {
-    void deliverPendingActivityXp(prisma).catch((error) => {
+    void deliverPendingActivityXp(prisma, 25, null, message).catch((error) => {
       console.error("Engauge message XP delivery failed:", error);
     });
   }
@@ -365,7 +388,7 @@ export function startActivityRuntime(client, prisma) {
         const stillEligible = isActivityVoiceSessionEligible(client, session, settings);
         await settleVoiceSession(prisma, session, new Date(), !stillEligible);
       }
-      await deliverPendingActivityXp(prisma);
+      await deliverPendingActivityXp(prisma, 25, null, client);
       await updateActivityBoards(client, prisma);
     })().catch((error) => console.error("Activity runtime tick failed:", error));
   }, 30_000);
