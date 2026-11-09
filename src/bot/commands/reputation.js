@@ -116,7 +116,8 @@ export const reputationCommand = Object.freeze({
     }
     if (action === "give") {
       const target = interaction.options.getUser("member");
-      if (target.bot) {
+      const targetMember = await interaction.guild.members.fetch(target.id);
+      if (targetMember.user.bot) {
         await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
         return;
       }
