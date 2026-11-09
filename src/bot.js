@@ -24,6 +24,7 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
+let serverEmojiRefresh = Promise.resolve();
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 async function refreshAveroServerEmojis(client) {
@@ -43,7 +44,7 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-client.once(Events.ClientReady, (readyClient) => {
+client.once(Events.ClientReady, async (readyClient) => {
   readyClient.user.setPresence({
     activities: [{
       name: "Avero",
@@ -53,7 +54,8 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
-  void refreshAveroServerEmojis(readyClient);
+  serverEmojiRefresh = refreshAveroServerEmojis(readyClient);
+  await serverEmojiRefresh;
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -95,6 +97,7 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.MessageCreate, async (message) => {
+  await serverEmojiRefresh.catch(() => {});
   try {
     if (await handleReputationPrefix(message, getPrismaClient())) return;
     await handleAveroPrefixMessage(message, commands);
@@ -104,6 +107,7 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  await serverEmojiRefresh.catch(() => {});
   if (interaction.isButton() && interaction.customId.startsWith("avero-rep|")) {
     try {
       await handleReputationComponent(interaction, getPrismaClient());
@@ -273,9 +277,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-client.on(Events.GuildCreate, () => void refreshAveroServerEmojis(client));
-client.on(Events.GuildDelete, () => void refreshAveroServerEmojis(client));
-client.on(Events.GuildEmojisUpdate, () => void refreshAveroServerEmojis(client));
+client.on(Events.GuildCreate, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
+client.on(Events.GuildDelete, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
+client.on(Events.GuildEmojisUpdate, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
 
 client.on(Events.Error, (error) => {
   console.error("Discord client error:", error);
