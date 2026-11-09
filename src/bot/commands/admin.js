@@ -1,9 +1,8 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
-import { createEngaugeClient } from "../engauge-api.js";
+import { grantGuildXp, getGuildProgress } from "../../db/guild-progression-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
 
-const engauge = createEngaugeClient();
 const ITEM_ACTION_CHOICES = [
   { name: "Grant", value: "grant" },
   { name: "Remove", value: "remove" }
@@ -43,7 +42,7 @@ export const adminCommand = Object.freeze({
         ]
       },
       {
-        type: 1, name: "xp", description: "Grant XP through Engauge (levels update naturally).",
+        type: 1, name: "xp", description: "Grant Avero XP to a server member.",
         options: [
           { type: 6, name: "member", description: "Member to award XP to.", required: true },
           { type: 4, name: "amount", description: "XP to grant (1–1,000,000).", required: true, min_value: 1, max_value: 1_000_000 },
@@ -136,21 +135,14 @@ export const adminCommand = Object.freeze({
 
     if (subcommand === "xp") {
       const amount = interaction.options.getInteger("amount", true);
-      const before = await engauge.getMember(interaction.guildId, target.id);
-      await engauge.addMemberXp(interaction.guildId, target.id, amount);
+      const before = await getGuildProgress(prisma, interaction.guildId, target.id);
+      const after = await grantGuildXp(prisma, interaction.guildId, target.id, amount);
       await recordAdminXpGrant(prisma, interaction.guildId, target.id, interaction.user.id, amount, reason);
-      let after = before;
-      try {
-        after = await engauge.getMember(interaction.guildId, target.id);
-      } catch (error) {
-        console.warn("Avero admin XP was granted, but the follow-up Engauge lookup failed:", error?.message ?? error);
-      }
-      const level = Number(after?.level ?? before?.level ?? 0);
-      const xp = Number(after?.xp ?? after?.totalXp ?? before?.xp ?? before?.totalXp ?? 0);
       await interaction.reply(response(
         "Granted **" + amount.toLocaleString("en-US") + " XP** to " + target.username +
-        ". Current level: **" + level.toLocaleString("en-US") + "** · XP: **" +
-        xp.toLocaleString("en-US") + "**. Engauge remains the source of truth; the new XP may advance their level."
+        ". Current level: **" + after.level.toLocaleString("en-US") + "** · Total XP: **" +
+        after.totalXp.toLocaleString("en-US") + "**." +
+        (after.level > (before?.level ?? 0) ? " Level up!" : "")
       ));
     }
   }
