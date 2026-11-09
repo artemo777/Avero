@@ -28,7 +28,8 @@ const PURPOSE_ALIASES = Object.freeze({
   scavenge: ["scavenge", "search", "magnifying_glass", "explore"],
   guess: ["guess", "target", "dart", "bullseye"],
   vault: ["vault", "lock", "safe"],
-  collections: ["collections", "atlas", "map"],
+  collections: ["collections", "collection", "atlas", "map"],
+  settings: ["settings", "tools", "wrench", "gear", "configuration"],
   rock: ["rock", "fist"],
   paper: ["paper", "hand"],
   scissors: ["scissors", "shears"]
