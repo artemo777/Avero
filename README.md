@@ -97,6 +97,11 @@ The assistant receives the member's question and Avero's public command catalogu
 - `/help` — groups the available commands by category.
 - `/profile [member]` — combines wallet, per-game Arcade Mastery tiers, themed collection progress, and unlocked set titles.
 - `/leaderboard [category]` — shows global top coin, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/rep profile [member]` — view server reputation, with positive, negative, and net scores.
+- `/rep give member type [reason]` — give positive or negative reputation; negative votes require a short reason.
+- `/rep history [member]` — view the latest reputation activity.
+- `/rep leaderboard` — rank server members by net reputation.
+- `+rep @member` / `-rep @member reason` — quick positive and negative prefix commands. Each member can give one reputation vote per 24 hours per server; self-votes and bot targets are blocked.
 - `/achievements [member]` — tracks twelve global activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
 - `/balance` — shows your global Avero coin balance.

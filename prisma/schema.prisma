@@ -379,6 +379,32 @@ model GuildMemberProgress {
   @@index([guildId, level])
 }
 
+model ReputationVote {
+  id          String   @id @default(cuid())
+  guildId     String
+  giverId     String
+  receiverId  String
+  value       Int
+  reason      String?  @db.VarChar(180)
+  createdAt   DateTime @default(now())
+  reversedAt  DateTime?
+  reversedById String?
+
+  @@index([guildId, receiverId, createdAt])
+  @@index([guildId, giverId, createdAt])
+}
+
+model ReputationCooldown {
+  id          String   @id @default(cuid())
+  guildId     String
+  giverId     String
+  lastGivenAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([guildId, giverId])
+}
+
 model ActivityRewardClaim {
   id          String   @id @default(cuid())
   guildId     String
