@@ -33,7 +33,7 @@ export const leaderboardCommand = Object.freeze({
       ]
     }]
   }),
-  async execute(interaction, { prisma, engaugeClient = engauge } = {}) {
+  async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Leaderboard command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Leaderboards are available inside a server.", flags: MessageFlags.Ephemeral });
@@ -42,7 +42,7 @@ export const leaderboardCommand = Object.freeze({
 
     const category = interaction.options.getString("category") ?? "coins";
     if (!CATEGORIES.includes(category)) {
-      await interaction.reply({ content: "Choose an Avero or Engauge leaderboard category.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Choose an Avero leaderboard category.", flags: MessageFlags.Ephemeral });
       return;
     }
 
