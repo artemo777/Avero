@@ -47,7 +47,6 @@ function drawPill(ctx, x, y, label, accent, width) {
 export async function renderProfileCard({
   username = "Avero member",
   avatarUrl,
-  level = 0,
   title = null,
   bio = null,
   accentColor = 0x8b7cff,
@@ -203,17 +202,8 @@ export async function renderProfileCard({
 
   ctx.fillStyle = "rgba(255,255,255,0.72)";
   ctx.font = "500 23px sans-serif";
-  ctx.fillText("LEVEL " + Math.max(0, Number(level) || 0), textX + 2, 264);
+  ctx.fillText(title ? String(title).slice(0, 46) : "No title equipped", textX + 2, 264);
 
-  if (title) {
-    ctx.fillStyle = accent;
-    ctx.font = "700 21px sans-serif";
-    ctx.fillText(String(title).slice(0, 46), textX + 2, 310);
-  } else {
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = "500 19px sans-serif";
-    ctx.fillText("No title equipped", textX + 2, 310);
-  }
 
   if (bio) {
     ctx.fillStyle = "rgba(255,255,255,0.68)";
