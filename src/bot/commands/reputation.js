@@ -120,10 +120,19 @@ export const reputationCommand = Object.freeze({
       const target = interaction.options.getUser("member");
       const type = interaction.options.getString("type");
       const value = type === "positive" ? 1 : -1;
-      const result = await giveReputation(prisma, {
-        guildId: interaction.guildId, giverId: interaction.user.id, receiverId: target.id,
-        value, reason: interaction.options.getString("reason")
-      });
+      let result;
+      try {
+        result = await giveReputation(prisma, {
+          guildId: interaction.guildId, giverId: interaction.user.id, receiverId: target.id,
+          value, reason: interaction.options.getString("reason")
+        });
+      } catch (error) {
+        if (error instanceof RangeError || error instanceof TypeError) {
+          await interaction.reply({ content: error.message, flags: MessageFlags.Ephemeral });
+          return;
+        }
+        throw error;
+      }
       if (!result.ok) {
         await interaction.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", flags: MessageFlags.Ephemeral });
         return;
@@ -144,7 +153,13 @@ export const reputationCommand = Object.freeze({
 export async function handleReputationPrefix(message, prisma) {
   if (!message.guildId || message.author.bot || message.webhookId) return false;
   const match = String(message.content ?? "").trim().match(/^([+-])rep\s+<@!?([0-9]{15,22})>(?:\s+([\s\S]+))?$/i);
-  if (!match) return false;
+  if (!match) {
+    if (/^[+-]rep\b/i.test(String(message.content ?? "").trim())) {
+      await message.reply({ content: "Use `+rep @member` or `-rep @member a short reason`.", allowedMentions: { parse: [] } });
+      return true;
+    }
+    return false;
+  }
   const value = match[1] === "+" ? 1 : -1;
   const receiverId = match[2];
   const reason = match[3]?.trim() ?? "";
