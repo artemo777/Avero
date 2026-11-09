@@ -11,7 +11,6 @@ import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
-import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 import { handleProfileBioModal } from "./bot/commands/profile.js";
 import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
 import { handleReputationPrefix, handleReputationComponent, handleReputationModal } from "./bot/commands/reputation.js";
@@ -55,17 +54,10 @@ client.once(Events.ClientReady, (readyClient) => {
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
   void refreshAveroServerEmojis(readyClient);
-  startActivityRuntime(readyClient, getPrismaClient());
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guildId || message.author.bot || message.webhookId) return;
-
-  try {
-    await recordMessageActivity(message, getPrismaClient());
-  } catch (error) {
-    console.error("Activity message tracking failed:", error);
-  }
 
   try {
     await handleAutoReactionMessage(message, getPrismaClient());
@@ -108,14 +100,6 @@ client.on(Events.MessageCreate, async (message) => {
     await handleAveroPrefixMessage(message, commands);
   } catch (error) {
     console.error("Avero prefix router failed:", error);
-  }
-});
-
-client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
-  try {
-    await handleVoiceStateUpdate(getPrismaClient(), oldState, newState);
-  } catch (error) {
-    console.error("Activity voice tracking failed:", error);
   }
 });
 
@@ -254,8 +238,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
-    // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
+    // Database-backed commands receive a shared Prisma client. Keep this explicit so newly added economy/profile commands cannot silently miss injection.
     const needsDatabase = !["ping", "help"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
