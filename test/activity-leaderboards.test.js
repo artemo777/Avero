@@ -174,6 +174,7 @@ test("voice XP carries sub-minute eligible time across separate sessions", async
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
       },
+      guildMemberProgress: { upsert: async () => ({}) },
       activityXpThrottle: {
         upsert: async () => ({ ...progress }),
         updateMany: async ({ where, data }) => {
