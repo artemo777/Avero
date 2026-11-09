@@ -5,6 +5,7 @@ import {
 import { randomInt } from "node:crypto";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
+import { getServerEmoji } from "../../averoui/server-emojis.js";
 import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame, updateProfileCustomization } from "../db/member-repository.js";
@@ -66,11 +67,14 @@ const WORK_TASKS = Object.freeze(["Sorted the community archive", "Designed a ti
 const CHOICES = Object.freeze(["rock", "paper", "scissors"]);
 const BEATS = Object.freeze({ rock: "scissors", paper: "rock", scissors: "paper" });
 const LABELS = Object.freeze({ rock: "Rock", paper: "Paper", scissors: "Scissors" });
-const COIN_ICON = getAssetSymbol("coin");
+
 const AVATAR_DECORATION_IDS = new Set(PROFILE_DECORATIONS);
+function uiEmoji(purpose, fallback) {
+  return getServerEmoji(purpose, fallback);
+}
 function collectibleButtonEmoji(itemId) {
   const emojis = { neon_badge: "👾", vault_badge: "🐀", starlight_badge: "📡", moonlit_token: "🛸", prism_crown: "🧪", avero_relic: "🪩" };
-  return emojis[itemId] ?? "🏅";
+  return getServerEmoji(itemId, emojis[itemId] ?? "🏅");
 }
 function collectibleIcon(item) {
   return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
@@ -161,29 +165,29 @@ function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, 
 }
 function navButtons(userId, includeDaily = false) {
   const buttons = [
-    button(userId, "shop", "Shop", "", ButtonStyle.Primary, "🛍️"),
-    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, "🎒"),
-    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+    button(userId, "shop", "Shop", "", ButtonStyle.Primary, uiEmoji("shop", "🛍️")),
+    button(userId, "inventory", "Inventory", "", ButtonStyle.Secondary, uiEmoji("inventory", "🎒")),
+    button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getAssetSymbol("coin"))
   ];
-  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, "🧰"));
-  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, "🔎"));
-  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, "✨"));
+  buttons.push(button(userId, "work", "Work", "", ButtonStyle.Success, uiEmoji("work", "🧰")));
+  buttons.push(button(userId, "scavenge", "Scavenge", "", ButtonStyle.Primary, uiEmoji("scavenge", "🔎")));
+  if (includeDaily) buttons.push(button(userId, "daily", "Daily +100", "", ButtonStyle.Success, uiEmoji("daily", "✨")));
   return buttons;
 }
 export function renderGames(userId) {
   const gameButtons = [
     ...[1, 2, 3, 4, 5].map((number) =>
-      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, "🎯")),
+      button(userId, "guess", "Guess " + number, String(number), ButtonStyle.Primary, uiEmoji("guess", "🎯"))),
     ...CHOICES.map((choice) =>
-      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️")),
-    button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, "🪙"),
-    button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, "🪙"),
-    button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, "🔐"),
-    button(userId, "collections", "Collection Atlas", "", ButtonStyle.Secondary, "🗺️")
+      button(userId, "rps", LABELS[choice], choice, ButtonStyle.Secondary, uiEmoji(choice, choice === "rock" ? "✊" : choice === "paper" ? "✋" : "✌️"))),
+    button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, getAssetSymbol("coin")),
+    button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, getAssetSymbol("coin")),
+    button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, uiEmoji("vault", "🔐")),
+    button(userId, "collections", "Collection Atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️"))
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: "🪙 **Coinflip** · heads or tails\n🎯 **Guess** · pick 1–5\n✊ **RPS** · choose your move\n🔐 **Vault** · solve the daily code\n\n-# Free games · no wagers · eligible wins earn virtual coins on a shared cooldown.",
+    description: getAssetSymbol("coin") + " **Coinflip** · heads or tails\n" + uiEmoji("guess", "🎯") + " **Guess** · pick 1–5\n" + uiEmoji("rock", "✊") + " **RPS** · choose your move\n" + uiEmoji("vault", "🔐") + " **Vault** · solve the daily code\n\n-# Free games · no wagers · eligible wins earn virtual coins on a shared cooldown.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY • COLLECTION ATLAS",
     buttons: gameButtons,
@@ -195,8 +199,8 @@ export async function renderBalance(prisma, guildId, userId) {
   return gamePayload(createGamePanel({
     title: "Your balance",
     eyebrow: "WALLET",
-    description: COIN_ICON + " **" + balance.toLocaleString("en-US") + "** coins  ·  ◆ **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
-    sections: ["**Earn coins**\n✨ /daily · every 24h\n🧰 /work · every 60m\n🧭 /scavenge · every 20m\n📜 /contracts · daily goals\n🎮 /games · free mini-games", "**Earn gems**\n◆ Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
+    description: getAssetSymbol("coin") + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
+    sections: ["**Earn coins**\n" + uiEmoji("daily", "✨") + " /daily · every 24h\n" + uiEmoji("work", "🧰") + " /work · every 60m\n" + uiEmoji("scavenge", "🧭") + " /scavenge · every 20m\n📜 /contracts · daily goals\n" + uiEmoji("game", "🎮") + " /games · free mini-games", "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
     footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
@@ -224,7 +228,7 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
   const sections = pageItems.map((item) => {
     const status = owned.has(item.id) ? "✓ Owned" : "Available";
     const unit = item.currency === "gems" ? "gems" : "coins";
-    return "**" + item.icon + " " + item.name + "** · " + item.rarity + "\n" +
+    return "**" + getServerEmoji(item.id, item.icon) + " " + item.name + "** · " + item.rarity + "\n" +
       "**Price:** " + item.price.toLocaleString("en-US") + " " + unit + " · " + status + "\n" + item.description;
   });
   sections.push("**Professor’s note** · Tools now have practical effects in Scavenge, Vault, and Work.");
@@ -247,7 +251,7 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
   shopThumbnails.push(professor.filename);
   return gamePayload(createGamePanel({
     title: "Avero shop",
-    description: "◉ **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  ◆ **" +
+    description: getAssetSymbol("coin") + " **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" +
       (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems  ·  " + filteredItems.length + " items",
     sections,
     sectionButtons,
@@ -311,7 +315,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
     description: "**Total Market Value:** " + totalMarketValue.toLocaleString("en-US") + "\\n**Page Market Value:** " + pageMarketValue.toLocaleString("en-US"),
     sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\\n**Sets completed:** " + completedSets + "/3"],
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
-    buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, "🗺️"), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, "🛍️")],
+    buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️")), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))],
     footer: "PAGE " + (currentPage + 1) + " OF " + pageCount,
     separators: true
   }));
@@ -340,9 +344,9 @@ export async function renderCollectionSets(prisma, guildId, userId, controlUserI
         { ...button(controlUserId, "collections_page", "← Previous", String(Math.max(0, currentPage - 1))), disabled: currentPage === 0 },
         { ...button(controlUserId, "collections_page", "Next →", String(Math.min(pageCount - 1, currentPage + 1))), disabled: currentPage === pageCount - 1 }
       ] : []),
-      button(controlUserId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"),
-      button(controlUserId, "shop", "Browse shop", "", ButtonStyle.Primary, "🛍️"),
-      button(controlUserId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")
+      button(controlUserId, "inventory", "My collection", "", ButtonStyle.Secondary, uiEmoji("inventory", "🎒")),
+      button(controlUserId, "shop", "Browse shop", "", ButtonStyle.Primary, uiEmoji("shop", "🛍️")),
+      button(controlUserId, "balance", "Wallet", "", ButtonStyle.Secondary, getAssetSymbol("coin"))
     ],
     footer: "COLLECTION ATLAS • GLOBAL PROGRESS",
   }));
@@ -374,12 +378,12 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
     color: owned ? THEME.colors.success : THEME.colors.primary,
     buttons: [
-      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? "🛍️" : "🎒"),
+      button(userId, source === "shop" ? "shop" : "inventory", source === "shop" ? "Back to shop" : "Back to collection", source === "shop" ? "" : String(page), ButtonStyle.Secondary, source === "shop" ? uiEmoji("shop", "🛍️") : uiEmoji("inventory", "🎒")),
       ...(owned && item.category === "badges" ? [equipped ? button(userId, "unequip_badge", "Unequip badge", item.id, ButtonStyle.Secondary) : button(userId, "equip_badge", "Equip badge", item.id, ButtonStyle.Success)] :
         owned && AVATAR_DECORATION_IDS.has(item.id) ? [avatarDecorationEquipped ? button(userId, "unequip_avatar_decoration", "Remove avatar deco", item.id, ButtonStyle.Secondary) : button(userId, "equip_avatar_decoration", "Equip avatar deco", item.id, ButtonStyle.Success)] :
         owned && item.category === "cosmetics" ? [frameEquipped ? button(userId, "unequip_frame", "Remove frame", item.id, ButtonStyle.Secondary) : button(userId, "equip_frame", "Use as frame", item.id, ButtonStyle.Success)] :
         owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
-      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, "🛍️")])
+      ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))])
     ]
   }));
 }
@@ -396,18 +400,18 @@ export function renderScavenge(result, userId, route, item) {
     }));
   }
   const dropText = result.itemId && item
-    ? "\n\n🎁 **New collectible**\n" + item.icon + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
+    ? "\n\n" + uiEmoji("reward-sparkle", "🎁") + " **New collectible**\n" + getServerEmoji(item.id, item.icon) + " **" + item.name + "** · " + item.rarity + "\nAdded to your collection."
     : result.duplicateItemId && item
-      ? "\n\n🔁 **Duplicate find** · " + item.icon + " **" + item.name + "**\nConverted to **+" + result.bonus + " coins**."
+      ? "\n\n" + uiEmoji("reward-sparkle", "🔁") + " **Duplicate find** · " + getServerEmoji(item.id, item.icon) + " **" + item.name + "**\nConverted to **+" + result.bonus + " coins**."
       : "";
   return gamePayload(createGamePanel({
     title: result.itemId ? "New find!" : "Run complete.",
-    description: "### 🧭 " + route.name + "\n" + route.description + "\n\n✦ **+" + result.amount + " coins**" + dropText +
+    description: "### " + uiEmoji("scavenge", "🧭") + " " + route.name + "\n" + route.description + "\n\n" + uiEmoji("reward-sparkle", "✦") + " **+" + result.amount + " coins**" + dropText +
       "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 20 minutes.",
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
     footer: "REWARDS SAVED • FREE TO PLAY",
-    buttons: [button(userId, "scavenge", "Run it back", route.id, ButtonStyle.Primary, "🧭"), ...navButtons(userId, true).slice(0, 4)]
+    buttons: [button(userId, "scavenge", "Run it back", route.id, ButtonStyle.Primary, uiEmoji("scavenge", "🧭")), ...navButtons(userId, true).slice(0, 4)]
   }));
 }
 export async function runScavenge(prisma, guildId, userId, routeId = null) {
@@ -450,7 +454,7 @@ export function renderWork(result, userId) {
   }
   return gamePayload(createGamePanel({
     title: "Shift done.",
-    description: "### 🧰 " + result.job.name + "\n\n✦ **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " minutes.",
+    description: "### " + uiEmoji("work", "🧰") + " " + result.job.name + "\n\n" + uiEmoji("reward-sparkle", "✦") + " **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " minutes.",
     eyebrow: "WORKSHOP", color: THEME.colors.success,
     footer: "CAREER SHIFT • REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId, true)
   }));
@@ -481,7 +485,7 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
     title: "Daily claimed.",
     description: "## ✨ +" + (result.amount ?? reward) + " coins" + (result.streakBonus ? " · +" + result.streakBonus + " streak bonus" : "") + "\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
       "\n🔥 Streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." +
-      (result.gemsAwarded ? "\n◆ **+" + result.gemsAwarded + " gem** · 7-day streak reward." : "") + perkLine +
+      (result.gemsAwarded ? "\n" + uiEmoji("gem-currency", "◆") + " **+" + result.gemsAwarded + " gem** · 7-day streak reward." : "") + perkLine +
       "\n\nSee you tomorrow.",
     eyebrow: "DAILY DROP", color: THEME.colors.success,
     footer: "REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId)
@@ -501,7 +505,7 @@ export function renderGuess(guess, answer, result, userId) {
       : "No coins lost. Try again.";
   return gamePayload(createGamePanel({
     title: rewarded ? "Perfect guess!" : won ? "Correct guess!" : "Not this time",
-    description: "### 🎯 Your pick: **" + guess + "** · Answer: **" + answer + "**\n\n" +
+    description: "### " + uiEmoji("guess", "🎯") + " Your pick: **" + guess + "** · Answer: **" + answer + "**\n\n" +
       outcome + "\n\n**Play again**",
     eyebrow: "GUESS",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.warning : THEME.colors.primary,
@@ -514,7 +518,7 @@ export function renderVaultChallenge(challenge, userId, { hasNotebook = false } 
   return gamePayload(createGamePanel({
     title: "Today's vault is ready",
     eyebrow: "THE VAULT • " + challenge.date,
-    description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
+    description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       (hasNotebook ? "\n\n**Field Notebook hint:** the three digits add up to **" + challenge.code.split("").reduce((sum, digit) => sum + Number(digit), 0) + "**." : "") +
       "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. A correct solve earns 25 coins when the shared 10-minute Guess/RPS cooldown is ready. Free play · No wagers.",
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
@@ -536,7 +540,7 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
   return gamePayload(createGamePanel({
     title: won ? "Vault unlocked" : "Vault stays locked",
     eyebrow: "THE VAULT • " + challenge.date,
-    description: "### 🔐 Daily three-dial puzzle\n" + challenge.clues.join("\n") +
+    description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
       (won ? "\nToday's code: **" + challenge.code + "**" : "") + outcome +
       "\n\n-# One submission per member per UTC day. No entry fee or wager; rewards share the 10-minute Guess/RPS cooldown.",
@@ -558,8 +562,8 @@ export function renderCoinflip(call, result, reward, userId) {
     description: "Free play · no wagers · virtual coins only\n\nYou called **" + call.toUpperCase() + "**\nAvero flipped **" + result.toUpperCase() + "**\n\n" + outcome,
     footer: "FREE PLAY • NO WAGERS • VIRTUAL COINS ONLY",
     buttons: [
-      button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, "🪙"),
-      button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, "🪙"),
+      button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, getAssetSymbol("coin")),
+      button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, getAssetSymbol("coin")),
       ...navButtons(userId, true).slice(0, 2)
     ]
   }));
@@ -596,7 +600,7 @@ export function renderBuy(result, item, userId) {
       : "**" + item.name + "** costs **" + item.price + " " + currency + "**.\nBalance: **" + balance.toLocaleString("en-US") + " " + currency + "**.";
   return gamePayload(createGamePanel({
     title, description, eyebrow: "SHOP", color: success ? THEME.colors.success : THEME.colors.warning, footer: "SHOP • VIRTUAL COLLECTIBLES",
-    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, "🛍️"), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, "🎒"), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, "🪙")]
+    buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, uiEmoji("shop", "🛍️")), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, uiEmoji("inventory", "🎒")), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getAssetSymbol("coin"))]
   }));
 }
 async function runGuess(prisma, guildId, userId, guess) {

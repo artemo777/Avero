@@ -138,7 +138,7 @@ It listens on port `3000` by default. Set `PORT` to change it; valid values are 
 Import shared helpers from `averoui/index.js`. The toolkit centralizes:
 
 - A deep violet, teal, and slate color palette.
-- Unicode-only semantic glyphs instead of default emoji.
+- Semantic server custom emojis where available, with Unicode glyph fallbacks.
 - Components V2 panels with accent colors, text displays, and consistent separators.
 - Discord timestamps, Markdown escaping, validated mentions, HTTPS links, and embed payload validation.
 
