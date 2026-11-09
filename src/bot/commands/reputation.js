@@ -7,8 +7,6 @@ import {
 } from "../../db/reputation-repository.js";
 
 const DARK = 0x343840;
-const GREEN = 0xA6D8B5;
-const RED = 0xD99A9A;
 const fmt = (value) => Number(value ?? 0).toLocaleString("en-US");
 const repId = (action, targetId = "") => ["avero-rep", action, targetId].filter(Boolean).join("|");
 
@@ -118,7 +116,7 @@ export const reputationCommand = Object.freeze({
     }
     if (action === "give") {
       const target = interaction.options.getUser("member");
-      const type = interaction.options.getString("type");
+      if (target.bot) {\n        await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });\n        return;\n      }\n      const type = interaction.options.getString("type");
       const value = type === "positive" ? 1 : -1;
       let result;
       try {
