@@ -4,9 +4,8 @@ import {
 } from "discord.js";
 import { renderRankCard } from "../../../averoui/rank-card.js";
 import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
-import { createEngaugeClient, EngaugeApiError } from "../engauge-api.js";
+import { getGuildProgress } from "../../db/guild-progression-repository.js";
 
-const engauge = createEngaugeClient();
 const number = (value) => {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -50,7 +49,7 @@ export async function buildRankPayload(target, member, { levelUp = false, previo
     new MediaGalleryItemBuilder().setURL("attachment://rank-card.png").setDescription("Avero compact rank card")
   ));
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-    "-# " + (levelUp ? "KEEP GOING · NEXT LEVEL AWAITS" : "LEVELS & XP POWERED BY ENGAUGE")
+    "-# " + (levelUp ? "KEEP GOING · NEXT LEVEL AWAITS" : "LEVELS & XP POWERED BY AVERO")
   ));
   return {
     flags: MessageFlags.IsComponentsV2,
@@ -66,7 +65,7 @@ export async function buildRankPayload(target, member, { levelUp = false, previo
 export const rankCommand = Object.freeze({
   data: Object.freeze({
     name: "rank",
-    description: "View your Engauge level, XP and activity stats.",
+    description: "View your Avero level, XP and activity stats.",
     options: [{
       type: 6,
       name: "member",
@@ -74,25 +73,16 @@ export const rankCommand = Object.freeze({
       required: false
     }]
   }),
-  async execute(interaction) {
-    if (!interaction.guildId) {
+  async execute(interaction, { prisma } = {}) {
+    if (!interaction.guildId || !prisma) {
       await interaction.reply({ content: "Rank cards are available inside a server.", flags: MessageFlags.Ephemeral });
       return;
     }
     const target = interaction.options.getUser("member") ?? interaction.user;
     await interaction.deferReply();
-    try {
-      const member = await engauge.getMember(interaction.guildId, target.id);
-      await interaction.editReply(await buildRankPayload(target, member));
-    } catch (error) {
-      const message = error instanceof EngaugeApiError && error.status === 403
-        ? "The Engauge API token does not have access to this Discord server."
-        : error instanceof EngaugeApiError && error.status === 404
-          ? "Engauge could not find this server or member record. Check that Avero is using the correct server ID and that the member has Engauge stats."
-          : error instanceof EngaugeApiError && error.status === 0 && /ENGAUGE_API_TOKEN/.test(error.message)
-            ? "ENGAUGE_API_TOKEN is not available in Avero's running environment. Add it to the environment that starts the bot, then restart Avero."
-            : "Rank data is temporarily unavailable. Check the Engauge API connection and try again.";
-      await interaction.editReply({ content: message });
-    }
+    const member = await getGuildProgress(prisma, interaction.guildId, target.id);
+    await interaction.editReply(await buildRankPayload(target, member ?? {
+      xp: 0, totalXp: 0, level: 0, nextLevelXp: 1000, messages: 0, voiceSeconds: 0
+    }));
   }
 });
