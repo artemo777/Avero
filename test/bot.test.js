@@ -350,6 +350,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
       findUnique: async ({ where }) => ownedIds.has(where.guildId_userId_itemId.itemId) ? { itemId: where.guildId_userId_itemId.itemId } : null
     },
     currencyTransaction: { groupBy: async () => [] },
+    guildMemberProgress: { findUnique: async () => null },
     memberProfile: {
       findUnique: async () => profile,
       upsert: async ({ create, update }) => { profile = { ...create, ...profile, ...update }; return profile; }
