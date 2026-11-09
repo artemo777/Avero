@@ -218,7 +218,7 @@ export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
     eyebrow: "AVERO / CONTROL CENTER",
     description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
     sections: [
-      "**AUTOMATION**\\nEnabled autoresponder rules · " + display(activeRules)
+      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules)
     ],
     buttons: [{ customId: "avero-config|diagnostics-back", label: "Back to config", style: ButtonStyle.Secondary }],
     footer: "MANAGE SERVER REQUIRED • INTERNAL SERVER HEALTH",
