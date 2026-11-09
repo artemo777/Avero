@@ -1,4 +1,5 @@
 import { ICONS } from "./icons.js";
+import { getServerEmoji } from "./server-emojis.js";
 
 /**
  * Shared asset catalogue for UI glyphs and local artwork.
@@ -38,7 +39,7 @@ const ASSET_SYMBOLS = Object.freeze({
 export function getAssetSymbol(id) {
   const asset = getAsset(id);
   if (!asset) return "·";
-  return ASSET_SYMBOLS[asset.id] ?? asset.value ?? "·";
+  return getServerEmoji(asset.id, ASSET_SYMBOLS[asset.id] ?? asset.value ?? "·");
 }
 
 export function getRarityAssetId(rarity) {
