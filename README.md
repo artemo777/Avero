@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Member-owned data is global across every server: each Discord user has one wallet, inventory, profile progression, career, title collection, cooldown set, and game history.
+Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Wallets, inventory, cosmetics, career, titles, cooldowns, and game history are global per member. XP, levels, and imported message/voice statistics are server-scoped.
 
 ## Requirements
 
@@ -48,6 +48,33 @@ Avero can operate in any Discord server where it is installed and has the requir
    ```
 
 The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
+
+## Moving XP from Engauge
+
+Avero now stores server XP, levels, message totals, voice time, and imported currency in its own PostgreSQL database. Runtime XP awards, `/rank`, `/leaderboard`, and `/admin xp` use Avero's database; the running bot no longer needs an Engauge API token.
+
+To migrate the existing server once:
+
+1. Back up the Avero PostgreSQL database.
+2. Set `ENGAUGE_API_TOKEN` and `ENGAUGE_SERVER_ID` in the one-time migration environment. Never paste the token into chat or commit it.
+3. Apply the new schema and regenerate Prisma:
+   ```sh
+   npm run db:migrate:deploy
+   npm run db:generate
+   ```
+4. Preview the Engauge export without writing anything:
+   ```sh
+   npm run db:import-engauge
+   ```
+5. If the server ID, member count, and totals look correct, run the import:
+   ```sh
+   npm run db:import-engauge -- --apply
+   ```
+6. Verify several members with `/rank` and check `/leaderboard xp`. Only after verification remove the Engauge token from the migration environment.
+
+The importer fetches all pages before writing, skips invalid Discord IDs, and uses insert-only writes so rerunning it does not overwrite existing Avero progression. It imports fields exposed by the Engauge member-list API (XP, level, messages, voice seconds, and currency). When Engauge does not expose a separate current-level XP threshold, Avero preserves the reported cumulative XP and level, then starts a fresh local level-progress bar for future XP. Avero's native level-up curve uses 1,000 XP for the first level threshold and increases the next threshold by 1,000 per level; confirm this matches the progression you want before switching members over.
+
+Do not remove the old Engauge data or uninstall Engauge until the imported totals have been checked and you have a database backup. Historical per-message/per-session events cannot be recreated from aggregate member statistics.
 
 ## Natural-language prefix and AI assistant
 
