@@ -10,12 +10,6 @@ function memberKey(guildId, userId) {
   return { guildId: GLOBAL_SCOPE_ID, userId };
 }
 
-function requireAmount(amount) {
-  if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000) {
-    throw new RangeError("Amount must be an integer from 1 to 1,000,000.");
-  }
-}
-
 function requireReason(reason) {
   if (reason !== undefined && reason !== null &&
       (typeof reason !== "string" || reason.trim().length > 200)) {
@@ -61,17 +55,5 @@ export async function adjustAdminInventory(prisma, guildId, targetUserId, actorU
       data: { guildId, targetUserId, actorUserId, action: "item_" + operation, itemId, reason: cleanReason }
     });
     return { updated: true, itemId, operation };
-  });
-}
-
-export async function recordAdminXpGrant(prisma, guildId, targetUserId, actorUserId, amount, reason = null) {
-  memberKey(guildId, targetUserId);
-  memberKey(guildId, actorUserId);
-  requireAmount(amount);
-  await prisma.adminEconomyAudit.create({
-    data: {
-      guildId, targetUserId, actorUserId, action: "xp_add",
-      currency: "xp", amount, reason: requireReason(reason)
-    }
   });
 }
