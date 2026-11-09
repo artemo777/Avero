@@ -1,6 +1,5 @@
 import { GatewayIntentBits, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
-import { getActivitySettings } from "../../db/activity-repository.js";
 import { getAutoReactionSettings, getAutoReactionRolePerks } from "../../db/auto-reaction-repository.js";
 
 const REQUIRED_PERMISSIONS = Object.freeze([
@@ -21,12 +20,10 @@ export const setupCommand = Object.freeze({
     const missing = REQUIRED_PERMISSIONS.some(([, permission]) => !permissions?.has(permission));
     const intents = interaction.client?.options?.intents;
     const messageContentRequested = Boolean(intents?.has?.(GatewayIntentBits.MessageContent));
-    const voiceRequested = Boolean(intents?.has?.(GatewayIntentBits.GuildVoiceStates));
-    const featureLines = [
+      const featureLines = [
       "**Games** · " + (settings.gamesEnabled ? "Ready" : "Paused by a server admin"),
       "**Currency** · " + (settings.currencyEnabled ? "Ready" : "Paused by a server admin"),
-      "**Message Content Intent** · " + (messageContentRequested ? "Requested at runtime · verify it is enabled in the Developer Portal" : "Not requested · text autoresponder triggers will not work"),
-      "**Voice State Intent** · " + (voiceRequested ? "Requested at runtime" : "Not requested · voice activity will not be tracked")
+      "**Message Content Intent** · " + (messageContentRequested ? "Requested at runtime · verify it is enabled in the Developer Portal" : "Not requested · text autoresponder triggers will not work")
     ];
     const sections = [
       "**Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
@@ -35,14 +32,10 @@ export const setupCommand = Object.freeze({
       "**Feature status**\n" + featureLines.join("\n")
     ];
     if (prisma) {
-      const [activity, reactions, perks] = await Promise.all([
-        getActivitySettings(prisma, interaction.guildId),
+      const [reactions, perks] = await Promise.all([
         getAutoReactionSettings(prisma, interaction.guildId),
         getAutoReactionRolePerks(prisma, interaction.guildId)
       ]);
-      sections.push("**Activity boards**\nDaily · " + (activity.dailyChannelId ? "Channel configured" : "Not configured") +
-        "\nWeekly · " + (activity.weeklyChannelId ? "Channel configured" : "Not configured") +
-        "\nTimezone · " + activity.timezone + " · Refresh · " + activity.updateIntervalSeconds + " sec");
       sections.push("**Reaction Perks**\n" + (reactions.enabled
         ? (perks.length ? perks.length + " role reaction(s) configured · " + (permissions?.has(PermissionFlagsBits.AddReactions) ? "Add Reactions permission available" : "Add Reactions permission needed") : "Enabled · no role reactions configured")
         : "Paused"));
