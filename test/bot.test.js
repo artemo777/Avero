@@ -270,7 +270,7 @@ test("profile command combines wallet and collection data", async () => {
   await profileCommand.execute({
     guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -304,7 +304,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   await profileCommand.execute({
     guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -328,7 +328,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
   await profileCommand.execute({
     guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -360,7 +360,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
       findUnique: async () => ({ titleId: "lobby_menace" })
     }
   };
-  const user = { id: "user-1", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
+  const user = { id: "22345678901234567", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
   const selections = [
     ["profile_accent_select", ["4380357"], () => assert.equal(profile.profileAccentColor, 0x42d6c5)],
     ["profile_banner_select", ["aurora"], () => { assert.equal(profile.profileBanner, "aurora"); assert.equal(profile.profileBannerImage, null); }],
