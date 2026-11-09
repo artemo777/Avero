@@ -21,7 +21,7 @@ try {
     guildId,
     membersFetched: members.length,
     validDiscordMembers: members.filter((member) => /^\d{17,20}$/.test(String(member?.id ?? ""))).length,
-    totalXp: members.reduce((sum, member) => sum + Math.max(0, Math.floor(Number(member?.xp ?? member?.totalXp ?? 0) || 0)), 0),
+    totalXp: members.reduce((sum, member) => sum + Math.max(0, Math.floor(Number(member?.totalXp ?? member?.xp ?? 0) || 0)), 0),
     totalMessages: members.reduce((sum, member) => sum + Math.max(0, Math.floor(Number(member?.messages ?? member?.messageCount ?? 0) || 0)), 0),
     totalVoiceSeconds: members.reduce((sum, member) => sum + Math.max(0, Math.floor(Number(member?.voiceSeconds ?? 0) || 0)), 0)
   };
