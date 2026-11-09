@@ -293,8 +293,6 @@ model AdminEconomyAudit {
   targetUserId String
   actorUserId  String
   action       String   @db.VarChar(40)
-  currency     String?  @db.VarChar(10)
-  amount       Int?
   itemId       String?  @db.VarChar(40)
   reason       String?  @db.VarChar(200)
   createdAt    DateTime @default(now())
