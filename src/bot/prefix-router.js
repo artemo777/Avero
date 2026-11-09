@@ -183,7 +183,7 @@ export async function handleAveroPrefixMessage(message, commands) {
     try {
       const parsed = parseCommandArguments(command, input, message);
       const interaction = prefixInteraction(message, parsed.options);
-      const needsDatabase = !["ping", "help", "rank"].includes(command.data.name);
+      const needsDatabase = !["ping", "help"].includes(command.data.name);
       const prisma = needsDatabase ? getPrismaClient() : undefined;
       const settings = needsDatabase ? await getGuildSettings(prisma, message.guildId) : undefined;
       if (GAME_COMMANDS.has(command.data.name) && !settings.gamesEnabled) {
