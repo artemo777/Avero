@@ -10,7 +10,7 @@ Commands already in the feature branch:
 - Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`
 - Collectibles: `/shop`, `/buy`, `/inventory`
 - Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
-- Progress and discovery: `/profile`, `/achievements`, `/collections`, `/leaderboard`, `/help`
+- Progress and discovery: `/profile`, `/achievements`, `/collections`, `/help`
 
 Current earning rules:
 
@@ -70,7 +70,7 @@ After the branch stack is integrated and the database migrations are applied in 
 8. Open `/contracts`, complete each objective, claim each reward, and verify repeated claims never pay twice.
 9. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
 10. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
-11. Check coin, XP, games, coinflip, guess, RPS, and Vault leaderboards.
+11. Check coin balances, games, coinflip, guess, RPS, and Vault rewards without ranking members.
 12. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
 13. Repeat balance and inventory checks in a second server to confirm the same global member wallet and inventory are visible there.
 
