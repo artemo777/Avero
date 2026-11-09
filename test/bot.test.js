@@ -262,7 +262,7 @@ test("profile command combines wallet and collection data", async () => {
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
-    memberProfile: { findUnique: async () => null },
+    guildMemberProgress: { findUnique: async () => null },\n    memberProfile: { findUnique: async () => null },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
@@ -295,7 +295,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "vault_badge" }] },
-    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "vault_badge", profileShowcaseBadgeIds: ["vault_badge"] }) },
+    guildMemberProgress: { findUnique: async () => null },\n    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "vault_badge", profileShowcaseBadgeIds: ["vault_badge"] }) },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
@@ -318,7 +318,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
-    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge" }) },
+    guildMemberProgress: { findUnique: async () => null },\n    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge" }) },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
