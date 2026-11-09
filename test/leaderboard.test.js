@@ -103,8 +103,8 @@ test("Avero XP leaderboard uses server-scoped native progression data", async ()
     orderBy: [{ totalXp: "desc" }, { level: "desc" }],
     take: 10
   });
-  assert.match(panelText(response), /<@12345678901234568> — \\*\\*20,662 total XP\\*\\*/);
-  assert.match(panelText(response), /<@12345678901234569> — \\*\\*15,000 total XP\\*\\*/);
+  assert.match(panelText(response), /<@12345678901234568> — \*\*20,662 total XP\*\*/);
+  assert.match(panelText(response), /<@12345678901234569> — \*\*15,000 total XP\*\*/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
