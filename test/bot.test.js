@@ -80,7 +80,7 @@ function panelText(response) {
 test("RPS is free to play and rewards wins without wagers", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
-  const account = { guildId: "guild-1", userId: "user-1", balance: 0, lastGameRewardAt: null };
+  const account = { guildId: "12345678901234567", userId: "user-1", balance: 0, lastGameRewardAt: null };
   const transactions = [];
   const prisma = {
     $transaction: async (callback) => callback(prisma),
@@ -99,7 +99,7 @@ test("RPS is free to play and rewards wins without wagers", async () => {
     }
   };
   await rpsCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
@@ -129,7 +129,7 @@ test("RPS rejects direct messages and invalid choices", async () => {
     flags: MessageFlags.Ephemeral
   });
 
-  interaction.guildId = "guild-1";
+  interaction.guildId = "12345678901234567";
   await rpsCommand.execute(interaction);
   assert.deepEqual(replies[1], {
     content: "Choose rock, paper, or scissors.",
@@ -161,7 +161,7 @@ test("guess command rejects out-of-range input before touching the database", as
   const { guessCommand } = await import("../src/bot/commands/guess.js");
   let response;
   await guessCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: { getInteger: () => 6 },
     reply: async (payload) => { response = payload; }
@@ -205,7 +205,7 @@ test("shop category select and pagination preserve the selected category", async
   const interaction = {
     customId: "avero|user-1|shop_category",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     values: ["gems"],
     isStringSelectMenu: () => true,
     reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); },
@@ -268,7 +268,7 @@ test("profile command combines wallet and collection data", async () => {
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
     user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
@@ -302,7 +302,7 @@ test("profile lists all owned badges but displays only the selected badge beside
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
     user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
@@ -326,7 +326,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
     user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
@@ -375,7 +375,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
     const handled = await handleGameComponent({
       customId: "avero|user-1|" + action,
       user,
-      guildId: "guild-1",
+      guildId: "12345678901234567",
       values,
       isStringSelectMenu: () => true,
       update: async (payload) => { response = payload; },
@@ -404,7 +404,7 @@ test("leaderboard sorts server members by the requested category", async () => {
     memberProfile: { findMany: async () => { throw new Error("XP query should not run"); } }
   };
   await leaderboardCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     options: { getString: () => "coins" },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -422,7 +422,7 @@ test("daily Vault button opens the current puzzle clues from the games hub", asy
   const handled = await handleGameComponent({
     customId: "avero|user-1|vault",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     reply: async (payload) => { response = payload; },
     update: async (payload) => { response = payload; }
   }, { prisma: {} });
@@ -442,7 +442,7 @@ test("collection atlas panel shows route-linked set progress", async () => {
         { itemId: "avero_relic" }
       ]
     }
-  }, "guild-1", "user-1");
+  }, "12345678901234567", "user-1");
   const text = panelText(response);
   assert.match(text, /The Collection Atlas/);
   assert.match(text, /1 \/ 3 themed sets completed/);
@@ -456,7 +456,7 @@ test("collection atlas button opens the member's set progress", async () => {
   const handled = await handleGameComponent({
     customId: "avero|user-1|collections",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     reply: async (payload) => { response = payload; },
     update: async (payload) => { response = payload; }
   }, {
@@ -478,7 +478,7 @@ test("inventory renders globally unique component IDs on empty and populated pag
       currencyPurchase: {
         findMany: async () => itemIds.map((itemId) => ({ itemId }))
       }
-    }, "guild-1", "user-1");
+    }, "12345678901234567", "user-1");
     const panel = response.components[0].toJSON();
     const customIds = panel.components
       .filter((component) => component.type === 1)
@@ -523,7 +523,7 @@ test("malformed, stale, and unknown game controls receive a private fallback res
     const handled = await handleGameComponent({
       customId,
       user: { id: "user-1" },
-      guildId: "guild-1",
+      guildId: "12345678901234567",
       reply: async (payload) => { response = payload; }
     }, { prisma: {} });
 
@@ -581,7 +581,7 @@ test("title purchases return a compact ephemeral Components V2 panel", async () 
   };
   const prisma = { $transaction: async (callback) => callback(tx) };
   await titlesCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: {
       getString: (name) => name === "action" ? "buy" : "main_character"
