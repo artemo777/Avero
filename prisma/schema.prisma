@@ -287,25 +287,6 @@ model ReputationCooldown {
   @@unique([guildId, giverId])
 }
 
-model ActivityRewardClaim {
-  id          String   @id @default(cuid())
-  guildId     String
-  periodType  String
-  periodKey   String
-  userId      String
-  position    Int
-  roleId      String?
-  coins       Int      @default(0)
-  xp          Int      @default(0)
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deliveredAt DateTime?
-
-  @@unique([guildId, periodType, periodKey, position])
-  @@index([guildId, periodType, periodKey])
-}
-
 model AdminEconomyAudit {
   id           String   @id @default(cuid())
   guildId      String
