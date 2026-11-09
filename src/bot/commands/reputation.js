@@ -167,6 +167,7 @@ export async function handleReputationPrefix(message, prisma) {
   const reason = match[3]?.trim() ?? "";
   try {
     const member = await message.guild.members.fetch(receiverId);
+    if (member.user.bot) throw new RangeError("Bots cannot receive reputation.");
     const result = await giveReputation(prisma, {
       guildId: message.guildId, giverId: message.author.id, receiverId: member.id, value, reason
     });
