@@ -14,6 +14,7 @@ import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js"
 import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 import { handleProfileBioModal } from "./bot/commands/profile.js";
 import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
+import { handleReputationPrefix, handleReputationComponent, handleReputationModal } from "./bot/commands/reputation.js";
 
 let config;
 try {
@@ -89,6 +90,7 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.MessageCreate, async (message) => {
   try {
+    if (await handleReputationPrefix(message, getPrismaClient())) return;
     await handleAveroPrefixMessage(message, commands);
   } catch (error) {
     console.error("Avero prefix router failed:", error);
@@ -104,6 +106,17 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  if (interaction.isButton() && interaction.customId.startsWith("avero-rep|")) {
+    try {
+      await handleReputationComponent(interaction, getPrismaClient());
+    } catch (error) {
+      console.error("Reputation component failed:", error);
+      const payload = { content: "Avero couldn't process that reputation action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
   if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
@@ -163,6 +176,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
     } catch (error) {
       console.error("Game component failed:", error);
       const payload = { content: "Avero could not complete that action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith("avero-rep|")) {
+    try {
+      await handleReputationModal(interaction, getPrismaClient());
+    } catch (error) {
+      console.error("Reputation modal failed:", error);
+      const payload = { content: error instanceof RangeError || error instanceof TypeError ? error.message : "Avero couldn't save that reputation vote.", flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }
