@@ -92,6 +92,8 @@ export async function publishActivityBoards(client, prisma, guild) {
   return results;
 }
 export async function deliverPendingActivityXp(prisma, take = 25, _apiClient = null, context = null, logger = console) {
+  // Engauge 4xx rejections were known not to have written XP; replay them safely into Avero.
+  await prisma.activityXpAward.updateMany({ where: { status: "rejected" }, data: { status: "pending" } });
   const staleBefore = new Date(Date.now() - 10 * 60_000);
   await prisma.activityXpAward.updateMany({
     where: { status: "in_flight", updatedAt: { lt: staleBefore } },
