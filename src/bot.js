@@ -40,7 +40,6 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
-  console.log("[Avero Engauge] API token configured in this runtime: " + (process.env.ENGAUGE_API_TOKEN?.trim() ? "yes" : "no"));
   startActivityRuntime(readyClient, getPrismaClient());
 });
 
@@ -219,7 +218,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
     // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
-    const needsDatabase = !["ping", "help", "rank"].includes(interaction.commandName);
+    const needsDatabase = !["ping", "help"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
     if (gameCommandNames.has(interaction.commandName) && !settings.gamesEnabled) {

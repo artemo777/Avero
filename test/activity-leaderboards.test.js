@@ -26,6 +26,7 @@ test("message activity records daily and weekly rows once per Discord message", 
   const prisma = {
     activityBoardSetting: { upsert: async () => ({ timezone: "UTC", weeklyResetDay: 1, ignoredChannelIds: [] }) },
     $transaction: async (callback) => callback({
+      guildMemberProgress: { upsert: async () => ({}) },
       activityMessageReceipt: {
         create: async ({ data }) => {
           if (receipts.has(data.messageId)) { const error = new Error("duplicate"); error.code = "P2002"; throw error; }
@@ -124,6 +125,7 @@ test("voice sessions split seconds across local midnight and weekly reset bounda
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
       },
+      guildMemberProgress: { upsert: async () => ({}) },
       activityXpThrottle: {
         upsert: async () => ({ ...progress }),
         updateMany: async ({ where, data }) => {
@@ -172,6 +174,7 @@ test("voice XP carries sub-minute eligible time across separate sessions", async
         updateMany: async () => ({ count: 1 }),
         deleteMany: async () => ({ count: 1 })
       },
+      guildMemberProgress: { upsert: async () => ({}) },
       activityXpThrottle: {
         upsert: async () => ({ ...progress }),
         updateMany: async ({ where, data }) => {

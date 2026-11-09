@@ -358,6 +358,27 @@ model ActivityRewardRule {
   @@index([guildId, periodType, enabled])
 }
 
+/// Server-scoped XP and imported Engauge statistics. Kept separate from global cosmetics.
+model GuildMemberProgress {
+  id             String   @id @default(cuid())
+  guildId        String
+  userId         String
+  xp             Int      @default(0)
+  totalXp        Int      @default(0)
+  level          Int      @default(0)
+  nextLevelXp    Int      @default(1000)
+  messages       Int      @default(0)
+  voiceSeconds   Int      @default(0)
+  currency       Int      @default(0)
+  importedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, totalXp])
+  @@index([guildId, level])
+}
+
 model ActivityRewardClaim {
   id          String   @id @default(cuid())
   guildId     String
