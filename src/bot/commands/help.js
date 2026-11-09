@@ -10,8 +10,8 @@ export const helpCommand = Object.freeze({
       sections: [
         "**🪙 Coins & collectibles**\n/balance · Wallet\n/daily · Daily coins\n/contracts · Daily goals + bonus coins\n/collections · Three themed sets\n/shop · Browse collectibles\n/buy · Unlock an item\n/inventory · Your collection\n/work · Earn coins every 60 min\n/scavenge · Explore a route\n/perks · Role perks",
         "**🎮 Quick games**\n/games · Quick-play menu\n/coinflip · Heads or tails, free play\n/guess · Guess 1–5, free play\n/rps · Rock, paper, scissors\n/vault · Daily puzzle, free play\nAll free games · no wagers",
-        "**🏅 Your profile**\n/profile · Wallet, stats and collection\n/rep profile · Reputation and history\n+rep @member · Give positive reputation\n-rep @member reason · Give negative reputation\n/rep leaderboard · Server reputation rankings\n/rank · Level, XP, messages and voice time\n/achievements · Milestones\n/titles · Unlock and equip titles\n/leaderboard · Global rankings",
-        "**🛠️ Server tools**\n/setup · Check server setup\n/config · Server settings (Manage Server)\n/activity · Live daily + weekly activity rankings\n/autoresponder · Automatic responses, message milestones and logs (Manage Server)\n/ping · Bot latency"
+        "**🏅 Your profile**\n/profile · Wallet, stats and collection\n/rep profile · Reputation and history\n+rep @member · Give positive reputation\n-rep @member reason · Give negative reputation\n/achievements · Milestones\n/titles · Unlock and equip titles\n",
+        "**🛠️ Server tools**\n/setup · Check server setup\n/config · Server settings (Manage Server)\n/autoresponder · Automatic responses, message milestones and logs (Manage Server)\n/ping · Bot latency"
       ],
       footer: "AVERO • COMMAND GUIDE",
       separators: true
