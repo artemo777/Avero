@@ -8,12 +8,13 @@ export function calculateReputation(positive = 0, negative = 0) {
 }
 
 export async function getReputationSummary(prisma, guildId, userId) {
-  const votes = await prisma.reputationVote.findMany({
+  const grouped = await prisma.reputationVote.groupBy({
+    by: ["value"],
     where: { guildId, receiverId: userId, reversedAt: null },
-    select: { value: true }
+    _count: { _all: true }
   });
-  const positive = votes.reduce((total, vote) => total + (vote.value > 0 ? 1 : 0), 0);
-  const negative = votes.reduce((total, vote) => total + (vote.value < 0 ? 1 : 0), 0);
+  const positive = grouped.find((row) => row.value > 0)?._count._all ?? 0;
+  const negative = grouped.find((row) => row.value < 0)?._count._all ?? 0;
   return { ...calculateReputation(positive, negative), total: positive + negative };
 }
 
