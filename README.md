@@ -191,4 +191,4 @@ npm test
 └── test/
 ```
 
-RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and achievements are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
