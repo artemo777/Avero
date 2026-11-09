@@ -7,7 +7,6 @@ import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
-import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
 import { commands } from "../src/bot/commands/index.js";
 import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
@@ -177,8 +176,6 @@ test("global command list includes new economy features and has no duplicate nam
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
   assert.ok(names.includes("profile"));
-  assert.ok(names.includes("rank"));
-  assert.ok(names.includes("leaderboard"));
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
   assert.ok(names.includes("work"));
@@ -191,7 +188,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("autoresponder"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 29);
+  assert.equal(names.length, 26);
   assert.ok(names.includes("rep"));
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
@@ -253,7 +250,7 @@ test("help command groups the real commands into a compact Components V2 panel",
   assert.match(text, /Avero commands/);
   assert.match(text, /collections/);
   assert.ok(text.includes("/balance"));
-  assert.ok(text.includes("/leaderboard"));
+  assert.doesNotMatch(text, /\/leaderboard|\/rank|\/activity/);
   assert.match(text, /achievements/);
   assert.match(text, /vault/);
 });
@@ -263,7 +260,6 @@ test("profile command combines wallet and collection data", async () => {
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 1250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
-    guildMemberProgress: { findUnique: async () => null },
     memberProfile: { findUnique: async () => null },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
@@ -388,35 +384,6 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
     assert.deepEqual(response.attachments, []);
   }
 });
-
-test("leaderboard sorts server members by the requested category", async () => {
-  let response;
-  const prisma = {
-    currencyAccount: {
-      findMany: async (query) => {
-        assert.equal(query.where.guildId, "__avero_global__");
-        assert.deepEqual(query.orderBy, { balance: "desc" });
-        return [
-          { userId: "user-1", balance: 900 },
-          { userId: "user-2", balance: 450 }
-        ];
-      }
-    },
-    memberProfile: { findMany: async () => { throw new Error("XP query should not run"); } }
-  };
-  await leaderboardCommand.execute({
-    guildId: "12345678901234567",
-    options: { getString: () => "coins" },
-    reply: async (payload) => { response = payload; }
-  }, { prisma });
-
-  assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  const text = panelText(response);
-  assert.match(text, /Coin leaderboard/);
-  assert.ok(text.includes("<@user-1> — **900 coins**"));
-  assert.ok(text.includes("<@user-2> — **450 coins**"));
-});
-
 
 test("daily Vault button opens the current puzzle clues from the games hub", async () => {
   let response;
@@ -615,9 +582,8 @@ test("config dashboard groups compact monochrome controls inside its Components 
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 6);
   const buttons = rows.flatMap((row) => row.components);
-  assert.equal(buttons.length, 14);
+  assert.equal(buttons.length, 13);
   assert.ok(buttons.every((button) => button.style === 2));
-  assert.ok(buttons.some((button) => button.custom_id === "avero-config|activity"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|diagnostics"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
 });
