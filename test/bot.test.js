@@ -293,7 +293,6 @@ test("profile lists all owned badges but displays only the selected badge beside
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }, { itemId: "vault_badge" }] },
-    guildMemberProgress: { findUnique: async () => null },
     memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "vault_badge", profileShowcaseBadgeIds: ["vault_badge"] }) },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
@@ -524,7 +523,7 @@ test("setup command reports channel permissions, feature status and first steps 
   assert.match(text, /Games.*Ready/);
   assert.match(text, /Currency.*Paused/);
   assert.match(text, /Message Content Intent/);
-  assert.match(text, /Voice State Intent/);
+  assert.doesNotMatch(text, /Voice State Intent|activity board|leaderboard/i);
 });
 
 
