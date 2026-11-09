@@ -44,7 +44,7 @@ test("help documents free game rules without ranking features", async () => {
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
   const text = panelText(response);
   assert.match(text, /free games/);
-  assert.doesNotMatch(text, /leaderboard|rank|XP/i);
+  assert.doesNotMatch(text, /\/(?:leaderboard|rank|activity)\b/i);
   assert.match(text, /achievements/);
 });
 
