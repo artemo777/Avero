@@ -1,98 +1,73 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { deliverPendingActivityXp } from "../src/bot/activity-leaderboards.js";
-import { EngaugeApiError } from "../src/bot/engauge-api.js";
 
 const silentLogger = { error() {}, warn() {} };
+const guildId = "12345678901234567";
+const userId = "12345678901234568";
 
-function createPrisma(initialAward) {
-  let status = "pending";
-  const prisma = {
-    activityXpAward: {
-      updateMany: async ({ where, data }) => {
-        if (!where.id) return { count: 0 }; // stale in-flight recovery query
-        if (status !== where.status) return { count: 0 };
-        status = data.status;
-        return { count: 1 };
-      },
-      findMany: async () => status === "pending" ? [initialAward] : [],
-      update: async ({ data }) => { status = data.status; return { ...initialAward, status }; }
+function createPrisma(initialAward, initialProgress = null) {
+  let awardStatus = "pending";
+  let progress = initialProgress ? { id: "progress-1", guildId, userId, xp: 0, totalXp: 0, level: 0, nextLevelXp: 1000, messages: 0, voiceSeconds: 0, currency: 0, ...initialProgress } : null;
+  const awards = {
+    updateMany: async ({ where, data }) => {
+      if (!where.id) return { count: 0 };
+      if (awardStatus !== where.status) return { count: 0 };
+      awardStatus = data.status;
+      return { count: 1 };
+    },
+    findMany: async () => awardStatus === "pending" ? [initialAward] : [],
+    update: async ({ data }) => { awardStatus = data.status; return { ...initialAward, status: awardStatus }; }
+  };
+  const progression = {
+    findUnique: async () => progress,
+    upsert: async ({ create, update }) => {
+      if (!progress) progress = { id: "progress-1", nextLevelXp: 1000, level: 0, xp: 0, totalXp: 0, messages: 0, voiceSeconds: 0, currency: 0, ...create };
+      else {
+        if (update.xp?.increment) progress.xp += update.xp.increment;
+        if (update.totalXp?.increment) progress.totalXp += update.totalXp.increment;
+      }
+      return progress;
+    },
+    updateMany: async ({ where, data }) => {
+      if (!progress || progress.id !== where.id || progress.xp !== where.xp || progress.level !== where.level || progress.nextLevelXp !== where.nextLevelXp) return { count: 0 };
+      progress.xp -= data.xp.decrement;
+      progress.level += data.level.increment;
+      progress.nextLevelXp = data.nextLevelXp;
+      return { count: 1 };
     }
   };
-  return { prisma, getStatus: () => status };
+  const tx = { activityXpAward: awards, guildMemberProgress: progression };
+  return {
+    prisma: { ...tx, $transaction: async (callback) => callback(tx) },
+    getStatus: () => awardStatus,
+    getProgress: () => progress
+  };
 }
 
-test("activity XP outbox marks successful Engauge awards delivered exactly once", async () => {
-  const { prisma, getStatus } = createPrisma({
-    id: "award-1", guildId: "12345678901234567", userId: "12345678901234568",
-    source: "message", amount: 8, status: "pending"
+test("activity XP outbox writes natively to Avero and delivers each award once", async () => {
+  const { prisma, getStatus, getProgress } = createPrisma({
+    id: "award-1", guildId, userId, source: "message", amount: 8, status: "pending"
   });
-  let writes = 0;
-  const api = {
-    getMember: async () => ({ level: 1 }),
-    addMemberXp: async (_guild, _user, amount) => { writes += 1; assert.equal(amount, 8); }
-  };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 1);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, null, null, silentLogger), 1);
   assert.equal(getStatus(), "delivered");
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
-  assert.equal(writes, 1);
+  assert.equal(getProgress().xp, 8);
+  assert.equal(getProgress().totalXp, 8);
+  assert.equal(await deliverPendingActivityXp(prisma, 25, null, null, silentLogger), 0);
+  assert.equal(getProgress().totalXp, 8);
 });
 
-test("ambiguous Engauge failures go to manual review and are never auto-retried", async () => {
-  const { prisma, getStatus } = createPrisma({
-    id: "award-2", guildId: "12345678901234567", userId: "12345678901234568",
-    source: "voice", amount: 8, status: "pending"
-  });
-  let writes = 0;
-  const api = {
-    getMember: async () => ({ level: 1 }),
-    addMemberXp: async () => { writes += 1; throw new Error("connection lost after request"); }
-  };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
-  assert.equal(getStatus(), "needs_review");
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
-  assert.equal(writes, 1);
-});
-
-
-test("Engauge lookup 404 rejects an XP award without attempting the XP write", async () => {
-  const { prisma, getStatus } = createPrisma({
-    id: "award-404", guildId: "12345678901234567", userId: "12345678901234568",
-    source: "message", amount: 8, status: "pending"
-  });
-  let writes = 0;
-  const api = {
-    getMember: async () => {
-      throw new EngaugeApiError("Engauge API request failed (HTTP 404).", {
-        status: 404, responseBody: "Member or server not found."
-      });
-    },
-    addMemberXp: async () => { writes += 1; }
-  };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, null, silentLogger), 0);
-  assert.equal(getStatus(), "rejected");
-  assert.equal(writes, 0);
-});
-
-
-test("successful XP delivery announces a level-up with the compact rank card", async () => {
-  const { prisma, getStatus } = createPrisma({
-    id: "award-level-up", guildId: "12345678901234567", userId: "12345678901234568",
-    source: "message", amount: 8, status: "pending"
-  });
-  let level = 4;
+test("native activity XP updates Avero level progress and announces level-ups", async () => {
+  const { prisma, getStatus, getProgress } = createPrisma({
+    id: "award-level-up", guildId, userId, source: "message", amount: 8, status: "pending"
+  }, { level: 4, xp: 1996, totalXp: 9996, nextLevelXp: 2000 });
   let announcement;
-  const api = {
-    getMember: async () => ({ level, xp: 1200, levelXp: 2000, messages: 80, voiceSeconds: 600 }),
-    addMemberXp: async () => { level = 5; }
-  };
-  const author = { id: "12345678901234568", username: "Level Tester", displayAvatarURL: () => null };
-  const message = {
-    guildId: "12345678901234567", author,
-    channel: { send: async (payload) => { announcement = payload; } }
-  };
-  assert.equal(await deliverPendingActivityXp(prisma, 25, api, message, silentLogger), 1);
+  const author = { id: userId, username: "Level Tester", displayAvatarURL: () => null };
+  const message = { guildId, author, channel: { send: async (payload) => { announcement = payload; } } };
+  assert.equal(await deliverPendingActivityXp(prisma, 25, null, message, silentLogger), 1);
   assert.equal(getStatus(), "delivered");
+  assert.equal(getProgress().level, 5);
+  assert.equal(getProgress().xp, 4);
   assert.ok(announcement);
   assert.deepEqual(announcement.files.map((file) => file.name).sort(), ["avero-professor.png", "rank-card.png"]);
 });
