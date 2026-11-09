@@ -116,7 +116,10 @@ export const reputationCommand = Object.freeze({
     }
     if (action === "give") {
       const target = interaction.options.getUser("member");
-      if (target.bot) {\n        await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });\n        return;\n      }\n      const type = interaction.options.getString("type");
+      if (target.bot) {
+        await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+        return;
+      }\n      const type = interaction.options.getString("type");
       const value = type === "positive" ? 1 : -1;
       let result;
       try {
