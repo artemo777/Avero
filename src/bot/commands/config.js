@@ -172,7 +172,7 @@ export function buildConfigPanel(settings, guildName) {
       "**01 · SYSTEM**\nGames · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "  /  Currency · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
       "**02 · REWARDS & LIMITS**\nDaily · " + settings.dailyReward.toLocaleString("en-US") + " coins  /  Work · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US"),
       "**03 · ROLE PERKS**\nBooster · " + roleStatus(settings.boosterRoleId) + "  /  Funder · " + roleStatus(settings.funderRoleId) + "  /  Voter · " + roleStatus(settings.voterRoleId),
-      "**04 · ACTIVITY & AUTOMATION**\nLive daily/weekly boards, weighted activity scoring, autoresponder rules and milestone announcements.",
+      "**04 · AUTOMATION**\nAutoresponder rules and milestone announcements.",
       "**05 · SERVER PROFILE**\nName · " + profileName + "\nBio · " + profileBio,
       "**06 · APPEARANCE**\nCurrent profile theme · **" + themeLabel + "**"
     ],
@@ -218,12 +218,7 @@ export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
     eyebrow: "AVERO / CONTROL CENTER",
     description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
     sections: [
-      "**ENGAUGE XP DELIVERY**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
-      "**ACTIVITY REWARDS**\nClaims requiring XP review · " + display(rewardReview),
-      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules),
-      "**LEADERBOARDS**\nDaily channel · " + (activity?.dailyChannelId ? "Configured" : "Not configured") +
-        "\nWeekly channel · " + (activity?.weeklyChannelId ? "Configured" : "Not configured") +
-        "\nRefresh interval · " + (activity?.updateIntervalSeconds ?? "Default") + " sec"
+      "**AUTOMATION**\\nEnabled autoresponder rules · " + display(activeRules)
     ],
     buttons: [{ customId: "avero-config|diagnostics-back", label: "Back to config", style: ButtonStyle.Secondary }],
     footer: "MANAGE SERVER REQUIRED • INTERNAL SERVER HEALTH",
