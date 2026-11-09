@@ -5,7 +5,7 @@
  */
 const PURPOSE_ALIASES = Object.freeze({
   coin: ["coin", "coins", "currency", "money", "gold", "wallet"],
-  "gem-common": ["gem_common", "common_gem", "gem"],
+  "gem-common": ["gem_common", "common_gem", "common"],
   "gem-rare": ["gem_rare", "rare_gem"],
   "gem-epic": ["gem_epic", "epic_gem"],
   "gem-legendary": ["gem_legendary", "legendary_gem", "mythic_gem"],
