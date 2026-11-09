@@ -131,5 +131,3 @@ test("Avero voice leaderboard displays native voice minutes", async () => {
   assert.match(panelText(response), /121 voice minutes/);
 });
 
-  assert.match(panelText(response), /2,? 121 voice minutes|121 voice minutes/);
-});
