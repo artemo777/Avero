@@ -1,0 +1,92 @@
+export const REPUTATION_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+export const REPUTATION_REASON_MAX_LENGTH = 180;
+
+export function calculateReputation(positive = 0, negative = 0) {
+  const up = Math.max(0, Number(positive) || 0);
+  const down = Math.max(0, Number(negative) || 0);
+  return Object.freeze({ positive: up, negative: down, net: up - down });
+}
+
+export async function getReputationSummary(prisma, guildId, userId) {
+  const votes = await prisma.reputationVote.findMany({
+    where: { guildId, receiverId: userId, reversedAt: null },
+    select: { value: true }
+  });
+  const positive = votes.reduce((total, vote) => total + (vote.value > 0 ? 1 : 0), 0);
+  const negative = votes.reduce((total, vote) => total + (vote.value < 0 ? 1 : 0), 0);
+  return { ...calculateReputation(positive, negative), total: positive + negative };
+}
+
+export async function giveReputation(prisma, {
+  guildId, giverId, receiverId, value, reason = null, now = new Date(),
+  cooldownMs = REPUTATION_COOLDOWN_MS
+}) {
+  if (!guildId || !giverId || !receiverId) throw new TypeError("A server, giver, and recipient are required.");
+  if (giverId === receiverId) throw new RangeError("You cannot give reputation to yourself.");
+  if (value !== 1 && value !== -1) throw new RangeError("Reputation must be positive or negative.");
+  const cleanReason = typeof reason === "string" ? reason.trim().replace(/\s+/g, " ") : "";
+  if (value < 0 && cleanReason.length < 3) throw new RangeError("Negative reputation needs a short, respectful reason (at least 3 characters).");
+  if (cleanReason.length > REPUTATION_REASON_MAX_LENGTH) throw new RangeError("Reputation reasons must be 180 characters or fewer.");
+
+  const cutoff = new Date(now.getTime() - cooldownMs);
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await tx.reputationCooldown.upsert({
+        where: { guildId_giverId: { guildId, giverId } },
+        create: { guildId, giverId, lastGivenAt: null },
+        update: {}
+      });
+      const claimed = await tx.reputationCooldown.updateMany({
+        where: {
+          guildId,
+          giverId,
+          OR: [{ lastGivenAt: null }, { lastGivenAt: { lte: cutoff } }]
+        },
+        data: { lastGivenAt: now }
+      });
+      if (claimed.count !== 1) {
+        const cooldown = await tx.reputationCooldown.findUnique({
+          where: { guildId_giverId: { guildId, giverId } }
+        });
+        const retryAt = new Date(cooldown.lastGivenAt.getTime() + cooldownMs);
+        return { ok: false, code: "COOLDOWN", retryAt };
+      }
+      const vote = await tx.reputationVote.create({
+        data: { guildId, giverId, receiverId, value, reason: cleanReason || null }
+      });
+      return { ok: true, vote };
+    });
+  } catch (error) {
+    if (error?.code === "P2002" || error?.code === "P2034") {
+      return { ok: false, code: "COOLDOWN", retryAt: new Date(now.getTime() + cooldownMs) };
+    }
+    throw error;
+  }
+}
+
+export async function getReputationHistory(prisma, guildId, userId, take = 10) {
+  return prisma.reputationVote.findMany({
+    where: { guildId, receiverId: userId, reversedAt: null },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(25, Math.max(1, take))
+  });
+}
+
+export async function getReputationLeaderboard(prisma, guildId, take = 10) {
+  const grouped = await prisma.reputationVote.groupBy({
+    by: ["receiverId", "value"],
+    where: { guildId, reversedAt: null },
+    _count: { _all: true }
+  });
+  const scores = new Map();
+  for (const row of grouped) {
+    const score = scores.get(row.receiverId) ?? { userId: row.receiverId, positive: 0, negative: 0 };
+    if (row.value > 0) score.positive += row._count._all;
+    else score.negative += row._count._all;
+    scores.set(row.receiverId, score);
+  }
+  return [...scores.values()]
+    .map((row) => ({ ...row, net: row.positive - row.negative }))
+    .sort((a, b) => b.net - a.net || b.positive - a.positive || a.userId.localeCompare(b.userId))
+    .slice(0, take);
+}
