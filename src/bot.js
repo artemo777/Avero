@@ -275,9 +275,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 client.on(Events.GuildCreate, () => void refreshAveroServerEmojis(client));
 client.on(Events.GuildDelete, () => void refreshAveroServerEmojis(client));
-client.on(Events.GuildEmojiCreate, () => void refreshAveroServerEmojis(client));
-client.on(Events.GuildEmojiDelete, () => void refreshAveroServerEmojis(client));
-client.on(Events.GuildEmojiUpdate, () => void refreshAveroServerEmojis(client));
+client.on(Events.GuildEmojisUpdate, () => void refreshAveroServerEmojis(client));
 
 client.on(Events.Error, (error) => {
   console.error("Discord client error:", error);
