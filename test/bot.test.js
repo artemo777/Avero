@@ -373,7 +373,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   for (const [action, values, verify] of selections) {
     let response;
     const handled = await handleGameComponent({
-      customId: "avero|user-1|" + action,
+      customId: "avero|22345678901234567|" + action,
       user,
       guildId: "12345678901234567",
       values,
