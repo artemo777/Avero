@@ -201,6 +201,11 @@ export async function handleReputationComponent(interaction, prisma) {
   }
   if (action === "negative-submit") return;
   if (action === "give") {
+    const targetMember = await interaction.guild.members.fetch(targetId);
+    if (targetMember.user.bot) {
+      await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+      return;
+    }
     const result = await giveReputation(prisma, {
       guildId: interaction.guildId, giverId: interaction.user.id, receiverId: targetId, value: 1
     });
@@ -231,6 +236,11 @@ export async function handleReputationModal(interaction, prisma) {
   const [, action, targetId] = interaction.customId.split("|");
   if (action !== "negative-submit") return false;
   const reason = interaction.fields.getTextInputValue("reason");
+  const targetMember = await interaction.guild.members.fetch(targetId);
+  if (targetMember.user.bot) {
+    await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
   const result = await giveReputation(prisma, {
     guildId: interaction.guildId, giverId: interaction.user.id, receiverId: targetId, value: -1, reason
   });
