@@ -85,6 +85,11 @@ export async function recordActivityMessage(prisma, message, now = new Date()) {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.activityMessageReceipt.create({ data: { messageId: message.id, guildId: message.guildId, userId: message.author.id } });
+      await tx.guildMemberProgress.upsert({
+        where: { guildId_userId: { guildId: message.guildId, userId: message.author.id } },
+        create: { guildId: message.guildId, userId: message.author.id, messages: 1 },
+        update: { messages: { increment: 1 } }
+      });
       for (const periodType of ["daily", "weekly"]) {
         const periodKey = getActivityPeriodKey(periodType, now, settings.timezone, settings.weeklyResetDay);
         await tx.activityStat.upsert({
@@ -166,6 +171,11 @@ export async function settleVoiceSession(prisma, session, now = new Date(), clos
     if (!claimed.count) return;
     if (seconds > 0) {
       const settings = await getActivitySettings(tx, session.guildId);
+      await tx.guildMemberProgress.upsert({
+        where: { guildId_userId: { guildId: session.guildId, userId: session.userId } },
+        create: { guildId: session.guildId, userId: session.userId, voiceSeconds: seconds },
+        update: { voiceSeconds: { increment: seconds } }
+      });
       const buckets = buildVoicePeriodBuckets(session.lastSettledAt, seconds, settings);
       for (const bucket of buckets) {
         for (const [periodType, periodKey] of [["daily", bucket.daily], ["weekly", bucket.weekly]]) {
