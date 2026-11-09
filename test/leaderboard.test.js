@@ -78,7 +78,7 @@ test("guess and RPS leaderboards filter to their own game records", async () => 
 });
 
 
-test("Engauge XP leaderboard uses paginated server member data", async () => {
+test("Avero XP leaderboard uses server-scoped native progression data", async () => {
   let requested;
   let response;
   await leaderboardCommand.execute({
@@ -86,40 +86,50 @@ test("Engauge XP leaderboard uses paginated server member data", async () => {
     options: { getString: () => "xp" },
     reply: async (payload) => { response = payload; }
   }, {
-    prisma: {},
-    engaugeClient: {
-      async getAllMembers(serverId, options) {
-        requested = { serverId, options };
-        return [
-          { id: "12345678901234568", xp: "20662", level: 99 },
-          { id: "12345678901234569", xp: "15000", level: 80 }
-        ];
+    prisma: {
+      guildMemberProgress: {
+        async findMany(query) {
+          requested = query;
+          return [
+            { userId: "12345678901234568", totalXp: 20662, level: 99 },
+            { userId: "12345678901234569", totalXp: 15000, level: 80 }
+          ];
+        }
       }
     }
   });
   assert.deepEqual(requested, {
-    serverId: "12345678901234567",
-    options: { order: "xp", direction: "desc" }
+    where: { guildId: "12345678901234567" },
+    orderBy: [{ totalXp: "desc" }, { level: "desc" }],
+    take: 10
   });
-  assert.match(panelText(response), /<@12345678901234568> — \*\*20,662 XP\*\*/);
-  assert.match(panelText(response), /<@12345678901234569> — \*\*15,000 XP\*\*/);
+  assert.match(panelText(response), /<@12345678901234568> — \\*\\*20,662 total XP\\*\\*/);
+  assert.match(panelText(response), /<@12345678901234569> — \\*\\*15,000 total XP\\*\\*/);
   assert.deepEqual(response.allowedMentions, { parse: [] });
 });
 
-test("Engauge voice leaderboard displays voice minutes from server member data", async () => {
+test("Avero voice leaderboard displays native voice minutes", async () => {
   let response;
   await leaderboardCommand.execute({
     guildId: "12345678901234567",
     options: { getString: () => "voice" },
     reply: async (payload) => { response = payload; }
   }, {
-    prisma: {},
-    engaugeClient: {
-      async getAllMembers(_serverId, options) {
-        assert.equal(options.order, "voice");
-        return [{ id: "12345678901234568", voiceSeconds: 7260 }];
+    prisma: {
+      guildMemberProgress: {
+        async findMany(query) {
+          assert.deepEqual(query, {
+            where: { guildId: "12345678901234567" },
+            orderBy: [{ voiceSeconds: "desc" }],
+            take: 10
+          });
+          return [{ userId: "12345678901234568", voiceSeconds: 7260 }];
+        }
       }
     }
   });
+  assert.match(panelText(response), /121 voice minutes/);
+});
+
   assert.match(panelText(response), /2,? 121 voice minutes|121 voice minutes/);
 });
