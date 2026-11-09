@@ -8,10 +8,13 @@ function validId(value, label) {
 }
 
 export function normalizeImportedMember(member) {
-  const xp = Math.max(0, Math.floor(Number(member?.xp ?? member?.totalXp ?? 0) || 0));
+  const hasLevelProgress = member?.levelXp != null || member?.nextLevelXp != null;
+  const rawXp = Math.max(0, Math.floor(Number(member?.xp ?? member?.totalXp ?? 0) || 0));
+  // Without an explicit level-progress threshold, treat Engauge xp as cumulative only.
+  const xp = hasLevelProgress ? rawXp : 0;
   const level = Math.max(0, Math.floor(Number(member?.level ?? 0) || 0));
   const nextLevelXp = Math.max(1, Math.floor(Number(member?.levelXp ?? member?.nextLevelXp ?? DEFAULT_XP_PER_LEVEL) || DEFAULT_XP_PER_LEVEL));
-  const totalXp = Math.max(xp, Math.floor(Number(member?.totalXp ?? xp) || xp));
+  const totalXp = Math.max(rawXp, Math.floor(Number(member?.totalXp ?? rawXp) || rawXp));
   const safeCount = (value) => Math.min(2_147_483_647, Math.max(0, Math.floor(Number(value) || 0)));
   return {
     xp: Math.min(2_147_483_647, xp),
@@ -43,7 +46,7 @@ export async function grantGuildXp(prisma, guildId, userId, amount) {
     update: { xp: { increment: amount }, totalXp: { increment: amount } }
   });
   // Apply level transitions atomically against the exact XP value observed.
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt < 1001; attempt += 1) {
     const row = await getGuildProgress(prisma, guildId, userId);
     if (!row || row.xp < row.nextLevelXp) break;
     const nextThreshold = Math.min(2_147_483_647, Math.max(1, row.nextLevelXp + DEFAULT_XP_PER_LEVEL));
