@@ -13,9 +13,6 @@ model MemberProfile {
   id               String   @id @default(cuid())
   guildId          String
   userId           String
-  xp               Int      @default(0)
-  level            Int      @default(0)
-  lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
   equippedFrameItemId String?
   equippedTitleId     String?
@@ -30,7 +27,6 @@ model MemberProfile {
   updatedAt        DateTime @updatedAt
 
   @@unique([guildId, userId])
-  @@index([guildId, xp])
 }
 
 model CurrencyAccount {
@@ -265,120 +261,6 @@ model MoneyRequest {
   @@index([guildId, requesterId, createdAt])
 }
 
-model ActivityBoardSetting {
-  guildId                 String   @id
-  dailyChannelId          String?
-  dailyMessageId          String?
-  weeklyChannelId         String?
-  weeklyMessageId         String?
-  messageWeight           Float    @default(1)
-  voiceWeight             Float    @default(1)
-  timezone                String   @default("UTC")
-  weeklyResetDay          Int      @default(1)
-  updateIntervalSeconds   Int      @default(300)
-  voiceMinParticipants    Int      @default(2)
-  ignoredChannelIds       String[] @default([])
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-}
-
-model ActivityStat {
-  id          String   @id @default(cuid())
-  guildId     String
-  userId      String
-  periodType  String
-  periodKey   String
-  messages    Int      @default(0)
-  voiceSeconds Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([guildId, userId, periodType, periodKey])
-  @@index([guildId, periodType, periodKey])
-}
-
-model ActivityMessageReceipt {
-  messageId String   @id
-  guildId   String
-  userId    String
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-}
-
-model ActivityVoiceSession {
-  id                 String   @id @default(cuid())
-  guildId            String
-  userId             String
-  channelId          String
-  lastSettledAt DateTime @default(now())
-  createdAt     DateTime @default(now())
-
-  @@unique([guildId, userId])
-}
-
-model ActivityXpThrottle {
-  guildId         String
-  userId          String
-  lastMessageXpAt       DateTime?
-  voiceRemainderSeconds Int      @default(0)
-  voiceMinutesAwarded   Int      @default(0)
-
-  @@id([guildId, userId])
-}
-
-model ActivityXpAward {
-  id        String   @id @default(cuid())
-  dedupeKey String   @unique
-  guildId   String
-  userId    String
-  source    String
-  amount    Int
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status, createdAt])
-  @@index([guildId, userId, createdAt])
-}
-
-model ActivityRewardRule {
-  id         String   @id @default(cuid())
-  guildId    String
-  periodType String
-  position   Int
-  roleId     String?
-  coins      Int      @default(0)
-  xp         Int      @default(0)
-  enabled    Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([guildId, periodType, position])
-  @@index([guildId, periodType, enabled])
-}
-
-/// Server-scoped XP and imported Engauge statistics. Kept separate from global cosmetics.
-model GuildMemberProgress {
-  id             String   @id @default(cuid())
-  guildId        String
-  userId         String
-  xp             Int      @default(0)
-  totalXp        Int      @default(0)
-  level          Int      @default(0)
-  nextLevelXp    Int      @default(1000)
-  messages       Int      @default(0)
-  voiceSeconds   Int      @default(0)
-  currency       Int      @default(0)
-  importedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@unique([guildId, userId])
-  @@index([guildId, totalXp])
-  @@index([guildId, level])
-}
-
 model ReputationVote {
   id          String   @id @default(cuid())
   guildId     String
@@ -403,25 +285,6 @@ model ReputationCooldown {
   updatedAt   DateTime @updatedAt
 
   @@unique([guildId, giverId])
-}
-
-model ActivityRewardClaim {
-  id          String   @id @default(cuid())
-  guildId     String
-  periodType  String
-  periodKey   String
-  userId      String
-  position    Int
-  roleId      String?
-  coins       Int      @default(0)
-  xp          Int      @default(0)
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deliveredAt DateTime?
-
-  @@unique([guildId, periodType, periodKey, position])
-  @@index([guildId, periodType, periodKey])
 }
 
 model AdminEconomyAudit {

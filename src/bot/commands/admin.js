@@ -1,7 +1,6 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
-import { grantGuildXp, getGuildProgress } from "../../db/guild-progression-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
-import { adjustAdminInventory, recordAdminXpGrant } from "../../db/admin-economy-repository.js";
+import { adjustAdminInventory } from "../../db/admin-economy-repository.js";
 
 const ITEM_ACTION_CHOICES = [
   { name: "Grant", value: "grant" },
@@ -22,7 +21,7 @@ function response(content) {
 export const adminCommand = Object.freeze({
   data: Object.freeze({
     name: "admin",
-    description: "Admin-only Avero progression and inventory controls.",
+    description: "Admin-only Avero inventory controls.",
     default_member_permissions: String(PermissionFlagsBits.ManageGuild),
     dm_permission: false,
     options: [
@@ -40,15 +39,8 @@ export const adminCommand = Object.freeze({
         options: [
           { type: 6, name: "member", description: "Member whose economy records to inspect.", required: true }
         ]
-      },
-      {
-        type: 1, name: "xp", description: "Grant Avero XP to a server member.",
-        options: [
-          { type: 6, name: "member", description: "Member to award XP to.", required: true },
-          { type: 4, name: "amount", description: "XP to grant (1–1,000,000).", required: true, min_value: 1, max_value: 1_000_000 },
-          { type: 3, name: "reason", description: "Optional audit note.", required: false, max_length: 200 }
-        ]
       }
+
     ]
   }),
   async autocomplete(interaction) {
@@ -133,17 +125,5 @@ export const adminCommand = Object.freeze({
       return;
     }
 
-    if (subcommand === "xp") {
-      const amount = interaction.options.getInteger("amount", true);
-      const before = await getGuildProgress(prisma, interaction.guildId, target.id);
-      const after = await grantGuildXp(prisma, interaction.guildId, target.id, amount);
-      await recordAdminXpGrant(prisma, interaction.guildId, target.id, interaction.user.id, amount, reason);
-      await interaction.reply(response(
-        "Granted **" + amount.toLocaleString("en-US") + " XP** to " + target.username +
-        ". Current level: **" + after.level.toLocaleString("en-US") + "** · Total XP: **" +
-        after.totalXp.toLocaleString("en-US") + "**." +
-        (after.level > (before?.level ?? 0) ? " Level up!" : "")
-      ));
-    }
   }
 });

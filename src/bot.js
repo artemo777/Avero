@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, Events, GatewayIntentBits, MessageFlags, TextDisplayBuilder } from "discord.js";
-import { createEmbed, ICONS, THEME } from "../averoui/index.js";
+import { createEmbed, ICONS, THEME, setServerEmojis } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
@@ -11,7 +11,6 @@ import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
-import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 import { handleProfileBioModal } from "./bot/commands/profile.js";
 import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
 import { handleReputationPrefix, handleReputationComponent, handleReputationModal } from "./bot/commands/reputation.js";
@@ -27,8 +26,21 @@ try {
 const commandMap = createCommandMap(commands);
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
+async function refreshAveroServerEmojis(client) {
+  const results = await Promise.all([...client.guilds.cache.values()].map(async (guild) => {
+    const emojis = await guild.emojis.fetch().catch((error) => {
+      console.warn("Could not fetch custom emojis for guild " + guild.id + ":", error.message);
+      return [];
+    });
+    return [...emojis.values()];
+  }));
+  const count = setServerEmojis(results.flat());
+  console.log("Avero loaded " + count + " available custom emoji(s) from shared servers.");
+  return count;
+}
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
 client.once(Events.ClientReady, (readyClient) => {
@@ -41,17 +53,11 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
-  startActivityRuntime(readyClient, getPrismaClient());
+  void refreshAveroServerEmojis(readyClient);
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guildId || message.author.bot || message.webhookId) return;
-
-  try {
-    await recordMessageActivity(message, getPrismaClient());
-  } catch (error) {
-    console.error("Activity message tracking failed:", error);
-  }
 
   try {
     await handleAutoReactionMessage(message, getPrismaClient());
@@ -94,14 +100,6 @@ client.on(Events.MessageCreate, async (message) => {
     await handleAveroPrefixMessage(message, commands);
   } catch (error) {
     console.error("Avero prefix router failed:", error);
-  }
-});
-
-client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
-  try {
-    await handleVoiceStateUpdate(getPrismaClient(), oldState, newState);
-  } catch (error) {
-    console.error("Activity voice tracking failed:", error);
   }
 });
 
@@ -240,8 +238,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
-    // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
+    // Database-backed commands receive a shared Prisma client. Keep this explicit so newly added economy/profile commands cannot silently miss injection.
     const needsDatabase = !["ping", "help"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
@@ -275,6 +272,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 });
+
+client.on(Events.GuildCreate, () => void refreshAveroServerEmojis(client));
+client.on(Events.GuildDelete, () => void refreshAveroServerEmojis(client));
+client.on(Events.GuildEmojisUpdate, () => void refreshAveroServerEmojis(client));
 
 client.on(Events.Error, (error) => {
   console.error("Discord client error:", error);

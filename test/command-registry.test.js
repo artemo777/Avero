@@ -8,7 +8,9 @@ test("all Avero slash commands have unique valid names and executable handlers",
   const definitions = getCommandDefinitions(commands);
 
   assert.ok(definitions.length > 0);
-  assert.ok(map.has("rank"), "the /rank command must be registered globally");
+  assert.equal(map.has("rank"), false, "the retired /rank command must not be registered");
+  assert.equal(map.has("leaderboard"), false, "the retired /leaderboard command must not be registered");
+  assert.equal(map.has("activity"), false, "the retired /activity command must not be registered");
   assert.ok(map.has("admin"), "the admin economy controls must be registered globally");
   assert.equal(map.size, definitions.length);
   assert.equal(new Set(definitions.map((command) => command.name)).size, definitions.length);

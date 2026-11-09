@@ -1,6 +1,5 @@
 import { achievementsCommand } from "./achievements.js";
 import { adminCommand } from "./admin.js";
-import { activityCommand } from "./activity.js";
 import { autoresponderCommand } from "./autoresponder.js";
 import { askCommand } from "./ask.js";
 import { balanceCommand } from "./balance.js";
@@ -14,11 +13,9 @@ import { guessCommand } from "./guess.js";
 import { helpCommand } from "./help.js";
 import { inventoryCommand } from "./inventory.js";
 import { gamesCommand } from "./games.js";
-import { leaderboardCommand } from "./leaderboard.js";
 import { perksCommand } from "./perks.js";
 import { pingCommand } from "./ping.js";
 import { profileCommand } from "./profile.js";
-import { rankCommand } from "./rank.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
@@ -33,13 +30,10 @@ export const commands = Object.freeze([
   helpCommand,
   adminCommand,
   configCommand,
-  activityCommand,
   autoresponderCommand,
   perksCommand,
   achievementsCommand,
   profileCommand,
-  rankCommand,
-  leaderboardCommand,
   balanceCommand,
   askCommand,
   buyCommand,

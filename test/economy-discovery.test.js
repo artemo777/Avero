@@ -39,12 +39,12 @@ test("insufficient-funds purchase response points to all main earning commands",
   assert.match(panelText(response), /Balance: \*\*20 coins/);
 });
 
-test("help documents game-specific leaderboards and free game rules", async () => {
+test("help documents free game rules without ranking features", async () => {
   let response;
   await helpCommand.execute({ reply: async (payload) => { response = payload; } });
   const text = panelText(response);
   assert.match(text, /free games/);
-  assert.match(text, /leaderboard/);
+  assert.doesNotMatch(text, /\/(?:leaderboard|rank|activity)\b/i);
   assert.match(text, /achievements/);
 });
 

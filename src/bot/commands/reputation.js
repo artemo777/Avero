@@ -3,7 +3,7 @@ import {
   ModalBuilder, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import {
-  giveReputation, getReputationSummary, getReputationHistory, getReputationLeaderboard
+  giveReputation, getReputationSummary, getReputationHistory
 } from "../../db/reputation-repository.js";
 
 const DARK = 0x343840;
@@ -28,8 +28,7 @@ function profilePayload(target, summary, note = "") {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(repId("give", target.id)).setLabel("+ Give rep").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(repId("negative", target.id)).setLabel("− Give rep").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(repId("history", target.id)).setLabel("History").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(repId("leaderboard")).setLabel("Leaderboard").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId(repId("history", target.id)).setLabel("History").setStyle(ButtonStyle.Secondary)
   );
   return { embeds: [embed], components: [row], allowedMentions: { parse: [] } };
 }
@@ -47,25 +46,7 @@ function historyPayload(target, history) {
       .setDescription(lines.join("\n").slice(0, 4000))
       .setFooter({ text: "Showing the latest " + history.length + " reputation votes" })],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(repId("profile", target.id)).setLabel("Back to profile").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(repId("leaderboard")).setLabel("Leaderboard").setStyle(ButtonStyle.Secondary)
-    )],
-    allowedMentions: { parse: [] }
-  };
-}
-
-function leaderboardPayload(rows) {
-  const lines = rows.length ? rows.map((row, index) => {
-    const medal = ["🥇", "🥈", "🥉"][index] ?? "`#" + (index + 1) + "`";
-    return medal + " <@" + row.userId + "> — **" + fmt(row.net) + "** net  (+" + fmt(row.positive) + " / −" + fmt(row.negative) + ")";
-  }) : ["No reputation votes yet. Be the first to recognize someone."];
-  return {
-    embeds: [new EmbedBuilder().setColor(DARK).setAuthor({ name: "AVERO • SERVER RANKINGS" })
-      .setTitle("Reputation leaderboard")
-      .setDescription(lines.join("\n"))
-      .setFooter({ text: "Ranked by net reputation • Positive − negative" })],
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(repId("profile", "")).setLabel("My reputation").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId(repId("profile", target.id)).setLabel("Back to profile").setStyle(ButtonStyle.Secondary)
     )],
     allowedMentions: { parse: [] }
   };
@@ -99,7 +80,6 @@ export const reputationCommand = Object.freeze({
       { type: 1, name: "history", description: "View a member's recent reputation activity.", options: [
         { type: 6, name: "member", description: "Member to inspect.", required: false }
       ] },
-      { type: 1, name: "leaderboard", description: "View the server reputation leaderboard." }
     ]
   }),
   async execute(interaction, { prisma } = {}) {
@@ -148,8 +128,7 @@ export const reputationCommand = Object.freeze({
       await interaction.reply(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, target.id)));
       return;
     }
-    const rows = await getReputationLeaderboard(prisma, interaction.guildId);
-    await interaction.reply(leaderboardPayload(rows));
+
   }
 });
 
@@ -228,9 +207,6 @@ export async function handleReputationComponent(interaction, prisma) {
     const target = await resolveUser(interaction, targetId);
     await interaction.update(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, targetId)));
     return;
-  }
-  if (action === "leaderboard") {
-    await interaction.update(leaderboardPayload(await getReputationLeaderboard(prisma, interaction.guildId)));
   }
 }
 

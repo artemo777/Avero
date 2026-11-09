@@ -8,7 +8,6 @@ import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../../../averoui/profile-card.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, updateProfileCustomization } from "../../db/member-repository.js";
-import { getGuildProgress } from "../../db/guild-progression-repository.js";
 import { getMemberTitles } from "../../db/title-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { TITLE_CATALOG } from "../title-catalog.js";
@@ -69,13 +68,12 @@ function ownedBadgeOptions(ownedBadges, selectedIds) {
 }
 
 export async function renderProfilePayload(prisma, guildId, target, viewerId = target.id, editable = target.id === viewerId) {
-  const [account, purchases, profile, stats, memberTitles, progression] = await Promise.all([
+  const [account, purchases, profile, stats, memberTitles] = await Promise.all([
     getCurrencyAccount(prisma, guildId, target.id),
     getCurrencyPurchases(prisma, guildId, target.id),
     getMemberProfile(prisma, guildId, target.id),
     getCurrencyStats(prisma, guildId, target.id),
-    getMemberTitles(prisma, guildId, target.id),
-    getGuildProgress(prisma, guildId, target.id)
+    getMemberTitles(prisma, guildId, target.id)
   ]);
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
   const ownedItems = purchases.map((purchase) => SHOP_ITEMS.find((item) => item.id === purchase.itemId)).filter(Boolean);
@@ -92,7 +90,6 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   const card = await renderProfileCard({
     username: target.globalName ?? target.username,
     avatarUrl: target.displayAvatarURL({ extension: "png", size: 256 }),
-    level: progression?.level ?? 0,
     title: equippedTitle?.name ?? null,
     bio: profile?.profileBio ?? null,
     accentColor: accent,

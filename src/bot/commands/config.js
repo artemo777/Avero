@@ -11,7 +11,6 @@ import {
   upsertAutoReactionRolePerk, removeAutoReactionRolePerk
 } from "../../db/auto-reaction-repository.js";
 import { normalizeReactionEmoji, resolveSharedCustomEmoji } from "../auto-reactions.js";
-import { handleActivityConfigButton, handleActivityConfigModal } from "../activity-config.js";
 
 const SUPPORT_URL = "https://discord.com/channels/1434292419788017766/1434554043581337601";
 const ROLE_ID_PATTERN = /^\d{17,20}$/;
@@ -173,7 +172,7 @@ export function buildConfigPanel(settings, guildName) {
       "**01 · SYSTEM**\nGames · " + (settings.gamesEnabled ? "Enabled" : "Paused") + "  /  Currency · " + (settings.currencyEnabled ? "Enabled" : "Paused"),
       "**02 · REWARDS & LIMITS**\nDaily · " + settings.dailyReward.toLocaleString("en-US") + " coins  /  Work · " + settings.workMinReward.toLocaleString("en-US") + "–" + settings.workMaxReward.toLocaleString("en-US"),
       "**03 · ROLE PERKS**\nBooster · " + roleStatus(settings.boosterRoleId) + "  /  Funder · " + roleStatus(settings.funderRoleId) + "  /  Voter · " + roleStatus(settings.voterRoleId),
-      "**04 · ACTIVITY & AUTOMATION**\nLive daily/weekly boards, weighted activity scoring, autoresponder rules and milestone announcements.",
+      "**04 · AUTOMATION**\nAutoresponder rules and milestone announcements.",
       "**05 · SERVER PROFILE**\nName · " + profileName + "\nBio · " + profileBio,
       "**06 · APPEARANCE**\nCurrent profile theme · **" + themeLabel + "**"
     ],
@@ -188,7 +187,6 @@ export function buildConfigPanel(settings, guildName) {
         { customId: "avero-config|reaction-perks", label: "Reaction perks" }
       ],
       [
-        { customId: "avero-config|activity", label: "Activity leaderboards" },
         { customId: "avero-config|autoresponder", label: "Autoresponder" },
         { customId: "avero-config|diagnostics", label: "Diagnostics" }
       ],
@@ -213,28 +211,14 @@ async function loadUploadedAvatar(attachment) {
 }
 export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
   const count = async (model, where) => typeof model?.count === "function" ? model.count({ where }) : null;
-  const [pendingXp, reviewXp, rejectedXp, rewardReview, activeRules, activity] = await Promise.all([
-    count(prisma.activityXpAward, { guildId, status: "pending" }),
-    count(prisma.activityXpAward, { guildId, status: "needs_review" }),
-    count(prisma.activityXpAward, { guildId, status: "rejected" }),
-    count(prisma.activityRewardClaim, { guildId, status: "pending_xp_review" }),
-    count(prisma.autoResponseRule, { guildId, enabled: true }),
-    prisma.activityBoardSetting?.findUnique
-      ? prisma.activityBoardSetting.findUnique({ where: { guildId } })
-      : null
-  ]);
+  const activeRules = await count(prisma.autoResponseRule, { guildId, enabled: true });
   const display = (value) => value === null ? "Unavailable" : value.toLocaleString("en-US");
   return gamePayload(createGamePanel({
     title: "Avero diagnostics",
     eyebrow: "AVERO / CONTROL CENTER",
     description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
     sections: [
-      "**ENGAUGE XP DELIVERY**\nPending · " + display(pendingXp) + "\nNeeds review · " + display(reviewXp) + "\nRejected · " + display(rejectedXp),
-      "**ACTIVITY REWARDS**\nClaims requiring XP review · " + display(rewardReview),
-      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules),
-      "**LEADERBOARDS**\nDaily channel · " + (activity?.dailyChannelId ? "Configured" : "Not configured") +
-        "\nWeekly channel · " + (activity?.weeklyChannelId ? "Configured" : "Not configured") +
-        "\nRefresh interval · " + (activity?.updateIntervalSeconds ?? "Default") + " sec"
+      "**AUTOMATION**\nEnabled autoresponder rules · " + display(activeRules)
     ],
     buttons: [{ customId: "avero-config|diagnostics-back", label: "Back to config", style: ButtonStyle.Secondary }],
     footer: "MANAGE SERVER REQUIRED • INTERNAL SERVER HEALTH",
@@ -274,7 +258,6 @@ export async function handleConfigButton(interaction, prisma) {
   const parts = interaction.customId.split("|");
   const action = parts[1];
   const value = parts[2];
-  if (action === "activity" || action.startsWith("activity-")) return handleActivityConfigButton(interaction, prisma);
   if (action === "diagnostics") {
     await interaction.deferUpdate();
     await interaction.editReply(await buildDiagnosticsPanel(prisma, interaction.guildId, interaction.guild.name));
@@ -364,7 +347,6 @@ export async function handleConfigModal(interaction, prisma) {
     return true;
   }
   const [, kind, modalRoleId] = interaction.customId.split("|");
-  if (kind.startsWith("activity-")) return handleActivityConfigModal(interaction, prisma);
   if (kind === "reaction-emoji") {
     if (!ROLE_ID_PATTERN.test(modalRoleId || "")) throw new Error("That role selection expired. Please start again.");
     const role = await interaction.guild.roles.fetch(modalRoleId).catch(() => null);

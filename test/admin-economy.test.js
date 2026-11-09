@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { adjustAdminInventory, recordAdminXpGrant } from "../src/db/admin-economy-repository.js";
+import { adjustAdminInventory } from "../src/db/admin-economy-repository.js";
 
 const guildId = "12345678901234567";
 const userId = "22345678901234567";
@@ -36,12 +36,4 @@ test("admin inventory grants once and removes only owned items", async () => {
   assert.equal((await adjustAdminInventory(prisma, guildId, userId, adminId, "starter_badge", "remove")).updated, true);
   assert.equal((await adjustAdminInventory(prisma, guildId, userId, adminId, "starter_badge", "remove")).reason, "not_owned");
   assert.equal(prisma.audits.length, 2);
-});
-
-test("admin XP audit validates the amount and stores the actor", async () => {
-  const prisma = fakePrisma();
-  await recordAdminXpGrant(prisma, guildId, userId, adminId, 500, "staff event");
-  assert.equal(prisma.audits[0].action, "xp_add");
-  assert.equal(prisma.audits[0].actorUserId, adminId);
-  await assert.rejects(recordAdminXpGrant(prisma, guildId, userId, adminId, 0), /Amount/);
 });

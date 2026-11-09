@@ -72,22 +72,3 @@ export async function getReputationHistory(prisma, guildId, userId, take = 10) {
     take: Math.min(25, Math.max(1, take))
   });
 }
-
-export async function getReputationLeaderboard(prisma, guildId, take = 10) {
-  const grouped = await prisma.reputationVote.groupBy({
-    by: ["receiverId", "value"],
-    where: { guildId, reversedAt: null },
-    _count: { _all: true }
-  });
-  const scores = new Map();
-  for (const row of grouped) {
-    const score = scores.get(row.receiverId) ?? { userId: row.receiverId, positive: 0, negative: 0 };
-    if (row.value > 0) score.positive += row._count._all;
-    else score.negative += row._count._all;
-    scores.set(row.receiverId, score);
-  }
-  return [...scores.values()]
-    .map((row) => ({ ...row, net: row.positive - row.negative }))
-    .sort((a, b) => b.net - a.net || b.positive - a.positive || a.userId.localeCompare(b.userId))
-    .slice(0, take);
-}

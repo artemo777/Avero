@@ -2,7 +2,7 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Wallets, inventory, cosmetics, career, titles, cooldowns, and game history are global per member. XP, levels, and imported message/voice statistics are server-scoped.
+Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Wallets, inventory, cosmetics, career, titles, cooldowns, reputation and game history are global or server-scoped according to each feature.
 
 ## Requirements
 
@@ -49,33 +49,6 @@ Avero can operate in any Discord server where it is installed and has the requir
 
 The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
 
-## Moving XP from Engauge
-
-Avero now stores server XP, levels, message totals, voice time, and imported currency in its own PostgreSQL database. Runtime XP awards, `/rank`, `/leaderboard`, and `/admin xp` use Avero's database; the running bot no longer needs an Engauge API token.
-
-To migrate the existing server once:
-
-1. Back up the Avero PostgreSQL database.
-2. Set `ENGAUGE_API_TOKEN` and `ENGAUGE_SERVER_ID` in the one-time migration environment. Never paste the token into chat or commit it.
-3. Apply the new schema and regenerate Prisma:
-   ```sh
-   npm run db:migrate:deploy
-   npm run db:generate
-   ```
-4. Preview the Engauge export without writing anything:
-   ```sh
-   npm run db:import-engauge
-   ```
-5. If the server ID, member count, and totals look correct, run the import:
-   ```sh
-   npm run db:import-engauge -- --apply
-   ```
-6. Verify several members with `/rank` and check `/leaderboard xp`. Only after verification remove the Engauge token from the migration environment.
-
-The importer fetches all pages before writing, skips invalid Discord IDs, and uses insert-only writes so rerunning it does not overwrite existing Avero progression. It imports fields exposed by the Engauge member-list API (XP, level, messages, voice seconds, and currency). When Engauge does not expose a separate current-level XP threshold, Avero preserves the reported cumulative XP and level, then starts a fresh local level-progress bar for future XP. Avero's native level-up curve uses 1,000 XP for the first level threshold and increases the next threshold by 1,000 per level; confirm this matches the progression you want before switching members over.
-
-Do not remove the old Engauge data or uninstall Engauge until the imported totals have been checked and you have a database backup. Historical per-message/per-session events cannot be recreated from aggregate member statistics.
-
 ## Natural-language prefix and AI assistant
 
 Members can use `avero` as a message prefix as well as the existing slash commands:
@@ -96,11 +69,9 @@ The assistant receives the member's question and Avero's public command catalogu
 - `/ping` — checks interaction and gateway latency.
 - `/help` — groups the available commands by category.
 - `/profile [member]` — combines wallet, per-game Arcade Mastery tiers, themed collection progress, and unlocked set titles.
-- `/leaderboard [category]` — shows global top coin, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
 - `/rep profile [member]` — view server reputation, with positive, negative, and net scores.
 - `/rep give member type [reason]` — give positive or negative reputation; negative votes require a short reason.
 - `/rep history [member]` — view the latest reputation activity.
-- `/rep leaderboard` — rank server members by net reputation.
 - `+rep @member` / `-rep @member reason` — quick positive and negative prefix commands. Each member can give one reputation vote per 24 hours per server; self-votes and bot targets are blocked.
 - `/achievements [member]` — tracks twelve global activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
@@ -128,7 +99,7 @@ The collectible shop is the foundation for Avero profile customization. Member-o
 - **Customization inventory:** badges and cosmetic profile frames can be bought and equipped independently. Further profile themes, color accents and title styles remain planned.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
 - **Rendering:** games and currency panels use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
-- **Server boundaries:** member balances, purchases, equipped cosmetics, careers, titles, and progression are global across servers. Guild-specific settings and role configuration remain server-scoped.
+- **Server boundaries:** member balances, purchases, equipped cosmetics, careers, and titles are global across servers. Guild-specific settings and role configuration remain server-scoped.
 
 Profile frames and badges are global member cosmetics. Open `/inventory`, select an owned badge or cosmetic, then use its Equip action. Only owned items can be equipped; the selected badge and frame are shown on `/profile`. Either selection can be removed from the same item detail panel.
 
@@ -220,13 +191,4 @@ npm test
 └── test/
 ```
 
-RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, and Engauge-backed leveling are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
-
-
-## Activity leaderboards
-
-Avero can maintain two persistent server-scoped Components V2 activity boards: daily and weekly. Message activity is counted once per Discord message ID; voice time is settled from persisted sessions while a non-bot member is unmuted and undeafened in a voice channel with the configured minimum number of humans. Voice-state events do not expose actual speaking activity, so this is an eligible-presence measure rather than proof that a member is speaking. The current Engauge server rates are mirrored with **8 XP per message** (one award per member per rolling 60 seconds) and **8 XP per complete eligible voice minute**. XP awards are persisted in an outbox, delivered to Engauge, and never blindly retried after an ambiguous response.
-
-Use **/rank [member]** for an Engauge-backed level card with separate total XP, message count, and voice minutes. The existing **/leaderboard** command also offers Engauge XP, message, voice-time, and currency rankings; these read the full server member list through the paginated API. Configure the boards from /config → **Activity leaderboards**. Set each text-channel ID, weighted message and voice-minute scores, timezone, weekly reset day, voice eligibility, and placement reward rules (daily and weekly positions 1–10). Configuring channels publishes the boards; subsequent updates edit the stored messages every five minutes, and missing messages are recreated. /activity shows a compact private summary.
-
-Reward claims are unique per guild, period, period key, and placement. Coin rewards are credited to the existing global wallet and logged as currency transactions; role delivery is retried when permissions or hierarchy prevent it. XP rewards are sent directly to Engauge through its member lookup and XP-award API, so Engauge remains the source of truth for its configured level formula. Set `ENGAUGE_API_TOKEN` as a secret in the environment that actually runs `npm run bot`; Avero reads it from `process.env` at startup and logs only whether it is present, never the token. A GitHub Actions repository secret is not automatically passed to a separately hosted bot: a workflow must explicitly map it into the process environment, or the bot host must have the secret configured there. The client defaults to `https://engau.ge` and Bearer authorization, with `ENGAUGE_API_BASE_URL`, `ENGAUGE_API_AUTH_HEADER`, and `ENGAUGE_API_AUTH_SCHEME` available for deployments using a different API host or token header format. A documented Engauge HTTP 502 after the XP POST is treated as committed; ambiguous network/5xx outcomes are held for manual verification rather than automatically paid twice. Voice tracking requires the GuildVoiceStates gateway intent. Avero needs View Channel and Send Messages in each configured board channel, and Manage Server to edit activity settings.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and achievements are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
