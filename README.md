@@ -85,7 +85,7 @@ The assistant receives the member's question and Avero's public command catalogu
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.
 - `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS/Coinflip cooldown is ready. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
-- `/shop` — browse six collectible badges and relics with rarity labels and prices.
+- `/shop` — browse the full collectible catalogue in compact three-item pages, with original product artwork, ownership state, server emoji accents, and rotating weekly picks.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view. Use `/collections` to track themed sets.
 
@@ -118,7 +118,7 @@ Reusable visual assets live in one place instead of being scattered through comm
 - `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments.
 - Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels.
 
-This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
+This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For third-party assets, record the source and licence before committing. Prefer original, deliberately designed Avero product artwork with restrained material finishes and a consistent visual language. No external files are downloaded at runtime.
 
 ## HTTP health server
 
@@ -130,8 +130,11 @@ npm start
 
 It listens on port `3000` by default. Set `PORT` to change it; valid values are integers from 1 through 65535.
 
-- `GET /health` — returns JSON indicating that the service is running.
+- `GET /health` — liveness check; returns JSON while the HTTP process is running.
+- `GET /ready` — readiness check; verifies PostgreSQL with a lightweight query and returns `503` when the database is unavailable.
 - Any other route — returns a JSON `404 Not Found` response.
+
+GitHub Actions runs the Node test suite against PostgreSQL 16 on pushes and pull requests. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
 
 ## Shared AveroUI
 
