@@ -211,7 +211,7 @@ test("shop category select and pagination preserve the selected category", async
   };
   await handleGameComponent(interaction, { prisma });
   let panel = updated.components[0].toJSON();
-  let text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
+  let text = panelText(updated);
   assert.match(text, /Aurora Frame/);
   assert.doesNotMatch(text, /Avero Enamel Pin/);
   assert.ok(panel.components.some((component) => component.type === 1 && component.components.some((child) => child.type === 3 && child.options.some((option) => option.value === "gems" && option.default))));
