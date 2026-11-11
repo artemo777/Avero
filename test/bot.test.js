@@ -213,7 +213,7 @@ test("shop category select and pagination preserve the selected category", async
   let panel = updated.components[0].toJSON();
   let text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
   assert.match(text, /Aurora Frame/);
-  assert.doesNotMatch(text, /Glitch Gremlin/);
+  assert.doesNotMatch(text, /Avero Enamel Pin/);
   assert.ok(panel.components.some((component) => component.type === 1 && component.components.some((child) => child.type === 3 && child.options.some((option) => option.value === "gems" && option.default))));
 
   interaction.customId = "avero|user-1|shop_page|all:1";
@@ -308,7 +308,7 @@ test("profile lists all owned badges but displays only the selected badge beside
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   assert.equal(response.files.length, 2);
   assert.equal(response.files[0].name, "profile-card.png");
-  assert.match(panelText(response), /Showcased badges.*Vault Rat/);
+  assert.match(panelText(response), /Showcased badges.*Archive Key/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
