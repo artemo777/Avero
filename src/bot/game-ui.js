@@ -73,7 +73,7 @@ function uiEmoji(purpose, fallback) {
   return getServerEmoji(purpose, fallback);
 }
 function collectibleButtonEmoji(itemId) {
-  const emojis = { neon_badge: "👾", vault_badge: "🐀", starlight_badge: "📡", moonlit_token: "🛸", prism_crown: "🧪", avero_relic: "🪩" };
+  const emojis = { neon_badge: "📍", vault_badge: "🗝️", starlight_badge: "📡", moonlit_token: "🧥", prism_crown: "▣", avero_relic: "🏅" };
   return getServerEmoji(itemId, emojis[itemId] ?? "🏅");
 }
 function collectibleIcon(item) {
