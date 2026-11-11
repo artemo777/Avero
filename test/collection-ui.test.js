@@ -160,4 +160,5 @@ test("shop catalogue entries resolve to local product artwork", () => {
   assert.equal(getCollectibleAssetId("other_badge", "badges"), "collectible-neon-badge");
   assert.equal(getCollectibleAssetId("other_cosmetic", "cosmetics"), "collectible-prism-crown");
   assert.equal(getCollectibleAssetId("other_tool", "tools"), "collectible-vault-badge");
+  assert.equal(getCollectibleAssetId("other_coin", "coins"), "coin");
 });
