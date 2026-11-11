@@ -77,7 +77,7 @@ function collectibleButtonEmoji(itemId) {
   return getServerEmoji(itemId, emojis[itemId] ?? "🏅");
 }
 function collectibleIcon(item) {
-  return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + (item?.icon ?? "");
+  return getAssetSymbol(getRarityAssetId(item?.rarity)) + " " + getServerEmoji(item?.id, item?.icon ?? "");
 }
 
 export function componentId(userId, action, arg = "") {
@@ -154,7 +154,7 @@ async function collectibleArtwork(items, size = 192) {
   const filenames = [];
   for (const [index, item] of items.entries()) {
     const filename = "avero-collectible-" + index + ".png";
-    const image = await renderRegisteredAsset(getCollectibleAssetId(item.id), size);
+    const image = await renderRegisteredAsset(getCollectibleAssetId(item.id, item.category), size);
     filenames.push(filename);
     files.push(new AttachmentBuilder(image, { name: filename }));
   }
@@ -212,26 +212,28 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
     getCurrencyAccount(prisma, guildId, userId)
   ]);
   const activeCategory = SHOP_CATEGORIES.some((entry) => entry.id === category) ? category : "all";
-  const filteredItems = activeCategory === "all" ? SHOP_ITEMS : SHOP_ITEMS.filter((item) =>
-    activeCategory === "coins" ? item.currency === "coins" :
-    activeCategory === "gems" ? item.currency === "gems" : item.category === activeCategory
-  );
+  const featuredItems = getWeeklyFeaturedItems();
+  const filteredItems = activeCategory === "all" ? SHOP_ITEMS :
+    activeCategory === "featured" ? featuredItems :
+    SHOP_ITEMS.filter((item) =>
+      activeCategory === "coins" ? item.currency === "coins" :
+      activeCategory === "gems" ? item.currency === "gems" : item.category === activeCategory
+    );
   const owned = new Set(purchases.map((purchase) => purchase.itemId));
-  const pageSize = 2;
+  const pageSize = 3;
   const pageCount = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = filteredItems.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-  const badgeItems = pageItems.filter((item) => item.category === "badges");
-  const artwork = await collectibleArtwork(badgeItems, 72);
-  const professor = await professorArtwork(72);
-  let artworkIndex = 0;
+  const artwork = await collectibleArtwork(pageItems, 88);
   const sections = pageItems.map((item) => {
     const status = owned.has(item.id) ? "✓ Owned" : "Available";
     const unit = item.currency === "gems" ? "gems" : "coins";
-    return "**" + getServerEmoji(item.id, item.icon) + " " + item.name + "** · " + item.rarity + "\n" +
-      "**Price:** " + item.price.toLocaleString("en-US") + " " + unit + " · " + status + "\n" + item.description;
+    const currencyIcon = item.currency === "gems" ? uiEmoji("gem-currency", "◆") : getAssetSymbol("coin");
+    const rarityIcon = getServerEmoji(getRarityAssetId(item.rarity), getAssetSymbol(getRarityAssetId(item.rarity)));
+    const weeklyLabel = activeCategory === "featured" ? " · WEEKLY PICK" : "";
+    return "**" + getServerEmoji(item.id, item.icon) + " " + item.name + "** · " + rarityIcon + " " + item.rarity + weeklyLabel + "\n" +
+      currencyIcon + " **" + item.price.toLocaleString("en-US") + " " + unit + "** · " + status + "\n" + item.description;
   });
-  sections.push("**Professor’s note** · Tools now have practical effects in Scavenge, Vault, and Work.");
   const sectionButtons = pageItems.map((item) => {
     const ownedItem = owned.has(item.id);
     return [
@@ -242,28 +244,26 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
   const selectMenu = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
       .setCustomId(componentId(userId, "shop_category"))
-      .setPlaceholder("Make a selection")
+      .setPlaceholder("Browse shop categories")
       .addOptions(SHOP_CATEGORIES.map((entry) => ({
         label: entry.label, value: entry.id, description: entry.description, default: entry.id === activeCategory
       })))
   );
-  const shopThumbnails = pageItems.map((item) => item.category === "badges" ? artwork.filenames[artworkIndex++] : null);
-  shopThumbnails.push(professor.filename);
   return gamePayload(createGamePanel({
     title: "Avero shop",
     description: getAssetSymbol("coin") + " **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" +
       (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems  ·  " + filteredItems.length + " items",
     sections,
     sectionButtons,
-    sectionThumbnails: shopThumbnails,
+    sectionThumbnails: artwork.filenames,
     selectMenus: [selectMenu],
-    eyebrow: "SHOP / " + (SHOP_CATEGORIES.find((entry) => entry.id === activeCategory)?.label.toUpperCase() ?? "ALL"),
-    footer: "VIRTUAL ITEMS ONLY",
+    eyebrow: uiEmoji("shop", "SHOP") + " / " + (SHOP_CATEGORIES.find((entry) => entry.id === activeCategory)?.label.toUpperCase() ?? "ALL"),
+    footer: activeCategory === "featured" ? "WEEKLY PICKS • ROTATES EVERY WEEK • VIRTUAL ITEMS ONLY" : "VIRTUAL ITEMS ONLY",
     buttons: pageCount > 1 ? [
       { ...button(userId, "shop_page", "‹", activeCategory + ":" + Math.max(0, currentPage - 1)), disabled: currentPage === 0 },
       { ...button(userId, "shop_page", "›", activeCategory + ":" + Math.min(pageCount - 1, currentPage + 1)), disabled: currentPage === pageCount - 1 }
     ] : []
-  }), [...artwork.files, professor.file]);
+  }), artwork.files);
 }
 export async function renderWorkJobsPage(userId, page = 0) {
   const pageSize = 5;
