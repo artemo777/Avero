@@ -60,8 +60,15 @@ const COLLECTIBLE_ASSETS = Object.freeze({
   avero_relic: "collectible-avero-relic"
 });
 
-export function getCollectibleAssetId(itemId) {
-  return COLLECTIBLE_ASSETS[String(itemId ?? "")] ?? "badge";
+const CATEGORY_ASSETS = Object.freeze({
+  badges: "collectible-neon-badge",
+  cosmetics: "collectible-prism-crown",
+  tools: "collectible-vault-badge",
+  coins: "collectible-avero-relic"
+});
+
+export function getCollectibleAssetId(itemId, category = null) {
+  return COLLECTIBLE_ASSETS[String(itemId ?? "")] ?? CATEGORY_ASSETS[category] ?? "badge";
 }
 
 export function getAsset(id) {
