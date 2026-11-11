@@ -6,6 +6,7 @@ import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
 import { inventoryCommand } from "../src/bot/commands/inventory.js";
 import { renderShop } from "../src/bot/game-ui.js";
+import { getWeeklyFeaturedItems } from "../src/bot/shop-catalog.js";
 
 function panelText(response) {
   return response.components[0].toJSON().components.flatMap((component) =>
@@ -78,12 +79,12 @@ test("shop paginates compact category sections and keeps controls within Discord
   const response = await renderShop(createFakePrisma(500), "guild-1", "user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const panel = response.components[0].toJSON();
-  const firstPageItems = SHOP_ITEMS.slice(0, 2);
-  assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length + 1);
+  const firstPageItems = SHOP_ITEMS.slice(0, 3);
+  assert.equal(panel.components.filter((component) => component.type === 9).length, firstPageItems.length);
   assert.match(panelText(response), /SHOP \/ ALL ITEMS/);
   assert.match(panelText(response), /VIRTUAL ITEMS ONLY/);
   for (const item of firstPageItems) assert.match(panelText(response), new RegExp(item.name));
-  for (const item of SHOP_ITEMS.slice(2, 4)) assert.doesNotMatch(panelText(response), new RegExp(item.name));
+  for (const item of SHOP_ITEMS.slice(3, 6)) assert.doesNotMatch(panelText(response), new RegExp(item.name));
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, firstPageItems.length + 2, "item controls, category selector, and navigation");
   const countNested = (component) => 1 + (component.components ?? []).reduce((sum, child) => sum + countNested(child), 0) + (component.accessory ? countNested(component.accessory) : 0);
@@ -96,13 +97,13 @@ test("shop paginates compact category sections and keeps controls within Discord
     assert.equal(section.accessory?.media?.url, "attachment://avero-collectible-" + index + ".png");
     assert.equal(panel.components[panel.components.indexOf(section) + 1]?.type, 1, "item controls immediately follow its thumbnail listing");
   }
-  assert.equal(sections.at(-1).accessory?.media?.url, "attachment://avero-professor.png");
-  assert.match(panelText(response), /Professor’s note/);
+  assert.equal(sections.length, firstPageItems.length);
+  assert.ok(response.files.every((file) => file.name.startsWith("avero-collectible-")));
 
   const secondResponse = await renderShop(createFakePrisma(500), "guild-1", "user-1", 1);
   const secondPanel = secondResponse.components[0].toJSON();
-  for (const item of SHOP_ITEMS.slice(2, 4)) assert.match(panelText(secondResponse), new RegExp(item.name));
-  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 2);
+  for (const item of SHOP_ITEMS.slice(3, 6)) assert.match(panelText(secondResponse), new RegExp(item.name));
+  assert.equal(secondPanel.components.filter((component) => component.type === 9).length, 3);
   assert.ok(secondPanel.components.length <= 10, "second shop page stays within Discord's container component limit");
   assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|all:0")));
 });
@@ -177,7 +178,7 @@ test("inventory displays owned collectibles and handles an empty collection", as
   };
 
   await inventoryCommand.execute(interaction, { prisma });
-  assert.match(panelText(replies[0]), /Glitch Gremlin/);
+  assert.match(panelText(replies[0]), /Avero Enamel Pin/);
 
   const emptyInteraction = {
     ...interaction,
@@ -241,4 +242,15 @@ test("buy autocomplete exposes the full catalog and filters beyond Discord's 25-
   assert.ok(filteredChoices.length > 0);
   assert.ok(filteredChoices.length <= 25);
   assert.ok(filteredChoices.every((choice) => SHOP_ITEMS.find((item) => item.id === choice.value)?.currency === "gems"));
+});
+
+
+test("weekly featured items are stable within a week and rotate across weeks", () => {
+  const monday = new Date("2026-11-09T12:00:00.000Z");
+  const sameWeek = new Date("2026-11-12T12:00:00.000Z");
+  const nextWeek = new Date("2026-11-16T12:00:00.000Z");
+  assert.deepEqual(getWeeklyFeaturedItems(monday), getWeeklyFeaturedItems(sameWeek));
+  assert.equal(getWeeklyFeaturedItems(monday).length, 3);
+  assert.notDeepEqual(getWeeklyFeaturedItems(monday).map((item) => item.id), getWeeklyFeaturedItems(nextWeek).map((item) => item.id));
+  assert.throws(() => getWeeklyFeaturedItems(new Date("invalid")), /valid date/);
 });
