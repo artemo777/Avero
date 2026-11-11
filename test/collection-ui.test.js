@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
-import { listAssets } from "../averoui/assets.js";
+import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
+import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
   return {
@@ -93,7 +94,7 @@ test("shop stays within Discord container limits across paginated item cards", a
   assert.equal(response.files.length, 3);
   const categoryRow = json.components.find((component) => component.type === 1 && component.components.some((child) => child.type === 3));
   assert.ok(categoryRow, "shop must show a category selection menu");
-  assert.equal(categoryRow.components[0].placeholder, "Make a selection");
+  assert.equal(categoryRow.components[0].placeholder, "Browse shop categories");
   assert.deepEqual(categoryRow.components[0].options.map((option) => option.value), ["all", "featured", "cosmetics", "badges", "tools", "coins", "gems"]);
   assert.ok(response.files.every((file) => file.name.startsWith("avero-collectible-") && file.name.endsWith(".png")));
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|item|vault_badge:0:shop"));
@@ -146,4 +147,15 @@ test("gem shop category filters gem-priced items and shows a separate gem balanc
 test("registered asset IDs are unique", () => {
   const ids = listAssets().map((asset) => asset.id);
   assert.equal(new Set(ids).size, ids.length, "each registered asset must have a unique ID");
+});
+
+
+test("shop catalogue entries resolve to local product artwork", () => {
+  for (const item of SHOP_ITEMS) {
+    assert.ok(getCollectibleAssetId(item.id, item.category), item.id + " has a category artwork fallback");
+  }
+  assert.equal(getCollectibleAssetId("neon_badge"), "collectible-neon-badge");
+  assert.equal(getCollectibleAssetId("other_badge", "badges"), "collectible-neon-badge");
+  assert.equal(getCollectibleAssetId("other_cosmetic", "cosmetics"), "collectible-prism-crown");
+  assert.equal(getCollectibleAssetId("other_tool", "tools"), "collectible-vault-badge");
 });
