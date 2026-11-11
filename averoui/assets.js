@@ -64,7 +64,7 @@ const CATEGORY_ASSETS = Object.freeze({
   badges: "collectible-neon-badge",
   cosmetics: "collectible-prism-crown",
   tools: "collectible-vault-badge",
-  coins: "collectible-avero-relic"
+  coins: "coin"
 });
 
 export function getCollectibleAssetId(itemId, category = null) {
