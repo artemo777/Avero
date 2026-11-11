@@ -57,11 +57,10 @@ export function getWeeklyFeaturedItems(now = new Date()) {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError("A valid date is required to select weekly shop items.");
   }
-  const year = now.getUTCFullYear();
-  const yearStart = Date.UTC(year, 0, 1);
-  const dayStart = Date.UTC(year, now.getUTCMonth(), now.getUTCDate());
-  const week = Math.floor((dayStart - yearStart) / (7 * 24 * 60 * 60 * 1000));
-  const offset = ((year * 53 + week) * 3) % SHOP_ITEMS.length;
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+  const week = Math.floor(monday.getTime() / (7 * 24 * 60 * 60 * 1000));
+  const offset = (week * 3) % SHOP_ITEMS.length;
   return Array.from({ length: Math.min(3, SHOP_ITEMS.length) }, (_, index) =>
     SHOP_ITEMS[(offset + index) % SHOP_ITEMS.length]
   );
