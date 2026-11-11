@@ -1,5 +1,6 @@
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
+import { getPrismaClient } from "./db/client.js";
 
 let config;
 try {
@@ -9,7 +10,12 @@ try {
   process.exit(1);
 }
 
-const server = createApp();
+const server = createApp({
+  readinessCheck: async () => {
+    const prisma = getPrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+  }
+});
 
 server.listen(config.port, "0.0.0.0", () => {
   console.log(`Avero listening on http://localhost:${config.port}`);
