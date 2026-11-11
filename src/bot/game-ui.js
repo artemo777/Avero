@@ -12,7 +12,7 @@ import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileB
 import { renderProfilePayload, showProfileBioModal, PROFILE_ACCENTS, PROFILE_DECORATIONS, PROFILE_FRAME_IDS } from "./commands/profile.js";
 import { PROFILE_BANNERS } from "../../averoui/profile-card.js";
 import { runJobShift } from "../db/work-repository.js";
-import { SHOP_ITEMS, SHOP_CATEGORIES } from "./shop-catalog.js";
+import { SHOP_ITEMS, SHOP_CATEGORIES, getWeeklyFeaturedItems } from "./shop-catalog.js";
 import { WORK_JOBS } from "./work-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
