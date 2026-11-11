@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 
-test("health endpoint returns a healthy JSON response", async (t) => {
-  const server = createApp();
+async function withServer(t, options = {}) {
+  const server = createApp(options);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   t.after(() => new Promise((resolve, reject) => {
     server.close((error) => error ? reject(error) : resolve());
   }));
+  return "http://127.0.0.1:" + server.address().port;
+}
 
-  const address = server.address();
-  const response = await fetch(`http://127.0.0.1:${address.port}/health`);
+test("health endpoint returns a healthy JSON response", async (t) => {
+  const baseUrl = await withServer(t);
+  const response = await fetch(baseUrl + "/health");
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
@@ -20,15 +23,47 @@ test("health endpoint returns a healthy JSON response", async (t) => {
   });
 });
 
-test("unknown routes return 404 JSON", async (t) => {
-  const server = createApp();
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  t.after(() => new Promise((resolve, reject) => {
-    server.close((error) => error ? reject(error) : resolve());
-  }));
+test("readiness endpoint confirms the database check", async (t) => {
+  let checks = 0;
+  const baseUrl = await withServer(t, { readinessCheck: async () => { checks += 1; } });
+  const response = await fetch(baseUrl + "/ready");
 
-  const address = server.address();
-  const response = await fetch(`http://127.0.0.1:${address.port}/missing`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    status: "ready",
+    service: "avero",
+    checks: { database: "ok" }
+  });
+  assert.equal(checks, 1);
+});
+
+test("readiness endpoint returns 503 when the database is unavailable", async (t) => {
+  const baseUrl = await withServer(t, { readinessCheck: async () => { throw new Error("database offline"); } });
+  const response = await fetch(baseUrl + "/ready");
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    status: "not_ready",
+    service: "avero",
+    checks: { database: "failed" }
+  });
+});
+
+test("readiness endpoint is unavailable when no check is configured", async (t) => {
+  const baseUrl = await withServer(t);
+  const response = await fetch(baseUrl + "/ready");
+
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    status: "not_ready",
+    service: "avero",
+    checks: { database: "not_configured" }
+  });
+});
+
+test("unknown routes return 404 JSON", async (t) => {
+  const baseUrl = await withServer(t);
+  const response = await fetch(baseUrl + "/missing");
 
   assert.equal(response.status, 404);
   assert.equal((await response.json()).error, "Not Found");
