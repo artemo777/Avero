@@ -134,7 +134,7 @@ It listens on port `3000` by default. Set `PORT` to change it; valid values are 
 - `GET /ready` — readiness check; verifies PostgreSQL with a lightweight query and returns `503` when the database is unavailable.
 - Any other route — returns a JSON `404 Not Found` response.
 
-GitHub Actions runs the Node test suite against PostgreSQL 16 on pushes and pull requests. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
+The existing Test Avero GitHub Actions workflow runs the Node test suite on Node.js 22 and 24 against PostgreSQL 16 for pull requests. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
 
 ## Shared AveroUI
 
