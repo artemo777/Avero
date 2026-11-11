@@ -1,5 +1,6 @@
 export const SHOP_CATEGORIES = Object.freeze([
   Object.freeze({ id: "all", label: "All items", description: "Browse every collectible in one list." }),
+  Object.freeze({ id: "featured", label: "Weekly picks", description: "Three items selected for this week." }),
   Object.freeze({ id: "cosmetics", label: "Cosmetics", description: "Profile styles and visual customizations." }),
   Object.freeze({ id: "badges", label: "Badges", description: "Collectible profile badges." }),
   Object.freeze({ id: "tools", label: "Tools", description: "Utility collectibles for future Avero features." }),
@@ -8,12 +9,12 @@ export const SHOP_CATEGORIES = Object.freeze([
 ]);
 
 export const SHOP_ITEMS = Object.freeze([
-  Object.freeze({ id: "neon_badge", name: "Glitch Gremlin", category: "badges", price: 150, currency: "coins", icon: "👾", rarity: "UNCOMMON", description: "A tiny chaos engine with a permanent spot in your collection." }),
-  Object.freeze({ id: "vault_badge", name: "Vault Rat", category: "badges", price: 300, currency: "coins", icon: "🐀", rarity: "RARE", description: "Knows where the good stuff is. Says absolutely nothing." }),
-  Object.freeze({ id: "starlight_badge", name: "Lag Spike", category: "badges", price: 500, currency: "coins", icon: "📡", rarity: "EPIC", description: "A signal from somewhere the servers swear does not exist." }),
-  Object.freeze({ id: "moonlit_token", name: "Moonwalk Menace", category: "cosmetics", price: 750, currency: "coins", icon: "🛸", rarity: "EPIC", description: "Leaves the lobby. Somehow still gets the last word." }),
-  Object.freeze({ id: "prism_crown", name: "Prism Goblin", category: "cosmetics", price: 1000, currency: "coins", icon: "🧪", rarity: "LEGENDARY", description: "Collects shiny things. Including things that are probably cursed." }),
-  Object.freeze({ id: "avero_relic", name: "Avero OG", category: "badges", price: 1500, currency: "coins", icon: "🪩", rarity: "MYTHIC", description: "A weird little piece of Avero history. You had to be there." }),
+  Object.freeze({ id: "neon_badge", name: "Avero Enamel Pin", category: "badges", price: 150, currency: "coins", icon: "📍", rarity: "UNCOMMON", description: "A small metal pin with a violet enamel centre." }),
+  Object.freeze({ id: "vault_badge", name: "Archive Key", category: "badges", price: 300, currency: "coins", icon: "🗝️", rarity: "RARE", description: "A brass key-shaped keepsake from the Avero archive." }),
+  Object.freeze({ id: "starlight_badge", name: "Signal Badge", category: "badges", price: 500, currency: "coins", icon: "📡", rarity: "EPIC", description: "A brushed-metal badge with a violet enamel detail." }),
+  Object.freeze({ id: "moonlit_token", name: "Avero Hoodie", category: "cosmetics", price: 750, currency: "coins", icon: "🧥", rarity: "EPIC", description: "A charcoal hoodie with a small Avero chest mark." }),
+  Object.freeze({ id: "prism_crown", name: "Profile Frame", category: "cosmetics", price: 1000, currency: "coins", icon: "▣", rarity: "LEGENDARY", description: "A brushed-metal frame with a violet stone accent." }),
+  Object.freeze({ id: "avero_relic", name: "Founders Medal", category: "badges", price: 1500, currency: "coins", icon: "🏅", rarity: "MYTHIC", description: "A solid metal medal from Avero's early days." }),
   Object.freeze({ id: "pixel_cape", name: "Pixel Cape", category: "cosmetics", price: 900, currency: "coins", icon: "🧥", rarity: "RARE", description: "A tiny cape for a very important pixel person." }),
   Object.freeze({ id: "cloud_specs", name: "Cloud Specs", category: "cosmetics", price: 650, currency: "coins", icon: "🕶️", rarity: "UNCOMMON", description: "The world looks 12% more dramatic through these." }),
   Object.freeze({ id: "star_pin", name: "Star Pin", category: "badges", price: 420, currency: "coins", icon: "🌟", rarity: "RARE", description: "A bright little mark for your Avero profile." }),
@@ -50,3 +51,18 @@ export const SHOP_ITEMS = Object.freeze([
   Object.freeze({ id: "professor_badge", name: "Professor's Assistant", category: "badges", price: 180, currency: "coins", icon: "🎓", rarity: "UNCOMMON", description: "An official-looking assistant badge. The Professor approves." }),
   Object.freeze({ id: "night_owl_badge", name: "Night Owl", category: "badges", price: 260, currency: "coins", icon: "🦉", rarity: "UNCOMMON", description: "For the ones who keep the late-night lights on." }),
 ]);
+
+
+export function getWeeklyFeaturedItems(now = new Date()) {
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new TypeError("A valid date is required to select weekly shop items.");
+  }
+  const year = now.getUTCFullYear();
+  const yearStart = Date.UTC(year, 0, 1);
+  const dayStart = Date.UTC(year, now.getUTCMonth(), now.getUTCDate());
+  const week = Math.floor((dayStart - yearStart) / (7 * 24 * 60 * 60 * 1000));
+  const offset = ((year * 53 + week) * 3) % SHOP_ITEMS.length;
+  return Array.from({ length: Math.min(3, SHOP_ITEMS.length) }, (_, index) =>
+    SHOP_ITEMS[(offset + index) % SHOP_ITEMS.length]
+  );
+}
