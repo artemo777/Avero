@@ -1,6 +1,6 @@
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
-import { getPrismaClient } from "./db/client.js";
+import { disconnectPrismaClient, getPrismaClient } from "./db/client.js";
 
 let config;
 try {
@@ -21,16 +21,37 @@ server.listen(config.port, "0.0.0.0", () => {
   console.log(`Avero listening on http://localhost:${config.port}`);
 });
 
+const SHUTDOWN_GRACE_PERIOD_MS = 10_000;
+let shuttingDown = false;
+
 function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
   console.log(`Received ${signal}; shutting down...`);
-  server.close((error) => {
+
+  const forceCloseTimer = setTimeout(() => {
+    console.error("HTTP shutdown grace period expired; closing remaining connections.");
+    server.closeAllConnections();
+  }, SHUTDOWN_GRACE_PERIOD_MS);
+  forceCloseTimer.unref();
+
+  server.close(async (error) => {
+    clearTimeout(forceCloseTimer);
+
     if (error) {
-      console.error("Shutdown failed:", error);
-      process.exit(1);
+      console.error("HTTP server shutdown failed:", error);
     }
-    process.exit(0);
+
+    try {
+      await disconnectPrismaClient();
+    } catch (disconnectError) {
+      console.error("Database disconnect failed:", disconnectError);
+      process.exitCode = 1;
+    }
+
+    if (error) process.exitCode = 1;
   });
 }
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
