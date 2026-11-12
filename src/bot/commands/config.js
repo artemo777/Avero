@@ -138,7 +138,7 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
   ]);
   const perkLines = perks.length
     ? perks.map((perk) => (perk.roleId ? "<@&" + perk.roleId + ">" : "<@" + perk.userId + ">") + " · " + perk.emoji).join("\n")
-    : "No role perks configured yet.";
+    : "No reaction perks configured yet.";
   const buttons = [
     { customId: "avero-config|reaction-add", label: "Add / edit role", style: ButtonStyle.Primary },
     { customId: "avero-config|reaction-remove", label: "Remove role", style: ButtonStyle.Secondary },
@@ -458,21 +458,6 @@ export async function handleConfigSelect(interaction, prisma) {
   const [, action, extra] = interaction.customId.split("|");
   if (action === "reaction-cancel" || action === "reaction-user-cancel") {
     await interaction.update({ content: "Reaction perk editing cancelled.", components: [] });
-    return true;
-  }
-
-  if (action === "reaction-user-paste") {
-    if (!ROLE_ID_PATTERN.test(extra || "")) {
-      await interaction.reply({ content: "That member selection was invalid.", flags: MessageFlags.Ephemeral });
-      return true;
-    }
-    const member = await interaction.guild.members.fetch(extra).catch(() => null);
-    if (!member) {
-      await interaction.reply({ content: "That member is no longer available.", flags: MessageFlags.Ephemeral });
-      return true;
-    }
-    const input = new TextInputBuilder().setCustomId("reactionEmoji").setLabel("Paste one emoji").setPlaceholder("🔥 or <:name:id>").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(100);
-    await interaction.showModal(new ModalBuilder().setCustomId("avero-config-modal|reaction-emoji|user|" + extra).setTitle("Paste reaction emoji").addComponents(new ActionRowBuilder().addComponents(input)));
     return true;
   }
 
