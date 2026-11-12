@@ -6,7 +6,7 @@ Avero can operate in any Discord server where it is installed and has the requir
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer (the CI matrix verifies Node.js 22 and 24)
 - npm
 - A Discord application and bot token from the Discord Developer Portal
 - PostgreSQL for persistent member and currency data
@@ -113,7 +113,7 @@ Reusable visual assets live in one place instead of being scattered through comm
 
 - `averoui/icons.js` — small text-safe glyphs used in Discord UI.
 - `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
-- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, six individually illustrated shop collectibles, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
+- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, the full shop catalogue, with a distinct original SVG illustration for every collectible, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
 - `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments.
 - Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels.
@@ -134,7 +134,7 @@ It listens on port `3000` by default. Set `PORT` to change it; valid values are 
 - `GET /ready` — readiness check; verifies PostgreSQL with a lightweight query and returns `503` when the database is unavailable.
 - Any other route — returns a JSON `404 Not Found` response.
 
-The existing Test Avero GitHub Actions workflow runs the Node test suite on Node.js 22 and 24 against PostgreSQL 16 for pull requests. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
+The Test Avero GitHub Actions workflow runs the Node test suite on Node.js 22 and 24 against PostgreSQL 16 for pull requests and supported branch pushes. Stale runs are cancelled when a newer commit is queued, and maintainers can also start a run manually from GitHub Actions. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
 
 ## Shared AveroUI
 
