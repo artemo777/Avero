@@ -1,6 +1,6 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, ModalBuilder,
-  PermissionFlagsBits, RoleSelectMenuBuilder, UserSelectMenuBuilder, StringSelectMenuBuilder,
+  PermissionFlagsBits, RoleSelectMenuBuilder, UserSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { THEME } from "../../../averoui/theme.js";
@@ -22,7 +22,7 @@ const UNICODE_REACTION_CHOICES = Object.freeze([
   ["🎮", "Game controller"], ["🌟", "Glowing star"], ["🥳", "Party face"],
   ["💯", "Hundred points"], ["🫡", "Saluting face"], ["🤝", "Handshake"]
 ]);
-function userSelectRow(customId, placeholder) {
+function channelSelectRow(customId, placeholder) {\n  return new ActionRowBuilder().addComponents(new ChannelSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(25).setChannelTypes([ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread, ChannelType.GuildForum]));\n}\nfunction userSelectRow(customId, placeholder) {
   return new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(1));
 }
 function roleSelectRow(customId, placeholder) {
@@ -144,6 +144,8 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     { customId: "avero-config|reaction-remove", label: "Remove role", style: ButtonStyle.Secondary },
     { customId: "avero-config|reaction-add-user", label: "Add / edit user", style: ButtonStyle.Primary },
     { customId: "avero-config|reaction-remove-user", label: "Remove user", style: ButtonStyle.Secondary },
+    { customId: "avero-config|reaction-ignore", label: "Ignore channels", style: ButtonStyle.Secondary },
+    { customId: "avero-config|reaction-allow", label: "Allow channels", style: ButtonStyle.Secondary },
     { customId: "avero-config|reaction-toggle", label: settings.enabled ? "Pause perks" : "Enable perks", style: settings.enabled ? ButtonStyle.Secondary : ButtonStyle.Success },
     { customId: "avero-config|reaction-back", label: "Back to config", style: ButtonStyle.Secondary }
   ];
@@ -325,7 +327,7 @@ export async function handleConfigButton(interaction, prisma) {
     await interaction.editReply(panel);
     return true;
   }
-  if (action === "reaction-toggle") {
+  if (action === "reaction-ignore" || action === "reaction-allow") {\n    const mode = action === "reaction-ignore" ? "ignore" : "allow";\n    await interaction.reply({ content: mode === "ignore" ? "Select up to 25 text channels where reaction perks should be disabled." : "Select up to 25 ignored channels to allow reactions in again.", components: [channelSelectRow("avero-config-select|reaction-" + mode + "-channels", "Choose text channels")], flags: MessageFlags.Ephemeral });\n    return true;\n  }\n  if (action === "reaction-toggle") {
     const settings = await getAutoReactionSettings(prisma, interaction.guildId);
     await updateAutoReactionSettings(prisma, interaction.guildId, { enabled: !settings.enabled });
     await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
@@ -458,6 +460,17 @@ export async function handleConfigSelect(interaction, prisma) {
   const [, action, extra] = interaction.customId.split("|");
   if (action === "reaction-cancel" || action === "reaction-user-cancel") {
     await interaction.update({ content: "Reaction perk editing cancelled.", components: [] });
+    return true;
+  }
+
+  if (action === "reaction-ignore-channels" || action === "reaction-allow-channels") {
+    const settings = await getAutoReactionSettings(prisma, interaction.guildId);
+    const selected = [...new Set((interaction.values || []).filter((id) => ROLE_ID_PATTERN.test(id)))];
+    const ignoredChannelIds = action === "reaction-ignore-channels"
+      ? [...new Set([...settings.ignoredChannelIds, ...selected])]
+      : settings.ignoredChannelIds.filter((id) => !selected.includes(id));
+    await updateAutoReactionSettings(prisma, interaction.guildId, { ignoredChannelIds });
+    await interaction.update({ content: action === "reaction-ignore-channels" ? "Saved ignored channels. Reaction perks will skip those channels." : "Selected channels are allowed again.", components: [] });
     return true;
   }
 
