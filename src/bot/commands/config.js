@@ -137,7 +137,7 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     getAutoReactionRolePerks(prisma, guildId)
   ]);
   const perkLines = perks.length
-    ? perks.map((perk) => "<@&" + perk.roleId + "> · " + perk.emoji).join("\n")
+    ? perks.map((perk) => (perk.roleId ? "<@&" + perk.roleId + ">" : "<@" + perk.userId + ">") + " · " + perk.emoji).join("\n")
     : "No role perks configured yet.";
   const buttons = [
     { customId: "avero-config|reaction-add", label: "Add / edit role", style: ButtonStyle.Primary },
@@ -360,23 +360,23 @@ export async function handleConfigModal(interaction, prisma) {
   }
   const [, kind, modalRoleId] = interaction.customId.split("|");
   if (kind === "reaction-emoji") {
-    if (!ROLE_ID_PATTERN.test(modalRoleId || "")) throw new Error("That role selection expired. Please start again.");
-    const role = await interaction.guild.roles.fetch(modalRoleId).catch(() => null);
-    if (!role || role.id === interaction.guild.id || role.managed) throw new Error("That role is no longer available. Please start again.");
+    const parts = interaction.customId.split("|");
+    const isUser = parts[3] === "user";
+    const targetId = isUser ? parts[4] : modalRoleId;
+    if (!ROLE_ID_PATTERN.test(targetId || "")) throw new Error("That target selection expired. Please start again.");
+    const role = isUser ? null : await interaction.guild.roles.fetch(targetId).catch(() => null);
+    const member = isUser ? await interaction.guild.members.fetch(targetId).catch(() => null) : null;
+    if (isUser ? !member : (!role || role.id === interaction.guild.id || role.managed)) throw new Error("That target is no longer available. Please start again.");
     const parsed = normalizeReactionEmoji(interaction.fields.getTextInputValue("reactionEmoji"));
     let emoji = parsed.value;
     if (parsed.kind === "custom") {
       const customEmoji = resolveSharedCustomEmoji(interaction.client, parsed.id);
-      if (!customEmoji || !customEmoji.available) {
-        throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Paste its full Discord emoji markup and make sure its server is available to Avero.");
-      }
+      if (!customEmoji || !customEmoji.available) throw new TypeError("Avero couldn't find that custom emoji in any server it shares. Paste its full Discord emoji markup and make sure its server is available to Avero.");
       emoji = customEmoji.toString();
     }
-    await upsertAutoReactionRolePerk(prisma, interaction.guildId, modalRoleId, emoji);
-    await interaction.reply({
-      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero accepts a single Unicode emoji or a custom emoji from any server it shares.",
-      flags: MessageFlags.Ephemeral
-    });
+    if (isUser) await upsertAutoReactionUserPerk(prisma, interaction.guildId, targetId, emoji);
+    else await upsertAutoReactionRolePerk(prisma, interaction.guildId, targetId, emoji);
+    await interaction.reply({ content: "Saved reaction perk: " + (isUser ? member.toString() : role.toString()) + " → " + emoji + ". Avero accepts one Unicode or shared custom emoji.", flags: MessageFlags.Ephemeral });
     return true;
   }
   if (kind === "reaction-add") {
@@ -458,6 +458,21 @@ export async function handleConfigSelect(interaction, prisma) {
   const [, action, extra] = interaction.customId.split("|");
   if (action === "reaction-cancel" || action === "reaction-user-cancel") {
     await interaction.update({ content: "Reaction perk editing cancelled.", components: [] });
+    return true;
+  }
+
+  if (action === "reaction-user-paste") {
+    if (!ROLE_ID_PATTERN.test(extra || "")) {
+      await interaction.reply({ content: "That member selection was invalid.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    const member = await interaction.guild.members.fetch(extra).catch(() => null);
+    if (!member) {
+      await interaction.reply({ content: "That member is no longer available.", flags: MessageFlags.Ephemeral });
+      return true;
+    }
+    const input = new TextInputBuilder().setCustomId("reactionEmoji").setLabel("Paste one emoji").setPlaceholder("🔥 or <:name:id>").setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(100);
+    await interaction.showModal(new ModalBuilder().setCustomId("avero-config-modal|reaction-emoji|user|" + extra).setTitle("Paste reaction emoji").addComponents(new ActionRowBuilder().addComponents(input)));
     return true;
   }
 
