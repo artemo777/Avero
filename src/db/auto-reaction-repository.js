@@ -94,7 +94,7 @@ export async function upsertAutoReactionRolePerk(prisma, guildId, roleId, emoji)
 }
 export async function removeAutoReactionRolePerk(prisma, guildId, roleId) {
   const key = requireGuildId(guildId);
-  const role = requireRoleId(roleId);
+  const role = requireTargetId(roleId, "roleId");
   const result = await prisma.autoReactionRolePerk.deleteMany({
     where: { guildId: key, roleId: role }
   });
