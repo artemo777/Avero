@@ -119,7 +119,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
     return;
   }
-  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu() || interaction.isUserSelectMenu()) {
+  if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu() || interaction.isUserSelectMenu() || interaction.isChannelSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
         await handleMoneyRequestButton(interaction, getPrismaClient());
