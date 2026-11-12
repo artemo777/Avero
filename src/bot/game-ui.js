@@ -113,7 +113,8 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     if (sectionRow?.length) {
       const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
         const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(ButtonStyle.Secondary);
-        if (entry.emoji) builder.setEmoji(entry.emoji);
+        const emoji = safeComponentEmoji(entry.emoji);
+        if (emoji) builder.setEmoji(emoji);
         if (entry.disabled) builder.setDisabled(true);
         return builder;
       }));
@@ -125,7 +126,8 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(ButtonStyle.Secondary);
-      if (button.emoji) builder.setEmoji(button.emoji);
+      const emoji = safeComponentEmoji(button.emoji);
+      if (emoji) builder.setEmoji(emoji);
       if (button.disabled) builder.setDisabled(true);
       return builder;
     }));
@@ -159,6 +161,27 @@ async function collectibleArtwork(items, size = 192) {
     files.push(new AttachmentBuilder(image, { name: filename }));
   }
   return { filenames, files };
+}
+function safeComponentEmoji(value) {
+  if (typeof value !== "string" || !value) return undefined;
+  const custom = value.match(/^<a?:([a-zA-Z0-9_]{2,32}):[0-9]{17,20}>$/);
+  if (custom) {
+    const name = custom[1].toLowerCase();
+    if (/(coin|money|wallet)/.test(name)) return "🪙";
+    if (/(gem|diamond|crystal)/.test(name)) return "💎";
+    if (/(shop|store|cart)/.test(name)) return "🛍️";
+    if (/(inventory|backpack|collection)/.test(name)) return "🎒";
+    if (/(work|toolbox|briefcase)/.test(name)) return "🧰";
+    if (/(scavenge|search|explore)/.test(name)) return "🔎";
+    if (/(daily|calendar|gift)/.test(name)) return "✨";
+    if (/(guess|target)/.test(name)) return "🎯";
+    if (/(vault|lock|safe)/.test(name)) return "🔐";
+    if (/(atlas|map)/.test(name)) return "🗺️";
+    return "🔹";
+  }
+  // Component emoji fields accept Unicode emoji, not Discord message markup.
+  if (value.startsWith("<")) return undefined;
+  return value;
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };

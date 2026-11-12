@@ -50,15 +50,14 @@ export async function handleAutoReactionMessage(message, prisma) {
       message.webhookId || message.system || !message.channelId ||
       !message.mentions?.users?.size || typeof message.react !== "function") return false;
 
-  const memberRoles = message.member?.roles?.cache;
-  if (!memberRoles || typeof memberRoles.has !== "function") return false;
-
   const settings = await getAutoReactionSettings(prisma, message.guildId);
   if (!settings.enabled || settings.ignoredChannelIds.includes(message.channelId)) return false;
 
   const perks = await getAutoReactionRolePerks(prisma, message.guildId);
+  const memberRoles = message.member?.roles?.cache;
+  const hasRole = (roleId) => Boolean(roleId && memberRoles?.has?.(roleId));
   const emojis = [...new Set(perks
-    .filter((perk) => memberRoles.has(perk.roleId))
+    .filter((perk) => (perk.roleId && hasRole(perk.roleId)) || (perk.userId && perk.userId === message.author.id))
     .map((perk) => perk.emoji))];
   if (!emojis.length) return false;
 
@@ -69,7 +68,7 @@ export async function handleAutoReactionMessage(message, prisma) {
     const warningKey = message.guildId + ":" + message.channelId;
     if (!warnedPermissions.has(warningKey)) {
       warnedPermissions.add(warningKey);
-      console.warn("Role reaction perks skipped: Avero needs Add Reactions in channel " + warningKey + ".");
+      console.warn("Reaction perks skipped: Avero needs Add Reactions in channel " + warningKey + ".");
     }
     return false;
   }
@@ -82,7 +81,7 @@ export async function handleAutoReactionMessage(message, prisma) {
       const warningKey = message.guildId + ":" + message.channelId + ":external-emoji";
       if (!warnedPermissions.has(warningKey)) {
         warnedPermissions.add(warningKey);
-        console.warn("Role reaction perks skipped for external custom emojis: Avero needs Use External Emojis in channel " + warningKey + ".");
+        console.warn("Reaction perks skipped for external custom emojis: Avero needs Use External Emojis in channel " + warningKey + ".");
       }
       continue;
     }
@@ -99,7 +98,7 @@ export async function handleAutoReactionMessage(message, prisma) {
         continue;
       }
       if (code === 10008 || code === 50013 || code === 50001) continue;
-      console.error("Role reaction perk failed in guild " + message.guildId + ":", error);
+      console.error("Reaction perk failed in guild " + message.guildId + ":", error);
     }
   }
   return added;

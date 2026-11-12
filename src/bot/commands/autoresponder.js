@@ -9,6 +9,15 @@ import { isValidMessageMilestone, MESSAGE_MILESTONE_STEP, MESSAGE_MILESTONE_MAX 
 const SNOWFLAKE = /^\d{17,20}$/;
 const MATCH_TYPES = ["exact", "contains", "starts_with", "ends_with", "attachment", "user_mention", "bot_mention"];
 const RESPONSE_TYPES = ["text", "embed", "reply", "random", "dm"];
+const MATCH_LABELS = Object.freeze({
+  exact: "Exact phrase", contains: "Contains text", starts_with: "Starts with",
+  ends_with: "Ends with", attachment: "Message has an attachment",
+  user_mention: "Any member is mentioned", bot_mention: "Avero is mentioned"
+});
+const RESPONSE_LABELS = Object.freeze({
+  text: "Send a channel message", embed: "Send an embed", reply: "Reply to the message",
+  random: "Choose a random response", dm: "Send a direct message"
+});
 const idList = (value, label) => {
   if (!value?.trim()) return [];
   const values = [...new Set(value.split(/[\s,]+/).filter(Boolean))];
@@ -69,15 +78,37 @@ function readRuleOptions(interaction, partial = false) {
   return data;
 }
 const textOption = (name, description, required = false, max = 1000) => ({ type: 3, name, description, required, max_length: max });
+export function validateAutoResponseRule(data) {
+  const name = String(data?.name ?? "").trim();
+  const response = String(data?.responseContent ?? "").trim();
+  const matchType = data?.matchType ?? "contains";
+  const responseType = data?.responseType ?? "text";
+  const trigger = String(data?.trigger ?? "").trim();
+  if (!name) throw new Error("Add a rule name so you can recognize it later.");
+  if (name.length > 50) throw new Error("Rule names can be up to 50 characters.");
+  if (!response) throw new Error("Add the message Avero should send in the Response field.");
+  if (response.length > 1800) throw new Error("Responses can be up to 1,800 characters.");
+  if (!MATCH_TYPES.includes(matchType)) throw new Error("Choose a valid trigger type from the list.");
+  if (!RESPONSE_TYPES.includes(responseType)) throw new Error("Choose a valid response type from the list.");
+  if (["exact", "contains", "starts_with", "ends_with"].includes(matchType) && !trigger) {
+    throw new Error("This trigger type needs a Trigger value. Add a keyword or phrase, or choose an attachment/member-mention/Avero-mention trigger instead.");
+  }
+  if (trigger.length > 200) throw new Error("Trigger values can be up to 200 characters.");
+  if (responseType === "random" && response.split(/\s*\|\|\s*/).filter(Boolean).length < 2) {
+    throw new Error("Random responses need at least two choices separated by ||.");
+  }
+  return { ...data, name, responseContent: response, matchType, responseType, trigger };
+}
+
 const intOption = (name, description, min, max) => ({ type: 4, name, description, min_value: min, max_value: max });
 const boolOption = (name, description) => ({ type: 5, name, description });
-const choiceOption = (name, description, values) => ({ type: 3, name, description, choices: values.map((value) => ({ name: value.replaceAll("_", " "), value })) });
+const choiceOption = (name, description, values, labels = {}) => ({ type: 3, name, description, choices: values.map((value) => ({ name: labels[value] ?? value.replaceAll("_", " "), value })) });
 const addEditOptions = (required) => [
-  textOption("name", "Short rule name.", required, 50),
-  textOption("response", "Response text; random choices separated by ||.", required, 1800),
-  textOption("trigger", "Keyword, phrase, or trigger value (not needed for attachment/mention triggers).", false, 200),
-  choiceOption("match_type", "How the trigger is matched.", MATCH_TYPES),
-  choiceOption("response_type", "How Avero responds.", RESPONSE_TYPES),
+  textOption("name", "Short rule name shown in your rule list.", required, 50),
+  textOption("response", "What Avero should send. Random: separate up to 10 choices with ||.", required, 1800),
+  choiceOption("match_type", "Choose what kind of message should trigger this rule.", MATCH_TYPES, MATCH_LABELS),
+  textOption("trigger", "Required for text matching. Leave empty for attachment or mention triggers.", false, 200),
+  choiceOption("response_type", "Choose how Avero sends the response.", RESPONSE_TYPES, RESPONSE_LABELS),
   intOption("cooldown", "Server-wide cooldown in seconds.", 0, 86400),
   intOption("user_cooldown", "Per-user cooldown in seconds.", 0, 86400),
   intOption("priority", "Higher priority rules run first.", -100, 100),
@@ -106,6 +137,7 @@ export const autoresponderCommand = Object.freeze({
         textOption("rule_id", "Rule ID from the list.", true, 30),
         { type: 5, name: "enabled", description: "Whether the rule is enabled.", required: true }
       ]},
+      { type: 1, name: "guide", description: "Explain trigger types, response types, placeholders, and examples." },
       { type: 1, name: "list", description: "List rules and response statistics." },
       { type: 1, name: "logs", description: "View the latest response execution logs." },
       { type: 2, name: "milestones", description: "Configure member message-count celebrations.", options: [
@@ -181,15 +213,37 @@ export const autoresponderCommand = Object.freeze({
       }
       return;
     }
+    if (action === "guide") {
+      await interaction.reply(ephemeral(
+        "## Autoresponder setup guide\n" +
+        "**1 · Choose a trigger**\n" +
+        "• Exact phrase — the whole message must match.\n" +
+        "• Contains text — the message includes your keyword or phrase (default).\n" +
+        "• Starts with / Ends with — match the beginning or end.\n" +
+        "• Attachment — fires when a message includes an upload; no Trigger value needed.\n" +
+        "• Member mention / Avero mention — fires when someone is mentioned; no Trigger value needed.\n\n" +
+        "**2 · Write the response**\n" +
+        "Use {user}, {username}, {user_id}, {server}, {channel}, {member_count}, {mention}, or {bot}.\n" +
+        "For random replies, separate 2–10 choices with ||.\n\n" +
+        "**3 · Example**\n" +
+        "/autoresponder add name:Welcome response:Welcome {user}! match_type:contains trigger:hello\n\n" +
+        "Use /autoresponder test to preview a saved rule. Use list, edit, toggle, and remove to manage it."
+      ));
+      return;
+    }
     if (action === "list") {
       const [rules, stats] = await Promise.all([
         listAutoResponseRules(prisma, interaction.guildId, { force: true }),
         getAutoResponseStats(prisma, interaction.guildId)
       ]);
-      const lines = rules.length ? rules.slice(0, 8).map((rule) =>
-        "**" + rule.name + "** · " + (rule.enabled ? "Enabled" : "Paused") + " · " + rule.matchType + " · " + rule.responseType +
-        "\nID: " + rule.id + " · Priority " + rule.priority + " · Cooldown " + rule.cooldownSeconds + "s / user " + rule.perUserCooldownSeconds + "s"
-      ) : ["No rules yet. Use /autoresponder add to create one."];
+      const lines = rules.length ? rules.slice(0, 8).map((rule) => {
+        const triggerLabel = ["attachment", "user_mention", "bot_mention"].includes(rule.matchType)
+          ? MATCH_LABELS[rule.matchType]
+          : MATCH_LABELS[rule.matchType] + ": " + (rule.trigger || "(missing)");
+        return "**" + rule.name + "** · " + (rule.enabled ? "Enabled" : "Paused") +
+          "\n" + triggerLabel + " → " + (RESPONSE_LABELS[rule.responseType] ?? rule.responseType) +
+          "\nID: " + rule.id + " · Priority " + rule.priority + " · Cooldown " + rule.cooldownSeconds + "s / user " + rule.perUserCooldownSeconds + "s";
+      }) : ["No rules yet. Use /autoresponder add to create one."];
       await interaction.reply(ephemeral("## Avero Autoresponder\n" + lines.join("\n\n") +
         "\n\n**Activity:** " + stats.total.toLocaleString("en-US") + " successful responses total · " +
         stats.recent.toLocaleString("en-US") + " in the last 24 hours\nUse /autoresponder edit, toggle, or remove with a rule ID."));
@@ -208,12 +262,11 @@ export const autoresponderCommand = Object.freeze({
     if (action === "add") {
       const current = await listAutoResponseRules(prisma, interaction.guildId, { force: true });
       if (current.length >= 50) throw new Error("This server has reached the 50-rule limit. Remove an unused rule first.");
-      const data = readRuleOptions(interaction);
-      if (!data.name || !data.trigger && !["attachment", "user_mention", "bot_mention"].includes(data.matchType) || !data.responseContent) {
-        throw new Error("Name, response, and a trigger value (except for attachment/mention triggers) are required.");
-      }
-      if (data.responseType === "random" && data.responseContent.split(/\s*\|\|\s*/).filter(Boolean).length < 2) {
-        throw new Error("Random responses need at least two choices separated by ||.");
+      let data;
+      try { data = validateAutoResponseRule(readRuleOptions(interaction)); }
+      catch (error) {
+        await interaction.reply(ephemeral(error.message));
+        return;
       }
       const rule = await createAutoResponseRule(prisma, interaction.guildId, data);
       await interaction.reply(ephemeral("Created **" + rule.name + "**. Rule ID: " + rule.id + ". It is enabled by default."));
@@ -223,11 +276,25 @@ export const autoresponderCommand = Object.freeze({
       const data = readRuleOptions(interaction, true);
       if (!Object.keys(data).length) throw new Error("Supply at least one setting to update.");
       const existing = (await listAutoResponseRules(prisma, interaction.guildId, { force: true })).find((entry) => entry.id === ruleId);
-      const nextType = data.responseType ?? existing?.responseType;
-      const nextContent = data.responseContent ?? existing?.responseContent;
-      if (nextType === "random" && data.responseContent !== undefined) {
-        data.randomResponses = nextContent.split(/\\s*\\|\\|\\s*/).filter(Boolean).slice(0, 10);
-        if (data.randomResponses.length < 2) throw new Error("Random responses need at least two choices separated by ||.");
+      if (!existing) {
+        await interaction.reply(ephemeral("I couldn't find that rule in this server. Run /autoresponder list to see its ID."));
+        return;
+      }
+      const merged = {
+        ...existing,
+        name: data.name ?? existing.name,
+        trigger: data.trigger ?? existing.trigger,
+        responseContent: data.responseContent ?? existing.responseContent,
+        matchType: data.matchType ?? existing.matchType,
+        responseType: data.responseType ?? existing.responseType
+      };
+      try { validateAutoResponseRule(merged); }
+      catch (error) {
+        await interaction.reply(ephemeral(error.message));
+        return;
+      }
+      if (merged.responseType === "random") {
+        data.randomResponses = merged.responseContent.split(/\s*\|\|\s*/).filter(Boolean).slice(0, 10);
       }
       const count = await updateAutoResponseRule(prisma, interaction.guildId, ruleId, data);
       await interaction.reply(ephemeral(count ? "Rule updated." : "I couldn't find that rule in this server."));

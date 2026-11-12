@@ -103,7 +103,7 @@ The collectible shop is the foundation for Avero profile customization. Member-o
 
 Profile frames and badges are global member cosmetics. Open `/inventory`, select an owned badge or cosmetic, then use its Equip action. Only owned items can be equipped; the selected badge and frame are shown on `/profile`. Either selection can be removed from the same item detail panel.
 
-## Persistence
+## Reaction perks\n\nConfigure `/config` → **Reaction Perks** to assign a reaction emoji to a role or an individual member. Role perks apply to every member with that role; personal perks apply only to the selected member. Choose a built-in Unicode emoji, a server custom emoji, or paste any Unicode/shared custom emoji. You can add or edit multiple targets, remove individual targets, pause the feature globally, and exclude or re-allow specific text channels. Avero only reacts when the configured member sends a message that mentions another user, and duplicate emojis are added once.\n\n## Persistence
 
 Avero uses PostgreSQL through Prisma. `MemberProfile`, `CurrencyAccount`, `MemberJob`, and `MemberTitle` use a reserved global scope keyed by Discord user ID. `CurrencyAccount` stores the one global wallet and shared cooldown timestamps. `CurrencyTransaction` records the member's global history. `CurrencyPurchase` stores global collectible ownership. `DailyContractClaim` prevents daily contract and Vault rewards from being claimed more than once per member and UTC date. `GuildSettings` and `MoneyRequest` origin metadata remain guild-scoped. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
 
@@ -149,7 +149,7 @@ Use `createPanel({ eyebrow, title, description, sections, footer, accentColor })
 
 ## Advanced autoresponder
 
-Server administrators can create rules with `/autoresponder add`, inspect them with `/autoresponder list` and `/autoresponder logs`, edit/toggle/remove them, and preview responses with `/autoresponder test`. Rules support exact/contains/starts-with/ends-with matching, attachment and mention triggers, text/embed/reply/random/DM responses, placeholders, role/channel allowlists and denylists, priority, server and per-user cooldowns (new rules default to a 2-second server cooldown and 5-second per-user cooldown), stop-after-match, optional response deletion, and recent execution logs.
+Server administrators can create rules with `/autoresponder add`, learn the setup with `/autoresponder guide`, inspect them with `/autoresponder list` and `/autoresponder logs`, edit/toggle/remove them, and preview responses with `/autoresponder test`. Rules support exact/contains/starts-with/ends-with matching, attachment and mention triggers, text/embed/reply/random/DM responses, placeholders, role/channel allowlists and denylists, priority, server and per-user cooldowns (new rules default to a 2-second server cooldown and 5-second per-user cooldown), stop-after-match, optional response deletion, and recent execution logs.
 
 Enable the **Message Content Intent** for the Avero application in the Discord Developer Portal (Bot → Privileged Gateway Intents). Avero requests this intent at runtime so text triggers can be evaluated. The bot needs **Send Messages** in response channels and **Embed Links** for embed responses. DM responses depend on each member's privacy settings. Configure the feature from `/config` → **Autoresponder**.
 
@@ -198,3 +198,12 @@ npm test
 ```
 
 RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and achievements are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
+
+
+## Gemini AI assistant
+
+Members can ask general questions naturally with the Avero prefix, for example `avero what is 2+2?`. Avero adapts to the language of the latest message and can use saved, user-specific preferences when relevant.
+
+Members can explicitly ask Avero to remember a preference or project detail (for example, `avero remember that I prefer Swedish`), ask what it remembers, or ask it to forget a saved item. Memories are stored in PostgreSQL per Discord user, are limited to 50 entries per user, and are not shared between members. Do not ask Avero to store passwords, API keys, tokens, precise addresses, or sensitive personal information.
+
+Configure `GEMINI_API_KEY` in the bot environment. `GEMINI_MODEL` is optional and defaults to `gemini-3.1-flash-lite`.

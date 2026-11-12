@@ -115,12 +115,14 @@ model AutoReactionSetting {
 model AutoReactionRolePerk {
   id        String   @id @default(cuid())
   guildId   String
-  roleId    String
+  roleId    String?
+  userId    String?
   emoji     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([guildId, roleId])
+  @@unique([guildId, userId])
   @@index([guildId])
 }
 
@@ -299,4 +301,16 @@ model AdminEconomyAudit {
 
   @@index([guildId, targetUserId, createdAt])
   @@index([guildId, actorUserId, createdAt])
+}
+
+model AiMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String   @default("general") @db.VarChar(40)
+  content   String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, content])
+  @@index([userId, updatedAt])
 }
