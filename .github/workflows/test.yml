@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, "feat/**", "feature/**", "fix/**", "improve/**", "skatesum/**"]
   push:
-    branches: [main, "feat/**", "feature/**", "fix/**", "improve/**", "skatesum/**"]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
