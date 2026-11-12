@@ -163,12 +163,15 @@ Use /autoresponder milestones set to configure a celebration response at any 5,0
 
 ## Tests
 
-Run the built-in Node.js test suite:
+Run the dependency-free syntax check and the built-in Node.js test suite:
 
 ```sh
 npm run db:generate
+npm run check
 npm test
 ```
+
+`npm run check` walks the JavaScript source, UI toolkit, and tests, then runs Node's parser check on every `.js` file. CI runs this check before the test suite on both supported Node.js versions.
 
 ## Project structure
 
