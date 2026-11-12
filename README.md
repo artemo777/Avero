@@ -103,7 +103,7 @@ The collectible shop is the foundation for Avero profile customization. Member-o
 
 Profile frames and badges are global member cosmetics. Open `/inventory`, select an owned badge or cosmetic, then use its Equip action. Only owned items can be equipped; the selected badge and frame are shown on `/profile`. Either selection can be removed from the same item detail panel.
 
-## Persistence
+## Reaction perks\n\nConfigure `/config` → **Reaction Perks** to assign a reaction emoji to a role or an individual member. Role perks apply to every member with that role; personal perks apply only to the selected member. Choose a built-in Unicode emoji, a server custom emoji, or paste any Unicode/shared custom emoji. You can add or edit multiple targets, remove individual targets, pause the feature globally, and exclude or re-allow specific text channels. Avero only reacts when the configured member sends a message that mentions another user, and duplicate emojis are added once.\n\n## Persistence
 
 Avero uses PostgreSQL through Prisma. `MemberProfile`, `CurrencyAccount`, `MemberJob`, and `MemberTitle` use a reserved global scope keyed by Discord user ID. `CurrencyAccount` stores the one global wallet and shared cooldown timestamps. `CurrencyTransaction` records the member's global history. `CurrencyPurchase` stores global collectible ownership. `DailyContractClaim` prevents daily contract and Vault rewards from being claimed more than once per member and UTC date. `GuildSettings` and `MoneyRequest` origin metadata remain guild-scoped. Database migrations must be applied explicitly to the intended database; they are not applied automatically.
 
