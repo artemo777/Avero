@@ -129,7 +129,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
       return;
     }
-    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu() || interaction.isUserSelectMenu()) &&
+    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu() || interaction.isUserSelectMenu() || interaction.isChannelSelectMenu()) &&
         interaction.customId.startsWith("avero-config-select|")) {
       try {
         await handleConfigSelect(interaction, getPrismaClient());
