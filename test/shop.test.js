@@ -8,6 +8,7 @@ import { inventoryCommand } from "../src/bot/commands/inventory.js";
 import { renderShop } from "../src/bot/game-ui.js";
 import { getWeeklyFeaturedItems } from "../src/bot/shop-catalog.js";
 import { getAsset, getCollectibleAssetId } from "../averoui/assets.js";
+import { renderRegisteredAsset } from "../averoui/render-asset.js";
 
 function panelText(response) {
   return response.components[0].toJSON().components.flatMap((component) =>
@@ -125,6 +126,15 @@ test("every shop collectible has its own registered SVG artwork", () => {
     assert.ok(asset, item.id + " resolves to a registered asset");
     assert.equal(asset.kind, "svg");
     assert.match(asset.path, new RegExp("collectible-" + item.id.replaceAll("_", "-") + "\\.svg$"));
+  }
+});
+
+test("every shop SVG can be rendered into a Discord-ready PNG", async () => {
+  const assetIds = SHOP_ITEMS.map((item) => getCollectibleAssetId(item.id, item.category));
+  for (const [index, item] of SHOP_ITEMS.entries()) {
+    const png = await renderRegisteredAsset(assetIds[index], 64);
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", item.id + " renders as PNG");
+    assert.ok(png.length > 100, item.id + " produces non-empty artwork");
   }
 });
 
