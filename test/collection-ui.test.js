@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { createGamePanel, renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
 import { setServerEmojis } from "../averoui/server-emojis.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
@@ -181,4 +181,15 @@ test("wallet buttons use valid Unicode fallbacks instead of custom emoji markup"
   } finally {
     setServerEmojis([]);
   }
+});
+
+
+test("unmapped custom component emojis fall back to a valid Unicode emoji", () => {
+  const json = createGamePanel({
+    title: "Emoji fallback",
+    description: "Test",
+    buttons: [{ customId: "emoji-test", label: "Test", emoji: "<:unmapped_icon:12345678901234567>" }]
+  }).toJSON();
+  const button = json.components.find((component) => component.type === 1)?.components[0];
+  assert.equal(button.emoji.name, "🔹");
 });
