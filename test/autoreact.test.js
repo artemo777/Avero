@@ -26,6 +26,7 @@ function makeMessage({
   bot = false,
   webhookId = null,
   system = false,
+  authorId = "30000000000000001",
   channelId = "20000000000000001"
 } = {}) {
   nextGuildId += 1n;
@@ -35,7 +36,7 @@ function makeMessage({
     message: {
       guildId: String(nextGuildId),
       guild: { members: { me: {} } },
-      author: { bot },
+      author: { bot, id: authorId },
       webhookId,
       system,
       channelId,
@@ -147,4 +148,22 @@ test("skips reaction attempts and reports missing Add Reactions permission", asy
   assert.deepEqual(added, []);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /needs Add Reactions/);
+});
+
+test("adds a configured user emoji even when the message author has no configured role", async () => {
+  const { message, added } = makeMessage({ roles: [], authorId: "30000000000000001" });
+  const prisma = makePrisma({ perks: [{ roleId: null, userId: "30000000000000001", emoji: "🌟" }] });
+  assert.equal(await handleAutoReactionMessage(message, prisma), true);
+  assert.deepEqual(added, ["🌟"]);
+});
+
+test("combines matching user and role perks without duplicate reactions", async () => {
+  const { message, added } = makeMessage({ roles: ["staff"], authorId: "30000000000000001" });
+  const prisma = makePrisma({ perks: [
+    { roleId: "staff", userId: null, emoji: "⭐" },
+    { roleId: null, userId: "30000000000000001", emoji: "💜" },
+    { roleId: null, userId: "30000000000000002", emoji: "🔥" }
+  ] });
+  assert.equal(await handleAutoReactionMessage(message, prisma), true);
+  assert.deepEqual(added, ["⭐", "💜"]);
 });
