@@ -22,7 +22,22 @@ const UNICODE_REACTION_CHOICES = Object.freeze([
   ["🎮", "Game controller"], ["🌟", "Glowing star"], ["🥳", "Party face"],
   ["💯", "Hundred points"], ["🫡", "Saluting face"], ["🤝", "Handshake"]
 ]);
-function channelSelectRow(customId, placeholder) {\n  return new ActionRowBuilder().addComponents(new ChannelSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(25).setChannelTypes([ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread, ChannelType.GuildForum]));\n}\nfunction userSelectRow(customId, placeholder) {
+function channelSelectRow(customId, placeholder) {
+  return new ActionRowBuilder().addComponents(new ChannelSelectMenuBuilder()
+    .setCustomId(customId)
+    .setPlaceholder(placeholder)
+    .setMinValues(1)
+    .setMaxValues(25)
+    .setChannelTypes([
+      ChannelType.GuildText,
+      ChannelType.GuildAnnouncement,
+      ChannelType.PublicThread,
+      ChannelType.PrivateThread,
+      ChannelType.AnnouncementThread,
+      ChannelType.GuildForum
+    ]));
+}
+function userSelectRow(customId, placeholder) {
   return new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId(customId).setPlaceholder(placeholder).setMinValues(1).setMaxValues(1));
 }
 function roleSelectRow(customId, placeholder) {
@@ -327,7 +342,18 @@ export async function handleConfigButton(interaction, prisma) {
     await interaction.editReply(panel);
     return true;
   }
-  if (action === "reaction-ignore" || action === "reaction-allow") {\n    const mode = action === "reaction-ignore" ? "ignore" : "allow";\n    await interaction.reply({ content: mode === "ignore" ? "Select up to 25 text channels where reaction perks should be disabled." : "Select up to 25 ignored channels to allow reactions in again.", components: [channelSelectRow("avero-config-select|reaction-" + mode + "-channels", "Choose text channels")], flags: MessageFlags.Ephemeral });\n    return true;\n  }\n  if (action === "reaction-toggle") {
+  if (action === "reaction-ignore" || action === "reaction-allow") {
+    const mode = action === "reaction-ignore" ? "ignore" : "allow";
+    await interaction.reply({
+      content: mode === "ignore"
+        ? "Select up to 25 text channels where reaction perks should be disabled."
+        : "Select up to 25 ignored channels to allow reactions in again.",
+      components: [channelSelectRow("avero-config-select|reaction-" + mode + "-channels", "Choose text channels")],
+      flags: MessageFlags.Ephemeral
+    });
+    return true;
+  }
+  if (action === "reaction-toggle") {
     const settings = await getAutoReactionSettings(prisma, interaction.guildId);
     await updateAutoReactionSettings(prisma, interaction.guildId, { enabled: !settings.enabled });
     await interaction.update(await buildReactionPerksPanel(prisma, interaction.guildId, interaction.guild.name));
