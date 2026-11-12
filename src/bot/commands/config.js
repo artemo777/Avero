@@ -171,8 +171,8 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     color: THEME.colors.primary,
     sections: [
       "**STATUS** · " + (settings.enabled ? "Enabled" : "Paused"),
-      "**ROLE REACTIONS**\n" + perkLines,
-      "**HOW IT WORKS**\nNormal messages never trigger reactions. Each matching role adds its configured emoji. Duplicate emojis are added only once. Use Add / edit role to assign one emoji per role."
+      "**ROLE & USER REACTIONS**\n" + perkLines,\n      "**IGNORED CHANNELS**\n" + (settings.ignoredChannelIds.length ? settings.ignoredChannelIds.map((id) => "<#" + id + ">").join(", ") : "All text channels are eligible."),
+      "**HOW IT WORKS**\nOnly messages that mention another user trigger reactions. Each matching role and individually selected member can have a different emoji. Duplicate emojis are added only once. You can pause the feature or exclude specific channels.
     ],
     buttons,
     footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
