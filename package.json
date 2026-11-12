@@ -14,7 +14,9 @@
     "register:commands": "node --import=dotenv/config src/register-commands.js",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
-    "test": "node --test"
+    "test": "node --test",
+    "check": "node scripts/check-syntax.js",
+    "verify": "npm run check && npm test"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",
