@@ -78,7 +78,7 @@ async function runMemoryTool(prisma, userId, name, args) {
       if (/(password|passcode|api[\s_-]?key|access[\s_-]?token|refresh[\s_-]?token|private[\s_-]?key|secret)\s*[:=]/i.test(content)) {
         return { ok: false, message: "Credentials and secrets cannot be saved." };
       }
-      if (/(medical|health|religion|race|ethnicity|sexuality|politic|precise.?location|address|biometric|financial)/i.test(category)) {
+      if (/(medical|health|religion|race|ethnicity|sexual|politic|location|address|biometric|financial|identity|contact)/i.test(category) || /\\b\\d{1,6}\\s+[\\p{L}\\d.'-]+(?:\\s+[\\p{L}\\d.'-]+){0,3}\\s+(?:street|st|road|rd|avenue|ave|lane|ln|drive|dr|boulevard|blvd|gatan|vägen|väg)\\b/iu.test(content)) {
         return { ok: false, message: "Highly sensitive personal information cannot be saved." };
       }
       const saved = await saveAiMemory(prisma, userId, content, category || "general");
