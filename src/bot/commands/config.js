@@ -293,7 +293,7 @@ export async function handleConfigButton(interaction, prisma) {
       description: "Create automatic server responses with /autoresponder. Manage Server is required.",
       color: THEME.colors.primary,
       sections: [
-        "**RULE MANAGEMENT**\n/autoresponder add · Create a rule\n/autoresponder list · View rules and statistics\n/autoresponder logs · Recent execution history\n/autoresponder edit · Change a rule\n/autoresponder toggle · Enable or pause a rule\n/autoresponder remove · Delete a rule\n/autoresponder test · Preview a response",
+        "**RULE MANAGEMENT**\n/autoresponder guide · Learn triggers and response setup\n/autoresponder add · Create a rule\n/autoresponder list · View rules and statistics\n/autoresponder logs · Recent execution history\n/autoresponder edit · Change a rule\n/autoresponder toggle · Enable or pause a rule\n/autoresponder remove · Delete a rule\n/autoresponder test · Preview a response",
         "**ADVANCED OPTIONS**\nExact / contains / starts with / ends with matching, attachment and mention triggers, text / embed / reply / random / DM responses, placeholders, role and channel filters, priority, cooldowns and response deletion.",
         "**MESSAGE MILESTONES**\n/autoresponder milestones set · Set a 5k–100k celebration\n/autoresponder milestones list · View all 20 thresholds\n/autoresponder milestones toggle / remove / test · Manage announcements",
         "**IMPORTANT**\nEnable the Message Content Intent for Avero in the Discord Developer Portal. The bot also needs Send Messages; Embed Links is required for embed responses."

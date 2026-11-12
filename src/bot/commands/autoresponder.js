@@ -236,10 +236,14 @@ export const autoresponderCommand = Object.freeze({
         listAutoResponseRules(prisma, interaction.guildId, { force: true }),
         getAutoResponseStats(prisma, interaction.guildId)
       ]);
-      const lines = rules.length ? rules.slice(0, 8).map((rule) =>
-        "**" + rule.name + "** · " + (rule.enabled ? "Enabled" : "Paused") + " · " + rule.matchType + " · " + rule.responseType +
-        "\nID: " + rule.id + " · Priority " + rule.priority + " · Cooldown " + rule.cooldownSeconds + "s / user " + rule.perUserCooldownSeconds + "s"
-      ) : ["No rules yet. Use /autoresponder add to create one."];
+      const lines = rules.length ? rules.slice(0, 8).map((rule) => {
+        const triggerLabel = ["attachment", "user_mention", "bot_mention"].includes(rule.matchType)
+          ? MATCH_LABELS[rule.matchType]
+          : MATCH_LABELS[rule.matchType] + ": " + (rule.trigger || "(missing)");
+        return "**" + rule.name + "** · " + (rule.enabled ? "Enabled" : "Paused") +
+          "\n" + triggerLabel + " → " + (RESPONSE_LABELS[rule.responseType] ?? rule.responseType) +
+          "\nID: " + rule.id + " · Priority " + rule.priority + " · Cooldown " + rule.cooldownSeconds + "s / user " + rule.perUserCooldownSeconds + "s";
+      }) : ["No rules yet. Use /autoresponder add to create one."];
       await interaction.reply(ephemeral("## Avero Autoresponder\n" + lines.join("\n\n") +
         "\n\n**Activity:** " + stats.total.toLocaleString("en-US") + " successful responses total · " +
         stats.recent.toLocaleString("en-US") + " in the last 24 hours\nUse /autoresponder edit, toggle, or remove with a rule ID."));
