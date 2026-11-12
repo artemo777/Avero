@@ -177,7 +177,7 @@ function safeComponentEmoji(value) {
     if (/(guess|target)/.test(name)) return "🎯";
     if (/(vault|lock|safe)/.test(name)) return "🔐";
     if (/(atlas|map)/.test(name)) return "🗺️";
-    return "◆";
+    return "🔹";
   }
   // Component emoji fields accept Unicode emoji, not Discord message markup.
   if (value.startsWith("<")) return undefined;
