@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
 import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
+import { setServerEmojis } from "../averoui/server-emojis.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
@@ -161,4 +162,23 @@ test("shop catalogue entries resolve to local product artwork", () => {
   assert.equal(getCollectibleAssetId("other_cosmetic", "cosmetics"), "collectible-prism-crown");
   assert.equal(getCollectibleAssetId("other_tool", "tools"), "collectible-vault-badge");
   assert.equal(getCollectibleAssetId("other_coin", "coins"), "coin");
+});
+
+test("wallet buttons use valid Unicode fallbacks instead of custom emoji markup", async () => {
+  setServerEmojis([
+    { id: "12345678901234567", name: "avero_coin", available: true },
+    { id: "12345678901234568", name: "avero_shop", available: true },
+    { id: "12345678901234569", name: "avero_inventory", available: true }
+  ]);
+  try {
+    const json = panel(await renderBalance(fakePrisma([], 321), "guild-1", "user-1"));
+    const wallet = buttons(json).find((entry) => entry.label === "Wallet");
+    assert.equal(wallet.emoji.name, "🪙");
+    for (const entry of buttons(json)) {
+      assert.ok(!entry.emoji?.name?.startsWith("<"), "button emoji must not contain Discord message markup");
+    }
+    assert.match(allText(json), /<:avero_coin:12345678901234567>/);
+  } finally {
+    setServerEmojis([]);
+  }
 });

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { matchesAutoResponseRule, normalizeTriggerText, renderAutoResponseTemplate } from "../src/bot/autoresponder/engine.js";
+import { validateAutoResponseRule } from "../src/bot/commands/autoresponder.js";
 const rule = (overrides = {}) => ({ matchType: "contains", trigger: "hello", caseSensitive: false, ...overrides });
 const message = (content, extra = {}) => ({ content, attachments: { size: 0 }, mentions: { users: { size: 0, has: () => false } }, ...extra });
 test("normalizes Unicode and case-insensitive text", () => {
@@ -109,4 +110,18 @@ test("message handler skips bots and respects active cooldown rows", async () =>
   ]);
   assert.equal(await handleAutoResponseMessage(cooldownCase.message, prisma), 0);
   assert.equal(cooldownCase.sent.length, 0);
+});
+
+test("autoresponder validation explains when a trigger value is required", () => {
+  const base = { name: "Welcome", responseContent: "Hello!", matchType: "contains", responseType: "text", trigger: "" };
+  assert.throws(() => validateAutoResponseRule(base), /needs a Trigger value/i);
+  assert.equal(validateAutoResponseRule({ ...base, matchType: "attachment" }).trigger, "");
+  assert.equal(validateAutoResponseRule({ ...base, matchType: "user_mention" }).matchType, "user_mention");
+  assert.equal(validateAutoResponseRule({ ...base, matchType: "bot_mention" }).matchType, "bot_mention");
+});
+
+test("random autoresponder requires at least two non-empty choices", () => {
+  const base = { name: "Random", responseContent: "one", matchType: "attachment", responseType: "random", trigger: "" };
+  assert.throws(() => validateAutoResponseRule(base), /at least two choices/i);
+  assert.equal(validateAutoResponseRule({ ...base, responseContent: "one || two" }).responseContent, "one || two");
 });
