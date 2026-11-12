@@ -6,7 +6,7 @@ Avero can operate in any Discord server where it is installed and has the requir
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer (the CI matrix verifies Node.js 22 and 24)
 - npm
 - A Discord application and bot token from the Discord Developer Portal
 - PostgreSQL for persistent member and currency data
@@ -85,7 +85,7 @@ The assistant receives the member's question and Avero's public command catalogu
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.
 - `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS/Coinflip cooldown is ready. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
-- `/shop` — browse six collectible badges and relics with rarity labels and prices.
+- `/shop` — browse the full collectible catalogue in compact three-item pages, with original product artwork, ownership state, server emoji accents, and rotating weekly picks.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view. Use `/collections` to track themed sets.
 
@@ -113,12 +113,12 @@ Reusable visual assets live in one place instead of being scattered through comm
 
 - `averoui/icons.js` — small text-safe glyphs used in Discord UI.
 - `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
-- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, six individually illustrated shop collectibles, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
+- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, the full shop catalogue, with a distinct original SVG illustration for every collectible, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
 - `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments.
 - Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels.
 
-This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
+This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For third-party assets, record the source and licence before committing. Prefer original, deliberately designed Avero product artwork with restrained material finishes and a consistent visual language. No external files are downloaded at runtime.
 
 ## HTTP health server
 
@@ -130,8 +130,11 @@ npm start
 
 It listens on port `3000` by default. Set `PORT` to change it; valid values are integers from 1 through 65535.
 
-- `GET /health` — returns JSON indicating that the service is running.
+- `GET /health` — liveness check; returns JSON while the HTTP process is running.
+- `GET /ready` — readiness check; verifies PostgreSQL with a lightweight query and returns `503` when the database is unavailable.
 - Any other route — returns a JSON `404 Not Found` response.
+
+The Test Avero GitHub Actions workflow runs the Node test suite on Node.js 22 and 24 against PostgreSQL 16 for pull requests and supported branch pushes. Stale runs are cancelled when a newer commit is queued, and maintainers can also start a run manually from GitHub Actions. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
 
 ## Shared AveroUI
 
@@ -160,12 +163,15 @@ Use /autoresponder milestones set to configure a celebration response at any 5,0
 
 ## Tests
 
-Run the built-in Node.js test suite:
+Run the dependency-free syntax check and the built-in Node.js test suite:
 
 ```sh
 npm run db:generate
+npm run check
 npm test
 ```
+
+`npm run check` walks the JavaScript source, UI toolkit, and tests, then runs Node's parser check on every `.js` file. CI runs this check before the test suite on both supported Node.js versions.
 
 ## Project structure
 

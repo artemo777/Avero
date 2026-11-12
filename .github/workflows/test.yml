@@ -2,9 +2,14 @@ name: Test Avero
 
 on:
   pull_request:
-    branches: [main, "feat/**", "feature/**", "fix/**", "skatesum/**"]
+    branches: [main, "feat/**", "feature/**", "fix/**", "improve/**", "skatesum/**"]
   push:
-    branches: [main, "feat/**", "fix/**", "skatesum/**"]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: avero-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -49,5 +54,7 @@ jobs:
         run: npm run db:migrate:deploy
       - name: Verify migration state
         run: npx prisma migrate status
+      - name: Check JavaScript syntax
+        run: npm run check
       - name: Run test suite
         run: npm test

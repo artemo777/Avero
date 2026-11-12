@@ -174,10 +174,17 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   };
 }
 
+function detectProfileImageContentType(bytes) {
+  if (bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  return null;
+}
+
 export async function downloadProfileBanner(attachment) {
   if (!attachment || typeof attachment.url !== "string") throw new TypeError("Attach a PNG, JPEG, or WebP image to upload as your profile banner.");
-  const contentType = String(attachment.contentType ?? "").split(";")[0].toLowerCase();
-  if (!["image/png", "image/jpeg", "image/webp"].includes(contentType) || attachment.size > 5 * 1024 * 1024) {
+  const declaredType = String(attachment.contentType ?? "").split(";")[0].toLowerCase();
+  if (!["image/png", "image/jpeg", "image/webp"].includes(declaredType) || attachment.size > 5 * 1024 * 1024) {
     throw new RangeError("Profile banners must be PNG, JPEG, or WebP images no larger than 5 MB.");
   }
   const url = new URL(attachment.url);
@@ -188,6 +195,10 @@ export async function downloadProfileBanner(attachment) {
   if (!response.ok) throw new Error("Discord could not provide that uploaded image.");
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length < 1 || bytes.length > 5 * 1024 * 1024) throw new RangeError("Profile banner images must be no larger than 5 MB.");
+  const contentType = detectProfileImageContentType(bytes);
+  if (!contentType || contentType !== declaredType) {
+    throw new TypeError("The uploaded image contents must match its declared PNG, JPEG, or WebP format.");
+  }
   const image = await loadImage(bytes);
   if (image.width < 320 || image.height < 160 || image.width > 4096 || image.height > 4096) {
     throw new RangeError("Profile banners must be between 320×160 and 4096×4096 pixels.");

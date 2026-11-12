@@ -32,7 +32,13 @@ const PURPOSE_ALIASES = Object.freeze({
   settings: ["settings", "tools", "wrench", "gear", "configuration"],
   rock: ["rock", "fist"],
   paper: ["paper", "hand"],
-  scissors: ["scissors", "shears"]
+  scissors: ["scissors", "shears"],
+  neon_badge: ["neon_badge", "avero_pin", "enamel_pin", "pin"],
+  vault_badge: ["vault_badge", "archive_key", "vault_key", "key"],
+  starlight_badge: ["starlight_badge", "signal_badge", "signal_pin", "signal"],
+  moonlit_token: ["moonlit_token", "avero_hoodie", "hoodie", "sweatshirt"],
+  prism_crown: ["prism_crown", "profile_frame", "frame"],
+  avero_relic: ["avero_relic", "founders_medal", "medal"]
 });
 
 let availableEmojis = [];

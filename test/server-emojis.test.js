@@ -37,3 +37,16 @@ test("refreshing the registry removes emojis that are no longer available", () =
   assert.equal(getServerEmoji("coin", "◉"), "◉");
   assert.deepEqual(listServerEmojis(), []);
 });
+
+
+test("shop item emoji purposes recognize common server emoji names", () => {
+  setServerEmojis([
+    { id: "12345678901234580", name: "avero_pin", available: true },
+    { id: "12345678901234581", name: "archive_key", available: true },
+    { id: "12345678901234582", name: "founders_medal", available: true }
+  ]);
+  assert.equal(getServerEmoji("neon_badge", "fallback"), "<:avero_pin:12345678901234580>");
+  assert.equal(getServerEmoji("vault_badge", "fallback"), "<:archive_key:12345678901234581>");
+  assert.equal(getServerEmoji("avero_relic", "fallback"), "<:founders_medal:12345678901234582>");
+  setServerEmojis([]);
+});
