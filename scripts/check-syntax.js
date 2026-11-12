@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-const ROOTS = ["src", "averoui", "test"];
+const ROOTS = ["src", "averoui", "test", "scripts"];
 const IGNORED_DIRECTORIES = new Set(["node_modules", "coverage", "dist"]);
 
 async function collectJavaScriptFiles(directory) {
