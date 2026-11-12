@@ -5,7 +5,7 @@
   "description": "Avero Discord bot and health-check service",
   "type": "module",
   "engines": {
-    "node": ">=20.6"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "start": "node src/server.js",
