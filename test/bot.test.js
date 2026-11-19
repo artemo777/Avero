@@ -224,7 +224,7 @@ test("shop category select and pagination preserve the selected category", async
   assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
 });
 
-test("legacy coinflip and RPS rounds do not award coins while currency is paused", async () => {
+test("legacy Guess, Coinflip, and RPS rounds do not award coins while currency is paused", async () => {
   const ledger = [];
   const prisma = {
     currencyTransaction: {
@@ -249,7 +249,7 @@ test("legacy coinflip and RPS rounds do not award coins while currency is paused
   assert.ok(ledger.every((entry) => entry.amount === 0));
   assert.ok(ledger.some((entry) => entry.type === "guess_win_play" || entry.type === "guess_loss"));
   assert.ok(ledger.some((entry) => ["coinflip_win", "coinflip_loss"].includes(entry.type)));
-  assert.ok(ledger.some((entry) => ["rps_win", "rps_loss"].includes(entry.type)));
+  assert.ok(ledger.some((entry) => ["rps_win", "rps_loss", "rps_tie"].includes(entry.type)));
 });
 
 test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
