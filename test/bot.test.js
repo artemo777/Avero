@@ -8,7 +8,7 @@ import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
 import { profileCommand } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
+import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
 
 test("bot configuration requires a token without exposing its value", () => {
@@ -222,6 +222,25 @@ test("shop category select and pagination preserve the selected category", async
   panel = updated.components[0].toJSON();
   const pageButtons = panel.components.filter((component) => component.type === 1).flatMap((row) => row.components);
   assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
+});
+
+test("legacy coinflip and RPS rounds do not award coins while currency is paused", async () => {
+  const ledger = [];
+  const prisma = {
+    currencyTransaction: {
+      create: async ({ data }) => { ledger.push(data); return data; }
+    },
+    $transaction: async () => {
+      throw new Error("A paused game must not attempt a currency reward transaction.");
+    }
+  };
+
+  await runCoinflip(prisma, "12345678901234567", "heads", "user-1", false);
+  await runRps(prisma, "12345678901234567", "rock", "user-1", false);
+
+  assert.equal(ledger.length, 2);
+  assert.ok(ledger.every((entry) => entry.amount === 0));
+  assert.deepEqual(ledger.map((entry) => entry.type).sort(), ["coinflip_loss", "rps_loss", "coinflip_win", "rps_win"].filter(type => ledger.some(entry => entry.type === type)).sort());
 });
 
 test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
