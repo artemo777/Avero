@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 const SESSION_MAX_AGE_MS = 15 * 60 * 1000;
+const GLOBAL_SCOPE_ID = "__avero_global__";
 const validGameId = (id) => typeof id === "string" && /^[a-z][a-z0-9_]{0,39}$/.test(id);
 function required(value, name) { if (typeof value !== "string" || !value.trim()) throw new TypeError(name + " is required."); return value.trim(); }
 function validDate(now) { if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new TypeError("Invalid now."); }
@@ -44,7 +45,7 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
   if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) throw new TypeError("Invalid reward cooldown.");
   validDate(now);
   return prisma.$transaction(async (tx) => {
-    const key = { guildId, userId };
+    const key = { guildId: GLOBAL_SCOPE_ID, userId };
     await tx.currencyAccount.upsert({ where: { guildId_userId: key }, create: key, update: {} });
     const sessionClaim = await tx.gameSession.updateMany({
       where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } },
