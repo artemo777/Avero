@@ -938,7 +938,8 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       }
       const turn = resolveMineTurn({ tile, revealed: session.payload.revealed, oreByTile: session.payload.oreByTile });
       const rewardValue = turn.value;
-      const result = rewardValue > 0
+      const rewardsEnabled = settings?.currencyEnabled !== false;
+      const result = rewardValue > 0 && rewardsEnabled
         ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, rewardValue, { type: "mine_reward", activityType: "mine_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
       if (rewardValue > 0 && !result.awarded && result.reason === "cooldown") await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
@@ -953,7 +954,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = gamePayload(createGamePanel({
         title: rewardValue > 0 ? "Ore uncovered!" : "Empty tile",
         eyebrow: "MINE TILES",
-        description: rewardValue > 0 ? "**" + turn.ore + "** ore! " + (result.awarded ? "**+" + rewardValue + " coins** added to your wallet." : "Your reward cooldown is active; no coins were added.") : "No ore here. No coins lost.",
+        description: rewardValue > 0 ? "**" + turn.ore + "** ore! " + (result.awarded ? "**+" + rewardValue + " coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "Your reward cooldown is active; no coins were added.") : "No ore here. No coins lost.",
         footer: "FREE PLAY • NO WAGERS",
         buttons: [button(interaction.user.id, "mine_start", "Mine again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
       }));
@@ -980,7 +981,8 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       const won = choice === session.payload.star;
-      const result = won
+      const rewardsEnabled = settings?.currencyEnabled !== false;
+      const result = won && rewardsEnabled
         ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, 8, { type: "pick3_reward", activityType: "pick3_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "pick3_play" });
       if (!won && result.count !== 1) {
@@ -998,7 +1000,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = gamePayload(createGamePanel({
         title: won ? "Star found!" : "Empty door",
         eyebrow: "PICK THE STAR",
-        description: won ? "You found the star! " + (awarded ? "**+8 coins** added to your wallet." : "Your reward cooldown is active; no coins were added.") : "No star behind that door. No coins lost.",
+        description: won ? "You found the star! " + (awarded ? "**+8 coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "Your reward cooldown is active; no coins were added.") : "No star behind that door. No coins lost.",
         footer: "FREE PLAY • NO WAGERS",
         buttons: [button(interaction.user.id, "pick3_start", "Play again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
       }));
