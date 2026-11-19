@@ -469,6 +469,19 @@ test("daily Vault button opens the current puzzle clues from the games hub", asy
 });
 
 
+test("daily Vault hub panel explains when currency rewards are paused", async () => {
+  let response;
+  await handleGameComponent({
+    customId: "avero|user-1|vault",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, { prisma: {}, settings: { gamesEnabled: true, currencyEnabled: false } });
+  assert.match(panelText(response), /Currency rewards are paused/);
+  assert.doesNotMatch(panelText(response), /can earn 25 coins/);
+});
+
 test("collection atlas panel shows route-linked set progress", async () => {
   const response = await renderCollectionSets({
     currencyPurchase: {
