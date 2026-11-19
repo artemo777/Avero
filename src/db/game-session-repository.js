@@ -14,6 +14,7 @@ export async function createGameSession(prisma, guildId, userId, gameId, payload
   const data = { id: randomUUID(), guildId, userId, gameId, status: "active", payload, createdAt: now, expiresAt: new Date(now.getTime() + expiresInMs) };
   if (typeof prisma.$transaction === "function") {
     return prisma.$transaction(async (tx) => {
+      await tx.gameSession.updateMany({ where: { status: "active", expiresAt: { lte: now } }, data: { status: "expired" } });
       await tx.gameSession.updateMany({ where: { guildId, userId, gameId, status: "active" }, data: { status: "superseded" } });
       return tx.gameSession.create({ data });
     });
