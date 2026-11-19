@@ -224,6 +224,47 @@ test("shop category select and pagination preserve the selected category", async
   assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
 });
 
+test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
+  for (const scenario of [
+    { action: "mine_pick", arg: "session-1:0", gameId: "mine", payload: { oreByTile: ["copper", ...Array(24).fill(null)], revealed: Array(25).fill(false) }, activityType: "mine_play" },
+    { action: "pick3", arg: "session-2:1", gameId: "pick3", payload: { star: 1 }, activityType: "pick3_play" }
+  ]) {
+    const ledger = [];
+    const sessionUpdates = [];
+    const prisma = {
+      gameSession: {
+        findFirst: async () => ({
+          id: scenario.gameId === "mine" ? "session-1" : "session-2",
+          gameId: scenario.gameId,
+          payload: scenario.payload
+        })
+      },
+      $transaction: async (callback) => callback({
+        gameSession: {
+          updateMany: async (args) => { sessionUpdates.push(args); return { count: 1 }; }
+        },
+        currencyTransaction: {
+          create: async (args) => { ledger.push(args.data); return args.data; }
+        }
+      })
+    };
+    let response;
+    await handleGameComponent({
+      customId: "avero|user-1|" + scenario.action + "|" + scenario.arg,
+      user: { id: "user-1" },
+      guildId: "12345678901234567",
+      update: async (payload) => { response = payload; },
+      reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+    }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+    assert.match(panelText(response), /Currency rewards are paused/);
+    assert.equal(sessionUpdates.length, 1);
+    assert.equal(sessionUpdates[0].data.status, "completed");
+    assert.deepEqual(ledger.map((entry) => entry.type), [scenario.activityType]);
+    assert.equal(ledger[0].amount, 0);
+  }
+});
+
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
