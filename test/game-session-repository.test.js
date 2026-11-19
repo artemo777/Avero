@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGameSession, getActiveGameSession, completeGameSession, expireGameSessions, claimGameSession } from "../src/db/game-session-repository.js";
+import { createGameSession, getActiveGameSession, completeGameSession, expireGameSessions, claimGameSession, settleGameSessionReward } from "../src/db/game-session-repository.js";
 
 function fakePrisma(){
  const calls=[];
@@ -39,10 +39,6 @@ test("completion and expiry operate on eligible active sessions",async()=>{
  await expireGameSessions(p,now);
  assert.equal(p.calls[1][1].where.status,"active");assert.equal(p.calls[1][1].where.expiresAt.lte,now);
 });
-
-import test from "node:test";
-import assert from "node:assert/strict";
-import { settleGameSessionReward } from "../src/db/game-session-repository.js";
 
 function fixture({ sessionClaim = 1, accountClaim = 1 } = {}) {
  const calls=[];
