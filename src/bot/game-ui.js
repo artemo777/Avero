@@ -518,13 +518,15 @@ export function renderGuess(guess, answer, result, userId, rewardsEnabled = true
       .concat(navButtons(userId).slice(0, 2))
   }));
 }
-export function renderVaultChallenge(challenge, userId, { hasNotebook = false } = {}) {
+export function renderVaultChallenge(challenge, userId, { hasNotebook = false, rewardsEnabled = true } = {}) {
   return gamePayload(createGamePanel({
     title: "Today's vault is ready",
     eyebrow: "THE VAULT • " + challenge.date,
     description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       (hasNotebook ? "\n\n**Field Notebook hint:** the three digits add up to **" + challenge.code.split("").reduce((sum, digit) => sum + Number(digit), 0) + "**." : "") +
-      "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. A correct solve earns 25 coins when the shared 10-minute Guess/RPS cooldown is ready. Free play · No wagers.",
+      "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. " +
+      (rewardsEnabled ? "A correct solve can earn 25 coins when the shared 10-minute Guess/RPS cooldown is ready. " : "Currency rewards are paused in this server. ") +
+      "Free play · No wagers.",
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
   }));
