@@ -124,6 +124,27 @@ test("vault wins respect the shared game reward cooldown", async () => {
   assert.equal(account.balance, 75);
 });
 
+test("Vault remains playable but does not award coins while server currency is paused", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const challenge = createVaultChallenge("guild-1", now);
+  const { interaction, response } = interactionFor(challenge.code);
+  const { prisma, transactions, account, claims } = makePrisma();
+
+  await vaultCommand.execute(interaction, {
+    prisma,
+    now,
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Vault unlocked/);
+  assert.match(text, /Currency rewards are paused/);
+  assert.deepEqual(transactions.map((entry) => entry.type), ["vault_win"]);
+  assert.deepEqual(claims.map((claim) => claim.contractId), ["vault_attempt"]);
+  assert.equal(account.balance, 0);
+  assert.equal(account.lastGameRewardAt, null);
+});
+
 test("vault loss records a result but never changes the balance", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
