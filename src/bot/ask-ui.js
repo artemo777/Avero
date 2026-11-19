@@ -9,13 +9,13 @@ function resultPanel(title, description) {
 }
 
 export async function handleMoneyRequestButton(interaction, prisma, settings = {}) {
-  if (settings.currencyEnabled === false) {
-    await interaction.reply({ content: "Currency is paused by this server's admins. This transfer cannot be completed right now.", flags: MessageFlags.Ephemeral });
-    return true;
-  }
   const [, requestId, decision] = interaction.customId.split("|");
   if (!requestId || !["accept", "decline"].includes(decision)) {
     await interaction.reply({ content: "This request control is invalid.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  if (decision === "accept" && settings.currencyEnabled === false) {
+    await interaction.reply({ content: "Currency is paused by this server's admins. This transfer cannot be completed right now.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const result = await respondToMoneyRequest(prisma, interaction.guildId, requestId, interaction.user.id, decision);
