@@ -40,6 +40,12 @@ test("farm growth is time-based and validated",()=>{
 });
 
 
+test("mine state rejects malformed revealed and ore arrays",()=>{
+ const revealed=Array(25).fill(false),ore=Array(25).fill(null);
+ revealed[3]="false";assert.throws(()=>resolveMineTurn({tile:0,revealed,oreByTile:ore}),TypeError);
+ revealed[3]=false;ore[4]="bogus";assert.throws(()=>resolveMineTurn({tile:0,revealed,oreByTile:ore}),TypeError);
+});
+
 test("mine core rejects inherited object keys as ore types",()=>{
  const revealed=Array(25).fill(false),ore=Array(25).fill(null);
  for(const invalid of ["constructor","toString","__proto__"]){ore[0]=invalid;assert.throws(()=>resolveMineTurn({tile:0,revealed,oreByTile:ore}),TypeError);}
