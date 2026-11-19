@@ -129,3 +129,11 @@ test("creation fallback cleans stale and same-game sessions without transaction 
  assert.deepEqual(calls[1][1].where,{guildId:"guild-y",userId:"user-y",gameId:"mining",status:"active"});
  assert.equal(calls[2][0],"create");
 });
+
+test("settlement applies cooldown cutoff at the exact boundary",async()=>{
+ const f=fixture(),now=new Date("2026-11-19T12:00:00Z");
+ await settleGameSessionReward(f.prisma,"g","u","s",5,{now,cooldownMs:60000});
+ const update=f.calls.find(x=>x[0]==="accountUpdate")[1];
+ assert.deepEqual(update.where.OR,[{lastGameRewardAt:null},{lastGameRewardAt:{lte:new Date("2026-11-19T11:59:00Z")}}]);
+ assert.equal(update.data.lastGameRewardAt,now);
+});
