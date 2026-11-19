@@ -78,9 +78,10 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
 export async function completeGameSession(prisma, guildId, userId, sessionId, { now = new Date(), activityType = null } = {}) {
   required(guildId, "guildId"); required(userId, "userId"); required(sessionId); validDate(now);
   if (activityType !== null && (typeof activityType !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(activityType))) throw new TypeError("Invalid activity type.");
+  if (!activityType) return prisma.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } }, data: { status: "completed", completedAt: now } });
   return prisma.$transaction(async (tx) => {
     const result = await tx.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } }, data: { status: "completed", completedAt: now } });
-    if (result.count === 1 && activityType) await tx.currencyTransaction.create({ data: { guildId: GLOBAL_SCOPE_ID, userId, amount: 0, type: activityType, createdAt: now } });
+    if (result.count === 1) await tx.currencyTransaction.create({ data: { guildId: GLOBAL_SCOPE_ID, userId, amount: 0, type: activityType, createdAt: now } });
     return result;
   });
 }
