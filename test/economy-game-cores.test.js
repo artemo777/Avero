@@ -41,7 +41,7 @@ test("farm growth is time-based and validated",()=>{
  assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
  assert.equal(cropStatus({cropId:"berry",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,false);
  assert.throws(()=>cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()-1)}),TypeError);
- assert.throws(()=>cropStatus({cropId:"turnip",plantedAt:new Date("invalid"),now}),TypeError);
+ assert.throws(()=>cropStatus({cropId:"turnip",plantedAt:new Date("invalid"),now:new Date("2025-01-01T00:01:00Z")}),TypeError);
 });
 
 
