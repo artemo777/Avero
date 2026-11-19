@@ -47,3 +47,7 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 4. Build Mine Grid and Reaction Arena.
 5. Build Tower and Farm after their persistence model and reward balance are reviewed.
 6. Run `npm run verify`, migrations (if any), and a live Discord acceptance checklist before deployment.
+
+
+### Atomic reward settlement (foundation)
+A session reward settlement helper now claims an active, owned, unexpired session, applies the shared game-reward cooldown, increments the account, and writes the ledger entry within a single Prisma transaction. Cooldown denial restores the session to active in that transaction; stale/replayed claims are rejected. Mocked tests cover these outcomes. This helper remains unintegrated with Discord game controls and must be reviewed and tested against a real database before use.
