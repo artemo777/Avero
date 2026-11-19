@@ -15,6 +15,10 @@ export function resolveMineTurn({ tile, revealed, oreByTile }) {
       revealed.length !== MINE_SIZE * MINE_SIZE || oreByTile.length !== revealed.length) {
     throw new TypeError("Mine state is invalid.");
   }
+  if (revealed.some((value) => typeof value !== "boolean") ||
+      oreByTile.some((value) => value !== null && value !== undefined && !Object.hasOwn(ORE_VALUES, value))) {
+    throw new TypeError("Mine state is invalid.");
+  }
   if (revealed[tile]) throw new Error("Tile already revealed.");
   const ore = oreByTile[tile];
   if (ore !== null && ore !== undefined && !Object.hasOwn(ORE_VALUES, ore)) throw new TypeError("Unknown ore.");
