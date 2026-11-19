@@ -65,6 +65,7 @@ The separate server controls remain independent:
 - Pausing **currency** leaves free game play available but suppresses coin rewards for Guess, Coinflip, RPS, Pick the Star, Mine Tiles, and the Vault.
 - Zero-value activity records and the Vault's one-attempt-per-UTC-day rule remain active while currency rewards are paused.
 - Both slash-command and Games Hub entry points receive the same setting and explain when a reward is unavailable.
+- Pending `/ask` transfers cannot be accepted while currency is paused; the request remains unanswered until currency is re-enabled or it expires.
 
 ## Live acceptance checklist
 
