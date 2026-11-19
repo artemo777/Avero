@@ -3,6 +3,7 @@ import {
   SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder
 } from "discord.js";
 import { randomInt } from "node:crypto";
+import { resolveMineTurn, MINE_SIZE, ORE_VALUES } from "./mine-core.js";
 import { createGameSession, getActiveGameSession, completeGameSession, settleGameSessionReward } from "../db/game-session-repository.js";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
@@ -185,11 +186,12 @@ export function renderGames(userId) {
     button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, getAssetSymbol("coin")),
     button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, uiEmoji("vault", "🔐")),
     button(userId, "pick3_start", "Pick the Star", "", ButtonStyle.Success, "⭐"),
+    button(userId, "mine_start", "Mine Tiles", "", ButtonStyle.Success, "⛏️"),
     button(userId, "collections", "Collection Atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️"))
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: getAssetSymbol("coin") + " **Coinflip** · heads or tails\n" + uiEmoji("guess", "🎯") + " **Guess** · pick 1–5\n" + uiEmoji("rock", "✊") + " **RPS** · choose your move\n" + uiEmoji("vault", "🔐") + " **Vault** · solve the daily code\n\n-# Free games · no wagers · eligible wins earn virtual coins on a shared cooldown.",
+    description: getAssetSymbol("coin") + " **Coinflip** · heads or tails\n" + uiEmoji("guess", "🎯") + " **Guess** · pick 1–5\n" + uiEmoji("rock", "✊") + " **RPS** · choose your move\n" + uiEmoji("vault", "🔐") + " **Vault** · solve the daily code\n⛏️ **Mine Tiles** · uncover a tile for a small reward\n\n-# Free games · no wagers · eligible wins earn virtual coins on a shared cooldown.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY • COLLECTION ATLAS",
     buttons: gameButtons,
@@ -905,6 +907,56 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price, { currency: item.currency ?? "coins" }), item, interaction.user.id);
+      break;
+    }
+    case "mine_start": {
+      const oreByTile = Array(MINE_SIZE * MINE_SIZE).fill(null);
+      const oreTypes = Object.keys(ORE_VALUES);
+      for (let i = 0; i < 5; i++) {
+        let tile;
+        do { tile = randomInt(oreByTile.length); } while (oreByTile[tile] !== null);
+        oreByTile[tile] = oreTypes[randomInt(oreTypes.length)];
+      }
+      const session = await createGameSession(prisma, interaction.guildId, interaction.user.id, "mine", { oreByTile, revealed: Array(oreByTile.length).fill(false) }, { expiresInMs: 120_000 });
+      const buttons = Array.from({ length: oreByTile.length }, (_, tile) => button(interaction.user.id, "mine_pick", "▫️", session.id + ":" + tile, ButtonStyle.Secondary));
+      payload = gamePayload(createGamePanel({
+        title: "Mine Tiles",
+        eyebrow: "MINI-GAME • FREE PLAY",
+        description: "Choose one tile in the 5×5 grid. Hidden ores give small virtual coin rewards. No wagers.",
+        buttons, footer: "ONE PICK • ROUND EXPIRES IN 2 MINUTES"
+      }));
+      break;
+    }
+    case "mine_pick": {
+      const [sessionId, tileText] = parsed.arg.split(":");
+      const tile = Number(tileText);
+      if (!sessionId || !Number.isInteger(tile) || tile < 0 || tile >= MINE_SIZE * MINE_SIZE) return unavailable();
+      const session = await getActiveGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      if (!session || session.gameId !== "mine") {
+        await interaction.reply({ content: "That mine round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      const turn = resolveMineTurn({ tile, revealed: session.payload.revealed, oreByTile: session.payload.oreByTile });
+      const rewardValue = turn.value;
+      const result = rewardValue > 0
+        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, rewardValue, { type: "mine_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
+        : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      if (rewardValue > 0 && !result.awarded && result.reason === "cooldown") await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      if (rewardValue > 0 && !result.awarded && result.reason !== "cooldown") {
+        await interaction.reply({ content: "That round could not be settled. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      if (rewardValue === 0 && result.count !== 1) {
+        await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      payload = gamePayload(createGamePanel({
+        title: rewardValue > 0 ? "Ore uncovered!" : "Empty tile",
+        eyebrow: "MINE TILES",
+        description: rewardValue > 0 ? "**" + turn.ore + "** ore! " + (result.awarded ? "**+" + rewardValue + " coins** added to your wallet." : "Your reward cooldown is active; no coins were added.") : "No ore here. No coins lost.",
+        footer: "FREE PLAY • NO WAGERS",
+        buttons: [button(interaction.user.id, "mine_start", "Mine again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
+      }));
       break;
     }
     case "pick3_start": {
