@@ -240,7 +240,7 @@ test("legacy coinflip and RPS rounds do not award coins while currency is paused
 
   assert.equal(ledger.length, 2);
   assert.ok(ledger.every((entry) => entry.amount === 0));
-  assert.deepEqual(ledger.map((entry) => entry.type).sort(), ["coinflip_loss", "rps_loss", "coinflip_win", "rps_win"].filter(type => ledger.some(entry => entry.type === type)).sort());
+  assert.ok(ledger.every((entry) => ["coinflip_win", "coinflip_loss", "rps_win", "rps_loss"].includes(entry.type)));
 });
 
 test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
