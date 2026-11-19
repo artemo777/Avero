@@ -93,7 +93,7 @@ test("settlement writes account and ledger to the global wallet scope",async()=>
  assert.equal(upserts.length,2);assert.equal(updates.length,2);assert.equal(ledgers.length,2);
  for(const call of [...upserts,...updates,...ledgers]){
   const args=call[1];
-  const key=call[0]==="upsert"?(args.where?.guildId_userId??args.create):args.where;
+  const key=call[0]==="upsert"?(args.where?.guildId_userId??args.create):call[0]==="ledger"?args.data:args.where;
   assert.equal(key.guildId,"__avero_global__");assert.equal(key.userId,"member");
  }
  const sessionCalls=f.calls.filter(x=>x[0]==="sessionUpdate");
