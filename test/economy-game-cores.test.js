@@ -16,6 +16,11 @@ test("reaction scores valid timings and rejects invalid inputs",()=>{
  assert.equal(evaluateReaction({elapsedMs:500,windowMs:500}).success,true);
  assert.equal(evaluateReaction({elapsedMs:501,windowMs:500}).success,false);
  assert.throws(()=>evaluateReaction({elapsedMs:-1,windowMs:500}),RangeError);
+ assert.throws(()=>evaluateReaction({elapsedMs:5001,windowMs:500}),RangeError);
+ assert.throws(()=>evaluateReaction({elapsedMs:100,windowMs:99}),RangeError);
+ assert.throws(()=>evaluateReaction({elapsedMs:100,windowMs:1501}),RangeError);
+ assert.equal(evaluateReaction({elapsedMs:250,windowMs:500}).score,50);
+ assert.equal(evaluateReaction({elapsedMs:500,windowMs:500}).score,0);
 });
 test("tower checkpoints and paths validate",()=>{
  assert.equal(checkpointForFloor(6),6); assert.equal(checkpointForFloor(10),6);
