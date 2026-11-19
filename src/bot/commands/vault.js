@@ -26,7 +26,7 @@ export const vaultCommand = Object.freeze({
     if (guess === null || guess === undefined) {
       const purchases = prisma ? await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id) : [];
       const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
-      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook }));
+      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook, rewardsEnabled: settings?.currencyEnabled !== false }));
       return;
     }
     if (!prisma) throw new Error("Vault command requires a database client.");
