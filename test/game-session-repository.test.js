@@ -116,4 +116,5 @@ test("session creation rejects invalid expiry duration",async()=>{
  await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:0}),TypeError);
  await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:-1}),TypeError);
  await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:1.5}),TypeError);
+ await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {now:new Date("2026-11-19T12:00:00Z"),expiresInMs:Number.MAX_SAFE_INTEGER}),TypeError);
 });
