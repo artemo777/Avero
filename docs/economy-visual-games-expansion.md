@@ -3,6 +3,11 @@
 This plan extends the existing economy; it does not replace the global member wallet,
 ledger, collections, achievements, contracts, work, shop, or shared game reward cooldown.
 
+## Session validation core
+- Added `src/bot/game-session-core.js` with owner binding, age validation, completion/replay guard and safe input checks.
+- Added Node tests for fresh, wrong-owner, expired, completed and malformed-timing scenarios.
+- This helper is pure and is not a substitute for persisted session records, database uniqueness, or transactional reward claims.
+
 ## Reliability gates
 - All coin and gem writes must go through existing transactional repository methods.
 - A game session must be persisted before the player can interact with a reward path.
