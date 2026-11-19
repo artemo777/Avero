@@ -237,10 +237,19 @@ test("legacy coinflip and RPS rounds do not award coins while currency is paused
 
   await runCoinflip(prisma, "12345678901234567", "heads", "user-1", false);
   await runRps(prisma, "12345678901234567", "rock", "user-1", false);
+  await handleGameComponent({
+    customId: "avero|user-1|guess|1",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    update: async () => {},
+    reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+  }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
 
-  assert.equal(ledger.length, 2);
+  assert.equal(ledger.length, 3);
   assert.ok(ledger.every((entry) => entry.amount === 0));
-  assert.ok(ledger.every((entry) => ["coinflip_win", "coinflip_loss", "rps_win", "rps_loss"].includes(entry.type)));
+  assert.ok(ledger.some((entry) => entry.type === "guess_win_play" || entry.type === "guess_loss"));
+  assert.ok(ledger.some((entry) => ["coinflip_win", "coinflip_loss"].includes(entry.type)));
+  assert.ok(ledger.some((entry) => ["rps_win", "rps_loss"].includes(entry.type)));
 });
 
 test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
