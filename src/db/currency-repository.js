@@ -501,6 +501,8 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const vaultLosses = count("vault_loss");
   const coinflipWins = count("coinflip_win");
   const coinflipLosses = count("coinflip_loss");
+  const minePlays = count("mine_play");
+  const pick3Plays = count("pick3_play");
   return {
     lifetimeEarned,
     lifetimeSpent,
@@ -514,7 +516,9 @@ export async function getCurrencyStats(prisma, guildId, userId) {
     vaultLosses,
     gameLosses: guessLosses + rpsLosses + vaultLosses + coinflipLosses,
     gameTies: rpsTies,
-    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies + vaultWins + vaultLosses + coinflipWins + coinflipLosses,
+    minePlays,
+    pick3Plays,
+    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies + vaultWins + vaultLosses + coinflipWins + coinflipLosses + minePlays + pick3Plays,
     dailyClaims: count("daily"),
     workShifts: count("work"),
     scavenges: count("scavenge"),
