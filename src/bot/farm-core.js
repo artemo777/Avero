@@ -5,7 +5,7 @@ export const CROPS = Object.freeze({
   pumpkin: Object.freeze({ growthMs: 900_000, yield: 4 })
 });
 export function cropStatus({ cropId, plantedAt, now }) {
-  const crop = CROPS[cropId];
+  const crop = typeof cropId === "string" && Object.hasOwn(CROPS, cropId) ? CROPS[cropId] : null;
   if (!crop || !(plantedAt instanceof Date) || Number.isNaN(plantedAt.getTime()) ||
       !(now instanceof Date) || Number.isNaN(now.getTime()) || now < plantedAt) throw new TypeError("Invalid crop state.");
   const remainingMs = Math.max(0, crop.growthMs - (now.getTime() - plantedAt.getTime()));
