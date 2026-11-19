@@ -28,7 +28,9 @@ test("tower checkpoints and paths validate",()=>{
  assert.equal(checkpointForFloor(100),96);
  assert.throws(()=>checkpointForFloor(0),RangeError);
  assert.throws(()=>checkpointForFloor(101),RangeError);
- assert.throws(()=>chooseTowerPath(["a"],0),TypeError);\n assert.throws(()=>chooseTowerPath(["a",null],0),TypeError);\n assert.throws(()=>chooseTowerPath(["a"," "],0),TypeError);
+ assert.throws(()=>chooseTowerPath(["a"],0),TypeError);
+ assert.throws(()=>chooseTowerPath(["a",null],0),TypeError);
+ assert.throws(()=>chooseTowerPath(["a"," "],0),TypeError);
  assert.throws(()=>chooseTowerPath(["a","b"],2),TypeError);
 });
 test("farm growth is time-based and validated",()=>{
