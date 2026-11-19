@@ -1031,7 +1031,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         ? await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id)
         : [];
       const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
-      payload = renderVaultChallenge(createVaultChallenge(interaction.guildId), interaction.user.id, { hasNotebook });
+      payload = renderVaultChallenge(createVaultChallenge(interaction.guildId), interaction.user.id, { hasNotebook, rewardsEnabled: settings?.currencyEnabled !== false });
       break;
     }
     case "rps":
