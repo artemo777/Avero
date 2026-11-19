@@ -10,7 +10,7 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 
 ## Persistence groundwork
 - Added the `GameSession` Prisma model and SQL migration with expiry/status indexes.
-- Added repository helpers for creating, fetching active owned sessions, completion and expiry.
+- Added repository helpers for creating, fetching active owned sessions, completion and expiry; added repository unit tests using mocked Prisma calls.
 - Session persistence is not yet wired to game components or payout claims; callers must enforce transactional idempotency.
 
 ## Reliability gates
