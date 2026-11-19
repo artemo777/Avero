@@ -25,17 +25,40 @@ export async function getActiveGameSession(prisma, guildId, userId, sessionId, n
   return prisma.gameSession.findFirst({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } } });
 }
 
-/** Atomic compare-and-set; only one caller can claim a still-active session. */
-export async function claimGameSession(prisma, guildId, userId, sessionId, { now = new Date() } = {}) {
-  required(guildId, "guildId"); required(userId, "userId"); required(sessionId, "sessionId"); validDate(now);
-  return prisma.gameSession.updateMany({
-    where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } },
-    data: { status: "claimed", completedAt: now }
+/** Atomically consumes an active session and awards coins in the same transaction. */
+export async function settleGameSessionReward(prisma, guildId, userId, sessionId, amount, {
+  type = "game_reward", cooldownMs = 60_000, now = new Date()
+} = {}) {
+  guildId = required(guildId, "guildId"); userId = required(userId, "userId"); sessionId = required(sessionId, "sessionId");
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new TypeError("Reward amount must be a positive safe integer.");
+  if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) throw new TypeError("Invalid reward type.");
+  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) throw new TypeError("Invalid reward cooldown.");
+  validDate(now);
+  return prisma.$transaction(async (tx) => {
+    const key = { guildId, userId };
+    await tx.currencyAccount.upsert({ where: { guildId_userId: key }, create: key, update: {} });
+    const sessionClaim = await tx.gameSession.updateMany({
+      where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } },
+      data: { status: "claimed", completedAt: now }
+    });
+    if (sessionClaim.count !== 1) return { awarded: false, reason: "session_unavailable" };
+    const accountClaim = await tx.currencyAccount.updateMany({
+      where: { ...key, OR: [{ lastGameRewardAt: null }, { lastGameRewardAt: { lte: new Date(now.getTime() - cooldownMs) } }] },
+      data: { balance: { increment: amount }, lastGameRewardAt: now }
+    });
+    if (accountClaim.count !== 1) {
+      // Reset the session to active within this transaction so cooldown denial doesn't consume it.
+      await tx.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "claimed" }, data: { status: "active", completedAt: null } });
+      return { awarded: false, reason: "cooldown" };
+    }
+    await tx.currencyTransaction.create({ data: { ...key, amount, type, createdAt: now } });
+    const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
+    return { awarded: true, amount, account };
   });
 }
 
 export async function completeGameSession(prisma, guildId, userId, sessionId, { now = new Date() } = {}) {
-  required(guildId, "guildId"); required(userId, "userId"); required(sessionId, "sessionId"); validDate(now);
+  required(guildId, "guildId"); required(userId, "userId"); required(sessionId); validDate(now);
   return prisma.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } }, data: { status: "completed", completedAt: now } });
 }
 
