@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../src/bot/title-catalog.js";
+import { titlesCommand } from "../src/bot/commands/titles.js";
+import { MessageFlags } from "discord.js";
 
 test("milestone titles unlock at their configured game and economy thresholds", () => {
   const eligible = getEligibleMilestoneTitles({
@@ -35,4 +37,30 @@ test("shop titles are separate from milestone titles", () => {
   const shopTitles = TITLE_CATALOG.filter((title) => Number.isSafeInteger(title.price));
   assert.ok(shopTitles.length >= 1);
   assert.ok(shopTitles.every((title) => !title.unlock && title.price > 0));
+});
+
+test("title purchases are blocked while server currency is paused", async () => {
+  let response;
+  const interaction = {
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: {
+      getString(name) {
+        return name === "action" ? "buy" : name === "title" ? "fresh_spawn" : null;
+      }
+    },
+    reply: async (payload) => { response = payload; }
+  };
+  const prisma = new Proxy({}, {
+    get() {
+      throw new Error("A paused title purchase must not access the database.");
+    }
+  });
+
+  await titlesCommand.execute(interaction, { prisma, settings: { currencyEnabled: false } });
+
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Title purchases are unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
 });
