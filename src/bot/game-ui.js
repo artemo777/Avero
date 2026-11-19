@@ -936,6 +936,10 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       const awarded = won && result.awarded;
+      if (won && !awarded && result.reason !== "cooldown") {
+        await interaction.reply({ content: "That round could not be settled because it is no longer available. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
       if (won && !awarded && result.reason === "cooldown") {
         await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
       }
