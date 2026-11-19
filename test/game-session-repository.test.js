@@ -39,3 +39,50 @@ test("completion and expiry operate on eligible active sessions",async()=>{
  await expireGameSessions(p,now);
  assert.equal(p.calls[1][1].where.status,"active");assert.equal(p.calls[1][1].where.expiresAt.lte,now);
 });
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import { settleGameSessionReward } from "../src/db/game-session-repository.js";
+
+function fixture({ sessionClaim = 1, accountClaim = 1 } = {}) {
+ const calls=[];
+ const tx={
+  currencyAccount:{
+   upsert:async(args)=>calls.push(["upsert",args]),
+   updateMany:async(args)=>{calls.push(["accountUpdate",args]);return {count:accountClaim};},
+   findUnique:async(args)=>({balance:42,...args.where})
+  },
+  gameSession:{updateMany:async(args)=>{calls.push(["sessionUpdate",args]);return {count:sessionClaim};}},
+  currencyTransaction:{create:async(args)=>calls.push(["ledger",args])}
+ };
+ return {calls,prisma:{$transaction:async(fn)=>fn(tx)}};
+}
+test("settlement atomically claims session, cooldown and ledger reward",async()=>{
+ const f=fixture(),now=new Date("2026-11-19T12:00:00Z");
+ const result=await settleGameSessionReward(f.prisma,"g","u","s",25,{type:"fishing_reward",now});
+ assert.equal(result.awarded,true);assert.equal(result.amount,25);
+ assert.equal(f.calls.filter(x=>x[0]==="sessionUpdate").length,1);
+ assert.equal(f.calls[1][1].data.balance.increment,25);
+ assert.equal(f.calls[2][1].data.amount,25);assert.equal(f.calls[2][1].data.type,"fishing_reward");
+});
+test("settlement rejects a session that cannot be claimed",async()=>{
+ const f=fixture({sessionClaim:0});
+ const result=await settleGameSessionReward(f.prisma,"g","u","s",25);
+ assert.deepEqual(result,{awarded:false,reason:"session_unavailable"});
+ assert.equal(f.calls.some(x=>x[0]==="ledger"),false);
+ assert.equal(f.calls.some(x=>x[0]==="accountUpdate"),false);
+});
+test("cooldown denial doesn't produce a ledger reward",async()=>{
+ const f=fixture({accountClaim:0});
+ const result=await settleGameSessionReward(f.prisma,"g","u","s",25);
+ assert.deepEqual(result,{awarded:false,reason:"cooldown"});
+ assert.equal(f.calls.some(x=>x[0]==="ledger"),false);
+ const resets=f.calls.filter(x=>x[0]==="sessionUpdate");
+ assert.equal(resets.length,2);assert.equal(resets[1][1].data.status,"active");
+});
+test("invalid reward amount/type/cooldown are rejected",async()=>{
+ const f=fixture();
+ await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",0),TypeError);
+ await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{type:"Bad Type"}),TypeError);
+ await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{cooldownMs:0}),TypeError);
+});
