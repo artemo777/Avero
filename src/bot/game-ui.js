@@ -939,7 +939,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const turn = resolveMineTurn({ tile, revealed: session.payload.revealed, oreByTile: session.payload.oreByTile });
       const rewardValue = turn.value;
       const result = rewardValue > 0
-        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, rewardValue, { type: "mine_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
+        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, rewardValue, { type: "mine_reward", activityType: "mine_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
       if (rewardValue > 0 && !result.awarded && result.reason === "cooldown") await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
       if (rewardValue > 0 && !result.awarded && result.reason !== "cooldown") {
@@ -981,7 +981,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       }
       const won = choice === session.payload.star;
       const result = won
-        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, 8, { type: "pick3_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
+        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, 8, { type: "pick3_reward", activityType: "pick3_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "pick3_play" });
       if (!won && result.count !== 1) {
         await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
