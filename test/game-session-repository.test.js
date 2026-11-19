@@ -18,7 +18,7 @@ test("creation supersedes existing active sessions of same game",async()=>{
  assert.equal(s.guildId,"g");assert.equal(s.userId,"u");assert.equal(s.gameId,"fishing");assert.equal(s.expiresAt.getTime(),now.getTime()+5000);
  assert.equal(p.calls[0][0],"updateMany");assert.equal(p.calls[0][1].where.status,"active");assert.equal(p.calls[0][1].where.gameId,"fishing");
  assert.equal(p.calls[1][0],"create");
- assert.throws(()=>createGameSession(p,"g","u","Bad Game",{}),TypeError);
+ await assert.rejects(()=>createGameSession(p,"g","u","Bad Game",{}),TypeError);
 });
 test("lookup is scoped to owner and expiry",async()=>{
  const p=fakePrisma();const now=new Date();
@@ -58,8 +58,8 @@ test("settlement atomically claims session, cooldown and ledger reward",async()=
  const result=await settleGameSessionReward(f.prisma,"g","u","s",25,{type:"fishing_reward",now});
  assert.equal(result.awarded,true);assert.equal(result.amount,25);
  assert.equal(f.calls.filter(x=>x[0]==="sessionUpdate").length,1);
- assert.equal(f.calls[1][1].data.balance.increment,25);
- assert.equal(f.calls[2][1].data.amount,25);assert.equal(f.calls[2][1].data.type,"fishing_reward");
+ assert.equal(f.calls[2][1].data.balance.increment,25);
+ assert.equal(f.calls[3][1].data.amount,25);assert.equal(f.calls[3][1].data.type,"fishing_reward");
 });
 test("settlement rejects a session that cannot be claimed",async()=>{
  const f=fixture({sessionClaim:0});
