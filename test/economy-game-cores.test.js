@@ -38,3 +38,8 @@ test("mine core rejects inherited object keys as ore types",()=>{
  const revealed=Array(25).fill(false),ore=Array(25).fill(null);
  for(const invalid of ["constructor","toString","__proto__"]){ore[0]=invalid;assert.throws(()=>resolveMineTurn({tile:0,revealed,oreByTile:ore}),TypeError);}
 });
+
+test("farm rejects inherited crop identifiers",()=>{
+ const plantedAt=new Date("2025-01-01T00:00:00Z"),now=new Date(plantedAt.getTime()+60000);
+ for(const cropId of ["constructor","toString","__proto__"])assert.throws(()=>cropStatus({cropId,plantedAt,now}),TypeError);
+});
