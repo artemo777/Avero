@@ -3,6 +3,7 @@ import {
   SectionBuilder, SeparatorBuilder, SeparatorSpacingSize, StringSelectMenuBuilder, TextDisplayBuilder, ThumbnailBuilder
 } from "discord.js";
 import { randomInt } from "node:crypto";
+import { createGameSession, getActiveGameSession, completeGameSession, settleGameSessionReward } from "../db/game-session-repository.js";
 import { THEME } from "../../averoui/theme.js";
 import { getAssetSymbol, getCollectibleAssetId, getRarityAssetId } from "../../averoui/assets.js";
 import { getServerEmoji } from "../../averoui/server-emojis.js";
@@ -183,6 +184,7 @@ export function renderGames(userId) {
     button(userId, "coinflip", "Heads", "heads", ButtonStyle.Primary, getAssetSymbol("coin")),
     button(userId, "coinflip", "Tails", "tails", ButtonStyle.Secondary, getAssetSymbol("coin")),
     button(userId, "vault", "Daily Vault", "", ButtonStyle.Secondary, uiEmoji("vault", "🔐")),
+    button(userId, "pick3_start", "Pick the Star", "", ButtonStyle.Success, "⭐"),
     button(userId, "collections", "Collection Atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️"))
   ];
   return gamePayload(createGamePanel({
@@ -903,6 +905,44 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       payload = renderBuy(await purchaseCurrencyItem(prisma, interaction.guildId, interaction.user.id, item.id, item.price, { currency: item.currency ?? "coins" }), item, interaction.user.id);
+      break;
+    }
+    case "pick3_start": {
+      const star = randomInt(1, 4);
+      const session = await createGameSession(prisma, interaction.guildId, interaction.user.id, "pick3", { star }, { expiresInMs: 120_000 });
+      payload = gamePayload(createGamePanel({
+        title: "Pick the Star",
+        eyebrow: "MINI-GAME • FREE PLAY",
+        description: "Three doors, one hidden star. Choose once before the session expires. No wagers.",
+        buttons: [1, 2, 3].map((choice) => button(interaction.user.id, "pick3", "Door " + choice, session.id + ":" + choice, ButtonStyle.Primary, choice === 1 ? "🚪" : choice === 2 ? "🚪" : "🚪"))
+      }));
+      break;
+    }
+    case "pick3": {
+      const [sessionId, choiceText] = parsed.arg.split(":");
+      const choice = Number(choiceText);
+      if (!sessionId || !Number.isInteger(choice) || choice < 1 || choice > 3) return unavailable();
+      const session = await getActiveGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      if (!session || session.gameId !== "pick3") {
+        await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      const won = choice === session.payload.star;
+      const result = won
+        ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, 8, { type: "pick3_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
+        : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      if (!won && result.count !== 1) {
+        await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
+        return true;
+      }
+      const awarded = won && result.awarded;
+      payload = gamePayload(createGamePanel({
+        title: won ? "Star found!" : "Empty door",
+        eyebrow: "PICK THE STAR",
+        description: won ? "You found the star! " + (awarded ? "**+8 coins** added to your wallet." : "Your reward cooldown is active; no coins were added.") : "No star behind that door. No coins lost.",
+        footer: "FREE PLAY • NO WAGERS",
+        buttons: [button(interaction.user.id, "pick3_start", "Play again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
+      }));
       break;
     }
     case "guess": {
