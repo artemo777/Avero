@@ -495,7 +495,7 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
     footer: "REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId)
   }));
 }
-export function renderGuess(guess, answer, result, userId) {
+export function renderGuess(guess, answer, result, userId, rewardsEnabled = true) {
   const won = guess === answer;
   const rewarded = won && result?.awarded === true;
   const nextReward = result?.account?.lastGameRewardAt
@@ -504,7 +504,7 @@ export function renderGuess(guess, answer, result, userId) {
   const outcome = rewarded
     ? "✦ **+" + GUESS_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
     : won
-      ? "Correct guess! Your coin reward is still cooling down." +
+      ? (rewardsEnabled ? "Correct guess! Your coin reward is still cooling down." : "Correct guess! Currency rewards are paused in this server.") +
         (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
       : "No coins lost. Try again.";
   return gamePayload(createGamePanel({
@@ -553,12 +553,12 @@ export function renderVault({ guess, challenge, won, reward, userId }) {
     buttons: navButtons(userId, true).slice(0, 4)
   }));
 }
-export function renderCoinflip(call, result, reward, userId) {
+export function renderCoinflip(call, result, reward, userId, rewardsEnabled = true) {
   const won = call === result;
   const outcome = won
     ? reward?.awarded
       ? "🎉 **You won · +" + reward.amount + " coins**\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
-      : "🎉 **You won!**\nYour shared 10-minute game-reward cooldown is active, so no coins were added."
+      : "🎉 **You won!**\n" + (rewardsEnabled ? "Your shared 10-minute game-reward cooldown is active, so no coins were added." : "Currency rewards are paused in this server, so no coins were added.")
     : "Not this time — no coins were lost. Try again whenever you like.";
   return gamePayload(createGamePanel({
     title: won ? "A clean call!" : "The coin landed",
@@ -572,13 +572,13 @@ export function renderCoinflip(call, result, reward, userId) {
     ]
   }));
 }
-export function renderRps(playerChoice, botChoice, userId, reward = null) {
+export function renderRps(playerChoice, botChoice, userId, reward = null, rewardsEnabled = true) {
   const tie = playerChoice === botChoice;
   const won = !tie && BEATS[playerChoice] === botChoice;
   const rewardText = reward?.awarded
     ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
     : won
-      ? "\n\nYou won, but your shared game-reward cooldown is active. No coins were lost."
+      ? "\n\n" + (rewardsEnabled ? "You won, but your shared game-reward cooldown is active. No coins were lost." : "You won, but currency rewards are paused in this server. No coins were added.")
       : "\n\nNo coins were lost. No wagers.";
   const outcome = (tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**") + rewardText;
   const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
@@ -607,37 +607,37 @@ export function renderBuy(result, item, userId) {
     buttons: [button(userId, "shop", "Back to shop", "", ButtonStyle.Primary, uiEmoji("shop", "🛍️")), button(userId, "inventory", "My collection", "", ButtonStyle.Secondary, uiEmoji("inventory", "🎒")), button(userId, "balance", "Wallet", "", ButtonStyle.Secondary, getAssetSymbol("coin"))]
   }));
 }
-async function runGuess(prisma, guildId, userId, guess) {
+async function runGuess(prisma, guildId, userId, guess, rewardsEnabled = true) {
   const answer = randomInt(1, 6);
   const won = guess === answer;
   await recordGuessResult(prisma, guildId, userId, won);
-  const result = won ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
-  return renderGuess(guess, answer, result, userId);
+  const result = won && rewardsEnabled ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS }) : null;
+  return renderGuess(guess, answer, result, userId, rewardsEnabled);
 }
-export async function runCoinflip(prisma, guildId, call, userId) {
+export async function runCoinflip(prisma, guildId, call, userId, rewardsEnabled = true) {
   if (call !== "heads" && call !== "tails") throw new RangeError("Choose heads or tails.");
   const result = randomInt(2) === 0 ? "heads" : "tails";
   const won = call === result;
   await recordGameResult(prisma, guildId, userId, "coinflip", won ? "win" : "loss");
-  const reward = won
+  const reward = won && rewardsEnabled
     ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, {
       type: "coinflip_reward",
       cooldownMs: GUESS_REWARD_COOLDOWN_MS
     })
     : null;
-  return renderCoinflip(call, result, reward, userId);
+  return renderCoinflip(call, result, reward, userId, rewardsEnabled);
 }
-export async function runRps(prisma, guildId, playerChoice, userId) {
+export async function runRps(prisma, guildId, playerChoice, userId, rewardsEnabled = true) {
   const botChoice = CHOICES[randomInt(CHOICES.length)];
   const outcome = playerChoice === botChoice ? "tie" : BEATS[playerChoice] === botChoice ? "win" : "loss";
   await recordGameResult(prisma, guildId, userId, "rps", outcome);
-  const reward = outcome === "win"
+  const reward = outcome === "win" && rewardsEnabled
     ? await awardGameReward(prisma, guildId, userId, GUESS_REWARD, {
       type: "rps_reward",
       cooldownMs: GUESS_REWARD_COOLDOWN_MS
     })
     : null;
-  return renderRps(playerChoice, botChoice, userId, reward);
+  return renderRps(playerChoice, botChoice, userId, reward, rewardsEnabled);
 }
 export async function handleGameComponent(interaction, { prisma, settings } = {}) {
   const unavailable = async () => {
@@ -1012,7 +1012,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         await interaction.reply({ content: "Choose a number from 1 to 5.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runGuess(prisma, interaction.guildId, interaction.user.id, guess);
+      payload = await runGuess(prisma, interaction.guildId, interaction.user.id, guess, settings?.currencyEnabled !== false);
       break;
     }
     case "coinflip":
@@ -1020,7 +1020,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         await interaction.reply({ content: "Choose heads or tails.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runCoinflip(prisma, interaction.guildId, parsed.arg, interaction.user.id);
+      payload = await runCoinflip(prisma, interaction.guildId, parsed.arg, interaction.user.id, settings?.currencyEnabled !== false);
       break;
     case "vault": {
       const purchases = prisma.currencyPurchase?.findMany
@@ -1035,7 +1035,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         await interaction.reply({ content: "Choose rock, paper, or scissors.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      payload = await runRps(prisma, interaction.guildId, parsed.arg, interaction.user.id);
+      payload = await runRps(prisma, interaction.guildId, parsed.arg, interaction.user.id, settings?.currencyEnabled !== false);
       break;
     default: return unavailable();
   }
