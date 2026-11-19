@@ -122,7 +122,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
-        await handleMoneyRequestButton(interaction, getPrismaClient());
+        const prisma = getPrismaClient();
+        const settings = await getGuildSettings(prisma, interaction.guildId);
+        await handleMoneyRequestButton(interaction, prisma, settings);
       } catch (error) {
         console.error("Money request response failed:", error);
         await interaction.reply({ content: "Avero could not process that request. Please try again.", flags: MessageFlags.Ephemeral }).catch(() => {});
