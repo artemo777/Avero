@@ -66,6 +66,7 @@ The separate server controls remain independent:
 - Zero-value activity records and the Vault's one-attempt-per-UTC-day rule remain active while currency rewards are paused.
 - Both slash-command and Games Hub entry points receive the same setting and explain when a reward is unavailable.
 - Pending `/ask` transfers cannot be accepted while currency is paused; the request remains unanswered until currency is re-enabled or it expires.
+- `/titles buy` is blocked while currency is paused; viewing and equipping already-owned titles remain available.
 
 ## Live acceptance checklist
 
