@@ -942,12 +942,12 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const result = rewardValue > 0 && rewardsEnabled
         ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, rewardValue, { type: "mine_reward", activityType: "mine_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
-      if (rewardValue > 0 && !result.awarded && result.reason === "cooldown") await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
-      if (rewardValue > 0 && !result.awarded && result.reason !== "cooldown") {
+      if (rewardValue > 0 && rewardsEnabled && !result.awarded && result.reason === "cooldown") await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "mine_play" });
+      if (rewardValue > 0 && rewardsEnabled && !result.awarded && result.reason !== "cooldown") {
         await interaction.reply({ content: "That round could not be settled. Start a fresh round.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      if (rewardValue === 0 && result.count !== 1) {
+      if ((rewardValue === 0 || !rewardsEnabled) && result.count !== 1) {
         await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
         return true;
       }
@@ -990,11 +990,11 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       const awarded = won && result.awarded;
-      if (won && !awarded && result.reason !== "cooldown") {
+      if (won && rewardsEnabled && !awarded && result.reason !== "cooldown") {
         await interaction.reply({ content: "That round could not be settled because it is no longer available. Start a fresh round.", flags: MessageFlags.Ephemeral });
         return true;
       }
-      if (won && !awarded && result.reason === "cooldown") {
+      if (won && rewardsEnabled && !awarded && result.reason === "cooldown") {
         await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "pick3_play" });
       }
       payload = gamePayload(createGamePanel({
