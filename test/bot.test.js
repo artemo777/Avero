@@ -239,7 +239,7 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   assert.doesNotMatch(text, /one code attempt per UTC day/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 13);
 });
 
 test("help command groups the real commands into a compact Components V2 panel", async () => {
