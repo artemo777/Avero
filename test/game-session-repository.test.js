@@ -16,8 +16,9 @@ test("creation supersedes existing active sessions of same game",async()=>{
  const p=fakePrisma(),now=new Date("2026-01-01T00:00:00Z");
  const s=await createGameSession(p,"g","u","fishing",{stage:1},{now,expiresInMs:5000});
  assert.equal(s.guildId,"g");assert.equal(s.userId,"u");assert.equal(s.gameId,"fishing");assert.equal(s.expiresAt.getTime(),now.getTime()+5000);
- assert.equal(p.calls[0][0],"updateMany");assert.equal(p.calls[0][1].where.status,"active");assert.equal(p.calls[0][1].where.gameId,"fishing");
- assert.equal(p.calls[1][0],"create");
+ assert.equal(p.calls[0][0],"updateMany");assert.equal(p.calls[0][1].where.status,"active");assert.ok(p.calls[0][1].where.expiresAt.lte);
+ assert.equal(p.calls[1][0],"updateMany");assert.equal(p.calls[1][1].where.gameId,"fishing");
+ assert.equal(p.calls[2][0],"create");
  await assert.rejects(()=>createGameSession(p,"g","u","Bad Game",{}),TypeError);
 });
 test("lookup is scoped to owner and expiry",async()=>{
