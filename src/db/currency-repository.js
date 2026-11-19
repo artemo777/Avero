@@ -275,9 +275,10 @@ export async function submitDailyVaultAttempt(
   userId,
   outcome,
   amount,
-  { cooldownMs = 600_000, now = new Date() } = {}
+  { cooldownMs = 600_000, now = new Date(), currencyEnabled = true } = {}
 ) {
   const key = currencyKey(guildId, userId);
+  if (typeof currencyEnabled !== "boolean") throw new TypeError("currencyEnabled must be a boolean.");
   if (!["win", "loss"].includes(outcome)) {
     throw new TypeError("Vault outcome must be win or loss.");
   }
@@ -311,6 +312,9 @@ export async function submitDailyVaultAttempt(
 
       if (outcome !== "win") {
         return { submitted: true, reward: null };
+      }
+      if (!currencyEnabled) {
+        return { submitted: true, reward: { awarded: false, reason: "currency_paused", account: null } };
       }
 
       const existingReward = await tx.dailyContractClaim.findUnique({
