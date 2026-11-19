@@ -42,11 +42,12 @@ export async function claimGameSession(prisma, guildId, userId, sessionId, { now
 
 /** Atomically consumes an active session and awards coins in the same transaction. */
 export async function settleGameSessionReward(prisma, guildId, userId, sessionId, amount, {
-  type = "game_reward", cooldownMs = 60_000, now = new Date()
+  type = "game_reward", activityType = null, cooldownMs = 60_000, now = new Date()
 } = {}) {
   guildId = required(guildId, "guildId"); userId = required(userId, "userId"); sessionId = required(sessionId, "sessionId");
   if (!Number.isSafeInteger(amount) || amount <= 0) throw new TypeError("Reward amount must be a positive safe integer.");
   if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) throw new TypeError("Invalid reward type.");
+  if (activityType !== null && (typeof activityType !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(activityType))) throw new TypeError("Invalid activity type.");
   if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) throw new TypeError("Invalid reward cooldown.");
   validDate(now);
   const cooldownCutoff = new Date(now.getTime() - cooldownMs);
@@ -68,14 +69,20 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
       return { awarded: false, reason: "cooldown" };
     }
     await tx.currencyTransaction.create({ data: { ...key, amount, type, createdAt: now } });
+    if (activityType) await tx.currencyTransaction.create({ data: { ...key, amount: 0, type: activityType, createdAt: now } });
     const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
     return { awarded: true, amount, account };
   });
 }
 
-export async function completeGameSession(prisma, guildId, userId, sessionId, { now = new Date() } = {}) {
+export async function completeGameSession(prisma, guildId, userId, sessionId, { now = new Date(), activityType = null } = {}) {
   required(guildId, "guildId"); required(userId, "userId"); required(sessionId); validDate(now);
-  return prisma.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } }, data: { status: "completed", completedAt: now } });
+  if (activityType !== null && (typeof activityType !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(activityType))) throw new TypeError("Invalid activity type.");
+  return prisma.$transaction(async (tx) => {
+    const result = await tx.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } }, data: { status: "completed", completedAt: now } });
+    if (result.count === 1 && activityType) await tx.currencyTransaction.create({ data: { guildId: GLOBAL_SCOPE_ID, userId, amount: 0, type: activityType, createdAt: now } });
+    return result;
+  });
 }
 
 export async function expireGameSessions(prisma, now = new Date()) {
