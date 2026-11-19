@@ -23,7 +23,7 @@ test("reaction scores valid timings and rejects invalid inputs",()=>{
  assert.equal(evaluateReaction({elapsedMs:500,windowMs:500}).score,0);
 });
 test("tower checkpoints and paths validate",()=>{
- assert.equal(checkpointForFloor(6),6); assert.equal(checkpointForFloor(10),6);
+ assert.equal(checkpointForFloor(1),1); assert.equal(checkpointForFloor(5),1); assert.equal(checkpointForFloor(6),6); assert.equal(checkpointForFloor(10),6); assert.equal(checkpointForFloor(11),11);
  assert.equal(chooseTowerPath(["a","b"],1),"b");
  assert.equal(checkpointForFloor(100),96);
  assert.throws(()=>checkpointForFloor(0),RangeError);
@@ -35,7 +35,7 @@ test("tower checkpoints and paths validate",()=>{
 });
 test("farm growth is time-based and validated",()=>{
  const plantedAt=new Date("2025-01-01T00:00:00Z");
- assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
+ assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+59999)}).ready,false);\n assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
  assert.equal(cropStatus({cropId:"berry",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,false);
 });
 
