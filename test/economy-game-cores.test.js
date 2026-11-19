@@ -32,3 +32,9 @@ test("farm growth is time-based and validated",()=>{
  assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
  assert.equal(cropStatus({cropId:"berry",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,false);
 });
+
+
+test("mine core rejects inherited object keys as ore types",()=>{
+ const revealed=Array(25).fill(false),ore=Array(25).fill(null);
+ for(const invalid of ["constructor","toString","__proto__"]){ore[0]=invalid;assert.throws(()=>resolveMineTurn({tile:0,revealed,oreByTile:ore}),TypeError);}
+});
