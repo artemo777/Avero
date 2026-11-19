@@ -985,7 +985,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const result = won && rewardsEnabled
         ? await settleGameSessionReward(prisma, interaction.guildId, interaction.user.id, sessionId, 8, { type: "pick3_reward", activityType: "pick3_play", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
         : await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId, { activityType: "pick3_play" });
-      if (!won && result.count !== 1) {
+      if ((!won || !rewardsEnabled) && result.count !== 1) {
         await interaction.reply({ content: "That round expired or was already played. Start a fresh round.", flags: MessageFlags.Ephemeral });
         return true;
       }
