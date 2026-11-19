@@ -8,6 +8,11 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 - Added Node tests for fresh, wrong-owner, expired, completed and malformed-timing scenarios.
 - This helper is pure and is not a substitute for persisted session records, database uniqueness, or transactional reward claims.
 
+## Persistence groundwork
+- Added the `GameSession` Prisma model and SQL migration with expiry/status indexes.
+- Added repository helpers for creating, fetching active owned sessions, completion and expiry.
+- Session persistence is not yet wired to game components or payout claims; callers must enforce transactional idempotency.
+
 ## Reliability gates
 - All coin and gem writes must go through existing transactional repository methods.
 - A game session must be persisted before the player can interact with a reward path.
