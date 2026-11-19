@@ -34,6 +34,7 @@ test("tower checkpoints and paths validate",()=>{
  assert.throws(()=>chooseTowerPath(["a",null],0),TypeError);
  assert.throws(()=>chooseTowerPath(["a"," "],0),TypeError);
  assert.throws(()=>chooseTowerPath(["a","b"],2),TypeError);
+ const sparse=["a",];sparse.length=2;assert.throws(()=>chooseTowerPath(sparse,1),TypeError);
 });
 test("farm growth is time-based and validated",()=>{
  const plantedAt=new Date("2025-01-01T00:00:00Z");
