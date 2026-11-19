@@ -15,7 +15,9 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     { type: "daily", _count: { _all: 2 }, _sum: { amount: 200 } },
     { type: "work", _count: { _all: 4 }, _sum: { amount: 320 } },
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 55 } },
-    { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } }
+    { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } },
+    { type: "mine_play", _count: { _all: 2 }, _sum: { amount: 0 } },
+    { type: "pick3_play", _count: { _all: 1 }, _sum: { amount: 0 } }
   ];
   const prisma = {
     currencyTransaction: {
@@ -39,7 +41,9 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     vaultLosses: 0,
     gameLosses: 5,
     gameTies: 1,
-    gamesPlayed: 18,
+    minePlays: 2,
+    pick3Plays: 1,
+    gamesPlayed: 21,
     dailyClaims: 2,
     workShifts: 4,
     scavenges: 1,
