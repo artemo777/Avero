@@ -21,6 +21,8 @@ export async function createGameSession(prisma, guildId, userId, gameId, payload
       return tx.gameSession.create({ data });
     });
   }
+  await prisma.gameSession.updateMany({ where: { status: "active", expiresAt: { lte: now } }, data: { status: "expired" } });
+  await prisma.gameSession.updateMany({ where: { guildId, userId, gameId, status: "active" }, data: { status: "superseded" } });
   return prisma.gameSession.create({ data });
 }
 
