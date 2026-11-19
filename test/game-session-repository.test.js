@@ -101,3 +101,19 @@ test("settlement writes account and ledger to the global wallet scope",async()=>
  assert.equal(sessionCalls[0][1].where.guildId,"server-a");
  assert.equal(sessionCalls[1][1].where.guildId,"server-b");
 });
+
+test("creation expires stale sessions across scopes before replacing same-game sessions",async()=>{
+ const p=fakePrisma(),now=new Date("2026-11-19T12:00:00Z");
+ await createGameSession(p,"guild-x","user-x","mining",{});
+ const cleanup=p.calls[0][1],replacement=p.calls[1][1];
+ assert.deepEqual(cleanup.where,{status:"active",expiresAt:{lte:now}});
+ assert.deepEqual(cleanup.data,{status:"expired"});
+ assert.deepEqual(replacement.where,{guildId:"guild-x",userId:"user-x",gameId:"mining",status:"active"});
+ assert.deepEqual(replacement.data,{status:"superseded"});
+});
+test("session creation rejects invalid expiry duration",async()=>{
+ const p=fakePrisma();
+ await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:0}),TypeError);
+ await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:-1}),TypeError);
+ await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:1.5}),TypeError);
+});
