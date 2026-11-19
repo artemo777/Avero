@@ -17,7 +17,7 @@ export function resolveMineTurn({ tile, revealed, oreByTile }) {
   }
   if (revealed[tile]) throw new Error("Tile already revealed.");
   const ore = oreByTile[tile];
-  if (ore !== null && ore !== undefined && !(ore in ORE_VALUES)) throw new TypeError("Unknown ore.");
+  if (ore !== null && ore !== undefined && !Object.hasOwn(ORE_VALUES, ore)) throw new TypeError("Unknown ore.");
   const next = revealed.slice();
   next[tile] = true;
   return Object.freeze({ tile, ore: ore ?? null, value: ore ? ORE_VALUES[ore] : 0, revealed: next });
