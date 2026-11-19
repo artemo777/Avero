@@ -17,7 +17,7 @@ export const vaultCommand = Object.freeze({
       max_length: 3
     }]
   }),
-  async execute(interaction, { prisma, now = new Date() } = {}) {
+  async execute(interaction, { prisma, settings, now = new Date() } = {}) {
     if (!interaction.guildId) {
       await interaction.reply({ content: "The Vault is available inside a server.", flags: MessageFlags.Ephemeral });
       return;
@@ -43,7 +43,7 @@ export const vaultCommand = Object.freeze({
       interaction.user.id,
       won ? "win" : "loss",
       GUESS_REWARD,
-      { cooldownMs: GUESS_REWARD_COOLDOWN_MS, now }
+      { cooldownMs: GUESS_REWARD_COOLDOWN_MS, now, currencyEnabled: settings?.currencyEnabled !== false }
     );
     if (!attempt.submitted) {
       await interaction.reply({
@@ -58,6 +58,7 @@ export const vaultCommand = Object.freeze({
       challenge,
       won,
       reward: attempt.reward,
+      rewardsEnabled: settings?.currencyEnabled !== false,
       userId: interaction.user.id
     }));
   }
