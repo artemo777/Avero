@@ -82,3 +82,21 @@ test("invalid reward amount/type/cooldown are rejected",async()=>{
  await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{type:"Bad Type"}),TypeError);
  await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{cooldownMs:0}),TypeError);
 });
+
+test("settlement writes account and ledger to the global wallet scope",async()=>{
+ const f=fixture(),now=new Date("2026-11-19T12:00:00Z");
+ await settleGameSessionReward(f.prisma,"server-a","member","session-a",10,{now});
+ await settleGameSessionReward(f.prisma,"server-b","member","session-b",10,{now});
+ const upserts=f.calls.filter(x=>x[0]==="upsert");
+ const updates=f.calls.filter(x=>x[0]==="accountUpdate");
+ const ledgers=f.calls.filter(x=>x[0]==="ledger");
+ assert.equal(upserts.length,2);assert.equal(updates.length,2);assert.equal(ledgers.length,2);
+ for(const call of [...upserts,...updates,...ledgers]){
+  const args=call[1];
+  const key=call[0]==="upsert"?(args.where?.guildId_userId??args.create):args.where;
+  assert.equal(key.guildId,"__avero_global__");assert.equal(key.userId,"member");
+ }
+ const sessionCalls=f.calls.filter(x=>x[0]==="sessionUpdate");
+ assert.equal(sessionCalls[0][1].where.guildId,"server-a");
+ assert.equal(sessionCalls[1][1].where.guildId,"server-b");
+});
