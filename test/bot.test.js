@@ -226,7 +226,7 @@ test("shop category select and pagination preserve the selected category", async
 
 test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
   for (const scenario of [
-    { action: "mine_pick", arg: "session-1:0", gameId: "mine", payload: { oreByTile: ["copper", ...Array(24).fill(null)], revealed: Array(25).fill(false) }, activityType: "mine_play" },
+    { action: "mine_pick", arg: "session-1:0", gameId: "mine", payload: { oreByTile: ["gold", ...Array(24).fill(null)], revealed: Array(25).fill(false) }, activityType: "mine_play" },
     { action: "pick3", arg: "session-2:1", gameId: "pick3", payload: { star: 1 }, activityType: "pick3_play" }
   ]) {
     const ledger = [];
