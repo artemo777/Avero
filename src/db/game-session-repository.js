@@ -11,7 +11,9 @@ export async function createGameSession(prisma, guildId, userId, gameId, payload
   if (!validGameId(gameId)) throw new TypeError("Invalid gameId.");
   validDate(now);
   if (!Number.isSafeInteger(expiresInMs) || expiresInMs <= 0) throw new TypeError("Invalid session expiry.");
-  const data = { id: randomUUID(), guildId, userId, gameId, status: "active", payload, createdAt: now, expiresAt: new Date(now.getTime() + expiresInMs) };
+  const expiresAt = new Date(now.getTime() + expiresInMs);
+  if (Number.isNaN(expiresAt.getTime())) throw new TypeError("Session expiry is out of range.");
+  const data = { id: randomUUID(), guildId, userId, gameId, status: "active", payload, createdAt: now, expiresAt };
   if (typeof prisma.$transaction === "function") {
     return prisma.$transaction(async (tx) => {
       await tx.gameSession.updateMany({ where: { status: "active", expiresAt: { lte: now } }, data: { status: "expired" } });
