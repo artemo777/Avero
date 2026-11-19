@@ -81,7 +81,8 @@ test("invalid reward amount/type/cooldown are rejected",async()=>{
  const f=fixture();
  await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",0),TypeError);
  await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{type:"Bad Type"}),TypeError);
- await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{cooldownMs:0}),TypeError);\n await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{now:new Date("2026-11-19T12:00:00Z"),cooldownMs:Number.MAX_SAFE_INTEGER}),TypeError);
+ await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{cooldownMs:0}),TypeError);
+ await assert.rejects(()=>settleGameSessionReward(f.prisma,"g","u","s",1,{now:new Date("2026-11-19T12:00:00Z"),cooldownMs:Number.MAX_SAFE_INTEGER}),TypeError);
 });
 
 test("settlement writes account and ledger to the global wallet scope",async()=>{
