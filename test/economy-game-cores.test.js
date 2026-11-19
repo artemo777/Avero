@@ -25,7 +25,7 @@ test("reaction scores valid timings and rejects invalid inputs",()=>{
 test("tower checkpoints and paths validate",()=>{
  assert.equal(checkpointForFloor(6),6); assert.equal(checkpointForFloor(10),6);
  assert.equal(chooseTowerPath(["a","b"],1),"b");
- assert.throws(()=>checkpointForFloor(0),RangeError);
+ assert.equal(checkpointForFloor(100),96);\n assert.throws(()=>checkpointForFloor(0),RangeError);\n assert.throws(()=>checkpointForFloor(101),RangeError);\n assert.throws(()=>chooseTowerPath(["a"],0),TypeError);\n assert.throws(()=>chooseTowerPath(["a","b"],2),TypeError);
 });
 test("farm growth is time-based and validated",()=>{
  const plantedAt=new Date("2025-01-01T00:00:00Z");
