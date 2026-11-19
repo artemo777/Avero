@@ -529,17 +529,19 @@ export function renderVaultChallenge(challenge, userId, { hasNotebook = false } 
     buttons: navButtons(userId, true).slice(0, 4)
   }));
 }
-export function renderVault({ guess, challenge, won, reward, userId }) {
+export function renderVault({ guess, challenge, won, reward, rewardsEnabled = true, userId }) {
   const rewarded = won && reward?.awarded === true;
   const nextReward = reward?.account?.lastGameRewardAt
     ? new Date(reward.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
     : null;
   const outcome = rewarded
     ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
-    : won && reward?.reason === "already_claimed"
-      ? "\n\nYour Vault reward has already been claimed for today."
-      : won
-        ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
+    : won && !rewardsEnabled
+      ? "\n\nVault solved! Currency rewards are paused in this server, so no coins were added."
+      : won && reward?.reason === "already_claimed"
+        ? "\n\nYour Vault reward has already been claimed for today."
+        : won
+          ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
         : "\n\nNo coins lost. Your next Vault attempt is available at 00:00 UTC.";
   return gamePayload(createGamePanel({
     title: won ? "Vault unlocked" : "Vault stays locked",
