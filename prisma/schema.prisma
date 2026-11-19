@@ -300,3 +300,18 @@ model AdminEconomyAudit {
   @@index([guildId, targetUserId, createdAt])
   @@index([guildId, actorUserId, createdAt])
 }
+
+model GameSession {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  gameId    String   @db.VarChar(40)
+  status    String   @default("active") @db.VarChar(20)
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([guildId, userId, status])
+  @@index([expiresAt])
+}
