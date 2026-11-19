@@ -25,6 +25,15 @@ export async function getActiveGameSession(prisma, guildId, userId, sessionId, n
   return prisma.gameSession.findFirst({ where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } } });
 }
 
+/** Atomically transitions an owned, unexpired session from active to claimed. */
+export async function claimGameSession(prisma, guildId, userId, sessionId, { now = new Date() } = {}) {
+  required(guildId, "guildId"); required(userId, "userId"); required(sessionId, "sessionId"); validDate(now);
+  return prisma.gameSession.updateMany({
+    where: { id: sessionId, guildId, userId, status: "active", expiresAt: { gt: now } },
+    data: { status: "claimed", completedAt: now }
+  });
+}
+
 /** Atomically consumes an active session and awards coins in the same transaction. */
 export async function settleGameSessionReward(prisma, guildId, userId, sessionId, amount, {
   type = "game_reward", cooldownMs = 60_000, now = new Date()
@@ -47,7 +56,6 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
       data: { balance: { increment: amount }, lastGameRewardAt: now }
     });
     if (accountClaim.count !== 1) {
-      // Reset the session to active within this transaction so cooldown denial doesn't consume it.
       await tx.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "claimed" }, data: { status: "active", completedAt: null } });
       return { awarded: false, reason: "cooldown" };
     }
