@@ -118,3 +118,13 @@ test("session creation rejects invalid expiry duration",async()=>{
  await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {expiresInMs:1.5}),TypeError);
  await assert.rejects(()=>createGameSession(p,"g","u","game",{}, {now:new Date("2026-11-19T12:00:00Z"),expiresInMs:Number.MAX_SAFE_INTEGER}),TypeError);
 });
+
+
+test("creation fallback cleans stale and same-game sessions without transaction support",async()=>{
+ const calls=[];const p={gameSession:{updateMany:async(args)=>{calls.push(["updateMany",args]);return {count:1};},create:async(args)=>{calls.push(["create",args]);return args.data;}}};
+ const now=new Date("2026-11-19T12:00:00Z");
+ await createGameSession(p,"guild-y","user-y","mining",{},{now});
+ assert.deepEqual(calls[0][1].where,{status:"active",expiresAt:{lte:now}});
+ assert.deepEqual(calls[1][1].where,{guildId:"guild-y",userId:"user-y",gameId:"mining",status:"active"});
+ assert.equal(calls[2][0],"create");
+});
