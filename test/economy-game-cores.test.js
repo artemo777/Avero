@@ -9,7 +9,9 @@ test("mine tile is resolved once and value is bounded by ore table",()=>{
  const revealed=Array(25).fill(false), ore=Array(25).fill(null); ore[2]="gold";
  const r=resolveMineTurn({tile:2,revealed,oreByTile:ore}); assert.equal(r.value,10); assert.equal(r.revealed[2],true);
  assert.throws(()=>resolveMineTurn({tile:2,revealed:r.revealed,oreByTile:ore}),/already/);
- assert.throws(()=>resolveMineTurn({tile:25,revealed,oreByTile:ore}),RangeError);\n assert.equal(resolveMineTurn({tile:24,revealed,oreByTile:ore}).tile,24);\n assert.throws(()=>resolveMineTurn({tile:-1,revealed,oreByTile:ore}),RangeError);
+ assert.throws(()=>resolveMineTurn({tile:25,revealed,oreByTile:ore}),RangeError);
+ assert.equal(resolveMineTurn({tile:24,revealed,oreByTile:ore}).tile,24);
+ assert.throws(()=>resolveMineTurn({tile:-1,revealed,oreByTile:ore}),RangeError);
 });
 test("reaction scores valid timings and rejects invalid inputs",()=>{
  assert.equal(evaluateReaction({elapsedMs:0,windowMs:500}).score,100);
@@ -35,8 +37,11 @@ test("tower checkpoints and paths validate",()=>{
 });
 test("farm growth is time-based and validated",()=>{
  const plantedAt=new Date("2025-01-01T00:00:00Z");
- assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+59999)}).ready,false);\n assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
- assert.equal(cropStatus({cropId:"berry",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,false);\n assert.throws(()=>cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()-1)}),TypeError);\n assert.throws(()=>cropStatus({cropId:"turnip",plantedAt:new Date("invalid"),now}),TypeError);
+ assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+59999)}).ready,false);
+ assert.equal(cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,true);
+ assert.equal(cropStatus({cropId:"berry",plantedAt,now:new Date(plantedAt.getTime()+60000)}).ready,false);
+ assert.throws(()=>cropStatus({cropId:"turnip",plantedAt,now:new Date(plantedAt.getTime()-1)}),TypeError);
+ assert.throws(()=>cropStatus({cropId:"turnip",plantedAt:new Date("invalid"),now}),TypeError);
 });
 
 
