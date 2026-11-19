@@ -936,6 +936,9 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
         return true;
       }
       const awarded = won && result.awarded;
+      if (won && !awarded && result.reason === "cooldown") {
+        await completeGameSession(prisma, interaction.guildId, interaction.user.id, sessionId);
+      }
       payload = gamePayload(createGamePanel({
         title: won ? "Star found!" : "Empty door",
         eyebrow: "PICK THE STAR",
