@@ -137,3 +137,25 @@ test("settlement applies cooldown cutoff at the exact boundary",async()=>{
  assert.deepEqual(update.where.OR,[{lastGameRewardAt:null},{lastGameRewardAt:{lte:new Date("2026-11-19T11:59:00Z")}}]);
  assert.equal(update.data.lastGameRewardAt,now);
 });
+
+test("reward settlement records activity alongside reward atomically",async()=>{
+ const f=fixture(),now=new Date("2026-11-19T12:00:00Z");
+ await settleGameSessionReward(f.prisma,"guild","user","session",8,{type:"pick3_reward",activityType:"pick3_play",now});
+ const ledger=f.calls.filter(x=>x[0]==="ledger").map(x=>x[1].data);
+ assert.deepEqual(ledger.map(x=>({amount:x.amount,type:x.type,guildId:x.guildId})),[
+  {amount:8,type:"pick3_reward",guildId:"__avero_global__"},
+  {amount:0,type:"pick3_play",guildId:"__avero_global__"}
+ ]);
+});
+test("completion records activity only when the session transitions",async()=>{
+ const calls=[];
+ const tx={gameSession:{updateMany:async(args)=>{calls.push(["session",args]);return {count:1};}},currencyTransaction:{create:async(args)=>calls.push(["ledger",args])}};
+ const prisma={$transaction:async(fn)=>fn(tx)};
+ const now=new Date("2026-11-19T12:00:00Z");
+ const result=await completeGameSession(prisma,"guild","user","session",{now,activityType:"mine_play"});
+ assert.equal(result.count,1);assert.equal(calls.length,2);
+ assert.deepEqual(calls[1][1].data,{guildId:"__avero_global__",userId:"user",amount:0,type:"mine_play",createdAt:now});
+ tx.gameSession.updateMany=async()=>({count:0});
+ const rejected=await completeGameSession(prisma,"guild","user","session",{now,activityType:"mine_play"});
+ assert.equal(rejected.count,0);assert.equal(calls.length,2);
+});
