@@ -104,7 +104,7 @@ test("settlement writes account and ledger to the global wallet scope",async()=>
 
 test("creation expires stale sessions across scopes before replacing same-game sessions",async()=>{
  const p=fakePrisma(),now=new Date("2026-11-19T12:00:00Z");
- await createGameSession(p,"guild-x","user-x","mining",{});
+ await createGameSession(p,"guild-x","user-x","mining",{},{now});
  const cleanup=p.calls[0][1],replacement=p.calls[1][1];
  assert.deepEqual(cleanup.where,{status:"active",expiresAt:{lte:now}});
  assert.deepEqual(cleanup.data,{status:"expired"});
