@@ -69,6 +69,21 @@ test("vault command shows daily clues before a code is submitted", async () => {
   assert.equal(vaultCommand.data.options[0].required, false);
 });
 
+test("Vault clue panel explains that currency rewards are paused", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const { interaction, response } = interactionFor(null);
+
+  await vaultCommand.execute(interaction, {
+    now,
+    prisma: { currencyPurchase: { findMany: async () => [] } },
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Currency rewards are paused/);
+  assert.doesNotMatch(text, /can earn 25 coins/);
+});
+
 test("vault win records a free game result and shares the reward cooldown", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
