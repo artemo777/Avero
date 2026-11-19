@@ -97,7 +97,7 @@ export const titlesCommand = Object.freeze({
       }
     ]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async execute(interaction, { prisma, settings } = {}) {
     if (!prisma) throw new Error("Titles command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Titles are available inside a server.", flags: MessageFlags.Ephemeral });
@@ -113,6 +113,10 @@ export const titlesCommand = Object.freeze({
     }
 
     if (action === "buy") {
+      if (settings?.currencyEnabled === false) {
+        await interaction.reply({ content: "Currency is paused by this server's admins. Title purchases are unavailable right now.", flags: MessageFlags.Ephemeral });
+        return;
+      }
       if (!selected.price) {
         await interaction.reply({ content: "That title is earned through a milestone, not bought.", flags: MessageFlags.Ephemeral });
         return;
