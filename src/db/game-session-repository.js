@@ -49,6 +49,8 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
   if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) throw new TypeError("Invalid reward type.");
   if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) throw new TypeError("Invalid reward cooldown.");
   validDate(now);
+  const cooldownCutoff = new Date(now.getTime() - cooldownMs);
+  if (Number.isNaN(cooldownCutoff.getTime())) throw new TypeError("Cooldown window is out of range.");
   return prisma.$transaction(async (tx) => {
     const key = { guildId: GLOBAL_SCOPE_ID, userId };
     await tx.currencyAccount.upsert({ where: { guildId_userId: key }, create: key, update: {} });
@@ -58,7 +60,7 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
     });
     if (sessionClaim.count !== 1) return { awarded: false, reason: "session_unavailable" };
     const accountClaim = await tx.currencyAccount.updateMany({
-      where: { ...key, OR: [{ lastGameRewardAt: null }, { lastGameRewardAt: { lte: new Date(now.getTime() - cooldownMs) } }] },
+      where: { ...key, OR: [{ lastGameRewardAt: null }, { lastGameRewardAt: { lte: cooldownCutoff } }] },
       data: { balance: { increment: amount }, lastGameRewardAt: now }
     });
     if (accountClaim.count !== 1) {
