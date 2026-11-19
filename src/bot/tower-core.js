@@ -10,6 +10,7 @@ export function checkpointForFloor(floor) {
 }
 export function chooseTowerPath(paths, choice) {
   if (!Array.isArray(paths) || paths.length < 2 || paths.length > 3 ||
+      paths.some((path) => typeof path !== "string" || !path.trim()) ||
       !Number.isSafeInteger(choice) || choice < 0 || choice >= paths.length) throw new TypeError("Invalid tower choice.");
   return paths[choice];
 }
