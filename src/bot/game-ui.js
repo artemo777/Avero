@@ -399,7 +399,7 @@ export function renderScavenge(result, userId, route, item) {
       description: "You've explored recently. Your next run opens <t:" + Math.floor(next.getTime() / 1000) + ":R>.",
       eyebrow: "SCAVENGE",
       color: THEME.colors.warning,
-      footer: "ONE EXPEDITION EVERY 10 MINUTES",
+      footer: "ONE EXPEDITION EVERY 20 MINUTES",
       buttons: navButtons(userId, true)
     }));
   }
