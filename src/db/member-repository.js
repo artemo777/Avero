@@ -46,7 +46,7 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
     });
     if (!owned) return { equipped: false, reason: "not_owned" };
     const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
-    const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds) && current.profileShowcaseBadgeIds.length
       ? current.profileShowcaseBadgeIds
       : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
     if (!showcased.includes(itemId) && showcased.length >= 5) {
@@ -101,7 +101,7 @@ export async function unequipProfileBadge(prisma, guildId, userId, itemId = null
   const key = memberWhere(guildId, userId).guildId_userId;
   return prisma.$transaction(async (tx) => {
     const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
-    const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds) && current.profileShowcaseBadgeIds.length
       ? current.profileShowcaseBadgeIds
       : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
     const remaining = itemId === null ? [] : showcased.filter((id) => id !== itemId);
