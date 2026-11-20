@@ -23,7 +23,13 @@ test("badge equip requires ownership and saves the selected item", async () => {
 
 test("badge unequip clears the saved selection", async () => {
   let upsertArgs;
-  const prisma = { memberProfile: { upsert: async (args) => { upsertArgs = args; return { equippedBadgeItemId: null }; } } };
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    memberProfile: {
+      findUnique: async () => ({ equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: ["neon_badge"] }),
+      upsert: async (args) => { upsertArgs = args; return { equippedBadgeItemId: null, profileShowcaseBadgeIds: [] }; }
+    }
+  };
   const result = await unequipProfileBadge(prisma, "guild-1", "user-1");
   assert.equal(result.unequipped, true);
   assert.equal(result.profile.equippedBadgeItemId, null);
