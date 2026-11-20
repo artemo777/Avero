@@ -102,3 +102,19 @@ test("profile card renderer accepts a custom uploaded banner image", async () =>
   assert.equal(card.toString("hex", 0, 8), "89504e470d0a1a0a");
   assert.ok(card.length > 1000);
 });
+
+
+test("clearing the badge showcase also clears the legacy equipped badge field", async () => {
+  let saved;
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyPurchase: { findUnique: async () => null },
+    memberProfile: {
+      upsert: async (args) => { saved = args; return { ...args.create, ...args.update }; }
+    }
+  };
+  const result = await updateProfileCustomization(prisma, "guild-1", "user-1", { profileShowcaseBadgeIds: [] });
+  assert.equal(result.updated, true);
+  assert.deepEqual(saved.update.profileShowcaseBadgeIds, []);
+  assert.equal(saved.update.equippedBadgeItemId, null);
+});
