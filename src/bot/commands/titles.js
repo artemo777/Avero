@@ -25,7 +25,11 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     getCurrencyPurchases(prisma, guildId, user.id),
     getCurrencyAccount(prisma, guildId, user.id)
   ]);
-  const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0 };
+  const setProgress = buildCollectionSetProgress([...new Set(purchases.map((purchase) => purchase.itemId))]);
+  const collectionSetStats = Object.fromEntries(
+    setProgress.map((set) => ["collectionSet:" + set.id, Number(set.complete)])
+  );
+  const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0, ...collectionSetStats };
   const newlyUnlocked = await syncMilestoneTitles(prisma, guildId, user.id, milestoneStats, purchases);
   const [owned, profile] = await Promise.all([
     getMemberTitles(prisma, guildId, user.id),
