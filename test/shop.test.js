@@ -111,6 +111,11 @@ test("shop paginates compact category sections and keeps controls within Discord
 });
 
 
+test("shop and buy command descriptions match the catalog experience", () => {
+  assert.match(shopCommand.data.description, /category.*currency.*weekly picks/i);
+  assert.match(buyCommand.data.description, /coins or gems/i);
+});
+
 test("shop tool category describes the current gameplay utilities", () => {
   const tools = SHOP_ITEMS.filter((item) => item.category === "tools");
   assert.ok(tools.some((item) => item.effect === "expanded_search"));
