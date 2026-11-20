@@ -196,8 +196,8 @@ test("PostgreSQL shares wallet, cooldowns, and item ownership across guild conte
 });
 
 test("PostgreSQL serializes equipment against concurrent admin inventory removal", { skip: !enabled }, async (t) => {
-  const userId = "user-" + randomUUID();
-  const actorUserId = "admin-" + randomUUID();
+  const userId = "7" + randomUUID().replaceAll("-", "").slice(0, 16);
+  const actorUserId = "8" + randomUUID().replaceAll("-", "").slice(0, 16);
   const guildId = "12345678901234567";
   const globalGuildId = "__avero_global__";
   t.after(async () => {
