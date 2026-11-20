@@ -126,6 +126,13 @@ test("inventory displays catalog values and compact separators", async () => {
   assert.ok(json.components.some((component) => component.type === 14));
 });
 
+test("inventory reports coin and gem market values separately", async () => {
+  const response = await renderInventory(fakePrisma(["neon_badge", "pixel_wings"]), "guild-1", "user-1");
+  const text = allText(panel(response));
+  assert.match(text, /Total Market Value:\\*\\* 150 coins · 12 gems/);
+  assert.match(text, /Page Market Value:\\*\\* 150 coins · 12 gems/);
+});
+
 test("balance uses the same compact V2 container style", async () => {
   const response = await renderBalance(fakePrisma([], 117355), "guild-1", "user-1");
   const json = panel(response);
