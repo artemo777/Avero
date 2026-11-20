@@ -153,7 +153,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
       throw new RangeError("Choose up to five unique badges from your collection.");
     }
     for (const itemId of ids) {
-      const owned = await prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
+      const owned = await tx.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
       if (!owned) return { updated: false, reason: "not_owned" };
     }
     data.profileShowcaseBadgeIds = ids;
