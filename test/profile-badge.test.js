@@ -57,7 +57,7 @@ test("equipping a badge adds it to the profile showcase without exceeding five",
   let savedProfile = { profileShowcaseBadgeIds: ["vault_badge", "starlight_badge", "avero_relic", "star_pin"] };
   const prisma = {
     $transaction: async (callback) => callback(prisma),
-    currencyPurchase: { findUnique: async () => ({ itemId: "neon_badge" }) },
+    currencyPurchase: { findUnique: async ({ where }) => where.guildId_userId_itemId.itemId === "neon_badge" ? { itemId: "neon_badge" } : null },
     memberProfile: {
       findUnique: async () => savedProfile,
       upsert: async (args) => { savedProfile = { ...savedProfile, ...args.create, ...args.update }; return savedProfile; }
@@ -66,7 +66,7 @@ test("equipping a badge adds it to the profile showcase without exceeding five",
   const added = await equipProfileBadge(prisma, "guild-1", "user-1", "neon_badge");
   assert.equal(added.equipped, true);
   assert.deepEqual(savedProfile.profileShowcaseBadgeIds, ["vault_badge", "starlight_badge", "avero_relic", "star_pin", "neon_badge"]);
-  assert.deepEqual(await equipProfileBadge(prisma, "guild-1", "user-1", "another_badge"), { equipped: false, reason: "not_owned" });
+  assert.deepEqual(await equipProfileBadge(prisma, "guild-1", "user-1", "crystal_badge"), { equipped: false, reason: "not_owned" });
 });
 
 test("badge removal removes only that badge from the profile showcase", async () => {
@@ -88,16 +88,16 @@ test("badge removal removes only that badge from the profile showcase", async ()
 });
 
 test("badge equip refuses a sixth showcase badge", async () => {
-  const savedProfile = { profileShowcaseBadgeIds: ["a", "b", "c", "d", "e"] };
+  const savedProfile = { profileShowcaseBadgeIds: ["neon_badge", "vault_badge", "starlight_badge", "avero_relic", "star_pin"] };
   const prisma = {
     $transaction: async (callback) => callback(prisma),
-    currencyPurchase: { findUnique: async () => ({ itemId: "sixth" }) },
+    currencyPurchase: { findUnique: async () => ({ itemId: "tiny_trophy" }) },
     memberProfile: {
       findUnique: async () => savedProfile,
       upsert: async () => { throw new Error("must not save"); }
     }
   };
-  assert.deepEqual(await equipProfileBadge(prisma, "guild-1", "user-1", "sixth"), { equipped: false, reason: "showcase_full" });
+  assert.deepEqual(await equipProfileBadge(prisma, "guild-1", "user-1", "tiny_trophy"), { equipped: false, reason: "showcase_full" });
 });
 
 
