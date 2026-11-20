@@ -25,6 +25,9 @@ async function createAccount(balance = 0) {
 }
 
 async function cleanGuild(guildId, userId) {
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new TypeError("A member ID is required for integration-test cleanup.");
+  }
   await prisma.dailyContractClaim.deleteMany({ where: { guildId, userId } });
   await prisma.currencyTransaction.deleteMany({ where: { guildId, userId } });
   await prisma.currencyPurchase.deleteMany({ where: { guildId, userId } });
@@ -51,7 +54,7 @@ test("PostgreSQL allows only one concurrent daily claim", { skip: !enabled }, as
 
 test("PostgreSQL prevents concurrent different-item purchases from overspending", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(300);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
 
   const results = await Promise.all([
     purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
@@ -71,7 +74,7 @@ test("PostgreSQL prevents concurrent different-item purchases from overspending"
 
 test("PostgreSQL rolls back a duplicate concurrent purchase without double charging", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(500);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
 
   const results = await Promise.all([
     purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
@@ -90,7 +93,7 @@ test("PostgreSQL rolls back a duplicate concurrent purchase without double charg
 
 test("PostgreSQL awards a concurrent game reward only once inside its cooldown", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount();
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T13:00:00.000Z");
 
   const results = await Promise.all([
@@ -110,7 +113,7 @@ test("PostgreSQL awards a concurrent game reward only once inside its cooldown",
 
 test("PostgreSQL records only one Vault submission per member and UTC day", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount();
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T18:00:00.000Z");
 
   const results = await Promise.all([
@@ -148,7 +151,7 @@ test("PostgreSQL records only one Vault submission per member and UTC day", { sk
 
 test("PostgreSQL allows only one concurrent claim for a completed daily contract", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(10);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T15:00:00.000Z");
   await prisma.currencyTransaction.createMany({
     data: [
