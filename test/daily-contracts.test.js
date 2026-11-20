@@ -120,6 +120,19 @@ test("daily contracts reject invalid identifiers and timestamps", async () => {
   await assert.rejects(getDailyContracts(prisma, "__avero_global__", "user-1", { now: new Date("invalid") }), /valid Date/);
 });
 
+test("contracts command labels progress as global member progress", async () => {
+  const replies = [];
+  await contractsCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: { getString: () => null },
+    reply: async (payload) => replies.push(payload)
+  }, { prisma: createPrisma() });
+
+  const panel = replies[0].components[0];
+  assert.ok(JSON.stringify(panel.toJSON()).includes("GLOBAL MEMBER PROGRESS"));
+});
+
 test("contracts command responds privately outside servers", async () => {
   const replies = [];
   await contractsCommand.execute({
