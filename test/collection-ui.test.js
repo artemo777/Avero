@@ -129,8 +129,8 @@ test("inventory displays catalog values and compact separators", async () => {
 test("inventory reports coin and gem market values separately", async () => {
   const response = await renderInventory(fakePrisma(["neon_badge", "pixel_wings"]), "guild-1", "user-1");
   const text = allText(panel(response));
-  assert.match(text, /Total Market Value:\\*\\* 150 coins · 12 gems/);
-  assert.match(text, /Page Market Value:\\*\\* 150 coins · 12 gems/);
+  assert.ok(text.includes("**Total Market Value:** 150 coins · 12 gems"));
+  assert.ok(text.includes("**Page Market Value:** 150 coins · 12 gems"));
 });
 
 test("balance uses the same compact V2 container style", async () => {
