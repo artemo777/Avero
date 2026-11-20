@@ -71,7 +71,7 @@ test("daily contracts derive progress from today's global member transaction led
 });
 
 test("daily contracts count only activity in the UTC day", async () => {
-  const prisma = createPrisma({ activity: { work: 2 } });
+  const prisma = createPrisma({ activity: { work_shift: 2 } });
   const snapshot = await getDailyContracts(prisma, "__avero_global__", "user-1", {
     now: new Date("2026-10-31T00:00:00.000Z")
   });
@@ -98,7 +98,7 @@ test("completed daily contract pays once and records a reward transaction", asyn
 });
 
 test("incomplete daily contract cannot be claimed", async () => {
-  const prisma = createPrisma({ activity: { work: 1 }, balance: 15 });
+  const prisma = createPrisma({ activity: { work_shift: 1 }, balance: 15 });
   const result = await claimDailyContract(prisma, "__avero_global__", "user-1", "work_shift");
   assert.deepEqual(result, { claimed: false, reason: "incomplete", progress: 1, target: 2 });
   assert.equal(prisma.claims.length, 0);
