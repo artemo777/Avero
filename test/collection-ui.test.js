@@ -91,6 +91,14 @@ test("item detail shows owned state and does not offer a second purchase", async
   assert.ok(!buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|neon_badge"));
 });
 
+test("avatar decoration details show equipped state and offer removal", async () => {
+  const prisma = fakePrisma(["halo_ring"]);
+  prisma.memberProfile.findUnique = async () => ({ equippedAvatarDecorationId: "halo_ring" });
+  const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", "halo_ring", 0));
+  assert.match(allText(json), /Equipped avatar decoration/);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|unequip_avatar_decoration|halo_ring"));
+});
+
 test("unowned item detail offers a direct unlock action", async () => {
   const response = await renderItemDetails(fakePrisma([], 500), "guild-1", "user-1", "vault_badge", 0);
   const json = panel(response);
