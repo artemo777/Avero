@@ -369,7 +369,9 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     getMemberProfile(prisma, guildId, userId)
   ]);
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
-  const equipped = profile?.equippedBadgeItemId === item.id;
+  const equipped = Array.isArray(profile?.profileShowcaseBadgeIds)
+    ? profile.profileShowcaseBadgeIds.includes(item.id)
+    : profile?.equippedBadgeItemId === item.id;
   const frameEquipped = profile?.equippedFrameItemId === item.id;
   const avatarDecorationEquipped = profile?.equippedAvatarDecorationId === item.id;
   return gamePayload(createGamePanel({
@@ -748,14 +750,16 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       }
       const result = await equipProfileBadge(prisma, interaction.guildId, interaction.user.id, item.id);
       if (!result.equipped) {
-        await interaction.reply({ content: "You can only equip a badge you own. Unlock it in the shop first.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: result.reason === "showcase_full"
+          ? "Your profile already showcases five badges. Remove one in your profile settings before adding another."
+          : "You can only equip a badge you own. Unlock it in the shop first.", flags: MessageFlags.Ephemeral });
         return true;
       }
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, item.id, 0, "inventory");
       break;
     }
     case "unequip_badge": {
-      await unequipProfileBadge(prisma, interaction.guildId, interaction.user.id);
+      await unequipProfileBadge(prisma, interaction.guildId, interaction.user.id, parsed.arg);
       payload = await renderItemDetails(prisma, interaction.guildId, interaction.user.id, parsed.arg, 0, "inventory");
       break;
     }
