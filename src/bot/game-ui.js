@@ -918,7 +918,9 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       const owned = purchases.map((purchase) => purchase.itemId)
         .filter((id) => SHOP_ITEMS.some((item) => item.id === id && item.category === "badges")).slice(0, 5);
       const profile = await getMemberProfile(prisma, interaction.guildId, interaction.user.id);
-      const current = profile?.profileShowcaseBadgeIds ?? [];
+      const current = Array.isArray(profile?.profileShowcaseBadgeIds) && profile.profileShowcaseBadgeIds.length
+        ? profile.profileShowcaseBadgeIds
+        : (profile?.equippedBadgeItemId ? [profile.equippedBadgeItemId] : []);
       const same = current.length === owned.length && current.every((id, index) => id === owned[index]);
       await updateProfileCustomization(prisma, interaction.guildId, interaction.user.id, { profileShowcaseBadgeIds: same ? [] : owned });
       payload = await renderProfilePayload(prisma, interaction.guildId, interaction.user);
