@@ -64,3 +64,26 @@ test("title purchases are blocked while server currency is paused", async () => 
     flags: MessageFlags.Ephemeral
   });
 });
+
+
+test("each individual collection set unlocks its matching profile title", () => {
+  const cases = [
+    ["archive-protocol", "archive_keeper"],
+    ["neon-circuit", "circuit_breaker"],
+    ["moonlit-relics", "moonlit_curator"]
+  ];
+  for (const [setId, titleId] of cases) {
+    const stat = "collectionSet:" + setId;
+    const locked = getEligibleMilestoneTitles({ [stat]: 0 }, 0);
+    const unlocked = getEligibleMilestoneTitles({ [stat]: 1 }, 0);
+    assert.ok(!locked.some((title) => title.id === titleId), titleId + " should remain locked before set completion");
+    assert.ok(unlocked.some((title) => title.id === titleId), titleId + " should unlock when its set is complete");
+  }
+});
+
+test("all collection-set display titles exist in the equipable title catalog", async () => {
+  const { COLLECTION_SETS } = await import("../src/bot/collection-sets.js");
+  for (const set of COLLECTION_SETS) {
+    assert.ok(TITLE_CATALOG.some((title) => title.name === set.title), set.title + " must be equipable");
+  }
+});
