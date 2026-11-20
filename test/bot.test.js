@@ -6,7 +6,7 @@ import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
-import { profileCommand } from "../src/bot/commands/profile.js";
+import { profileCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
 import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
@@ -667,4 +667,21 @@ test("config dashboard groups compact monochrome controls inside its Components 
   assert.ok(buttons.every((button) => button.style === 2));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|diagnostics"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
+});
+
+
+test("profile bio modal cannot bypass a currency pause applied after opening the editor", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile customization must not write to the database."); } });
+  const handled = await handleProfileBioModal({
+    customId: "avero-profile-bio|user-1",
+    user: { id: "user-1" },
+    fields: { getTextInputValue: () => "Updated bio" },
+    reply: async (payload) => { response = payload; }
+  }, prisma, { currencyEnabled: false });
+  assert.equal(handled, true);
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
 });
