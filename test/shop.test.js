@@ -6,7 +6,7 @@ import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
 import { inventoryCommand } from "../src/bot/commands/inventory.js";
 import { renderShop } from "../src/bot/game-ui.js";
-import { getWeeklyFeaturedItems } from "../src/bot/shop-catalog.js";
+import { getWeeklyFeaturedItems, SHOP_CATEGORIES } from "../src/bot/shop-catalog.js";
 import { getAsset, getCollectibleAssetId } from "../averoui/assets.js";
 import { renderRegisteredAsset } from "../averoui/render-asset.js";
 
@@ -115,7 +115,7 @@ test("shop tool category describes the current gameplay utilities", () => {
   const tools = SHOP_ITEMS.filter((item) => item.category === "tools");
   assert.ok(tools.some((item) => item.effect === "expanded_search"));
   assert.ok(tools.some((item) => item.effect === "work_bonus"));
-  const category = (await import("../src/bot/shop-catalog.js")).SHOP_CATEGORIES.find((entry) => entry.id === "tools");
+  const category = SHOP_CATEGORIES.find((entry) => entry.id === "tools");
   assert.match(category.description, /gameplay utilities/i);
   assert.doesNotMatch(category.description, /future Avero features/i);
 });
