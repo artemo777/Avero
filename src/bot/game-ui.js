@@ -394,7 +394,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
-      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped badge**" : "") + (frameEquipped ? "\n▧ **Equipped profile frame**" : "") +
+      (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped badge**" : "") + (frameEquipped ? "\n▧ **Equipped profile frame**" : "") + (avatarDecorationEquipped ? "\n✧ **Equipped avatar decoration**" : "") +
       "\nCatalog price: **" + item.price.toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**" +
       "\nYour balance: **" + (item.currency === "gems" ? (account?.gemBalance ?? 0) : (account?.balance ?? 0)).toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**",
     footer: "COLLECTIBLE CODE • " + item.id.toUpperCase(),
