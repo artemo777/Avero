@@ -172,3 +172,18 @@ test("item details falls back to a legacy equipped badge when the showcase array
     .flatMap((row) => row.components.map((button) => button.custom_id));
   assert.ok(ids.includes("avero|user-1|unequip_badge|neon_badge"));
 });
+
+
+test("badge removal clears a stale legacy pointer outside the showcase", async () => {
+  let savedProfile = { equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: ["vault_badge"] };
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    memberProfile: {
+      findUnique: async () => savedProfile,
+      upsert: async (args) => { savedProfile = { ...savedProfile, ...args.create, ...args.update }; return savedProfile; }
+    }
+  };
+  await unequipProfileBadge(prisma, "guild-1", "user-1", "vault_badge");
+  assert.deepEqual(savedProfile.profileShowcaseBadgeIds, []);
+  assert.equal(savedProfile.equippedBadgeItemId, null);
+});
