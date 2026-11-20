@@ -685,3 +685,18 @@ test("profile bio modal cannot bypass a currency pause applied after opening the
     flags: MessageFlags.Ephemeral
   });
 });
+
+
+test("profile command blocks bio and banner edits while currency is paused but leaves viewing available", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile edits must not access the database."); } });
+  await profileCommand.execute({
+    guildId: "guild-1", user: { id: "user-1" },
+    options: { getUser: () => null, getAttachment: () => null, getString: () => "New bio" },
+    reply: async (payload) => { response = payload; }
+  }, { prisma, settings: { currencyEnabled: false } });
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
+});
