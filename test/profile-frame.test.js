@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { equipProfileFrame, unequipProfileFrame } from "../src/db/member-repository.js";
+import { PROFILE_FRAME_IDS } from "../src/bot/commands/profile.js";
+import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 test("profile frame equip requires ownership and persists the global selection", async () => {
   let upsertArgs;
@@ -31,4 +33,14 @@ test("profile frame unequip clears the selected frame", async () => {
   assert.equal(result.unequipped, true);
   assert.equal(result.profile.equippedFrameItemId, null);
   assert.equal(upsertArgs.update.equippedFrameItemId, null);
+});
+
+
+test("profile frame selector names stay aligned with the shop catalog", async () => {
+  const { PROFILE_FRAME_NAMES } = await import("../src/bot/commands/profile.js");
+  for (const id of PROFILE_FRAME_IDS) {
+    const item = SHOP_ITEMS.find((entry) => entry.id === id);
+    assert.ok(item, id + " must exist in the shop catalog");
+    assert.equal(PROFILE_FRAME_NAMES.get(id), item.name, id + " selector label must match its shop name");
+  }
 });
