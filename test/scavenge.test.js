@@ -194,4 +194,9 @@ test("search tools improve the finding pool without mutating shared route odds",
 });
 
 
-test("scavenge cooldown panel correctly states the 20-minute cooldown", () => {\n  const now = new Date("2026-10-28T12:00:00.000Z");\n  const response = renderScavenge({ claimed: false, account: { lastScavengeAt: now } }, "user-1", SCAVENGE_ROUTES[0]);\n  assert.match(panelText(response), /ONE EXPEDITION EVERY 20 MINUTES/);\n  assert.doesNotMatch(panelText(response), /10 MINUTES/);\n});\n
+test("scavenge cooldown panel correctly states the 20-minute cooldown", () => {
+  const now = new Date("2026-10-28T12:00:00.000Z");
+  const response = renderScavenge({ claimed: false, account: { lastScavengeAt: now } }, "user-1", SCAVENGE_ROUTES[0]);
+  assert.match(panelText(response), /ONE EXPEDITION EVERY 20 MINUTES/);
+  assert.doesNotMatch(panelText(response), /10 MINUTES/);
+});
