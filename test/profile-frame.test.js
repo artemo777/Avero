@@ -5,6 +5,7 @@ import { equipProfileFrame, unequipProfileFrame } from "../src/db/member-reposit
 test("profile frame equip requires ownership and persists the global selection", async () => {
   let upsertArgs;
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async ({ where }) => ["aurora_frame", "chibi_frame"].includes(where.guildId_userId_itemId.itemId) ? { itemId: where.guildId_userId_itemId.itemId } : null },
     memberProfile: { upsert: async (args) => { upsertArgs = args; return { ...args.create, ...args.update }; } }
   };
