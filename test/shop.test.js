@@ -111,6 +111,15 @@ test("shop paginates compact category sections and keeps controls within Discord
 });
 
 
+test("shop tool category describes the current gameplay utilities", () => {
+  const tools = SHOP_ITEMS.filter((item) => item.category === "tools");
+  assert.ok(tools.some((item) => item.effect === "expanded_search"));
+  assert.ok(tools.some((item) => item.effect === "work_bonus"));
+  const category = (await import("../src/bot/shop-catalog.js")).SHOP_CATEGORIES.find((entry) => entry.id === "tools");
+  assert.match(category.description, /gameplay utilities/i);
+  assert.doesNotMatch(category.description, /future Avero features/i);
+});
+
 test("shop catalog has unique item IDs and positive prices", () => {
   assert.equal(new Set(SHOP_ITEMS.map((item) => item.id)).size, SHOP_ITEMS.length);
   for (const item of SHOP_ITEMS) assert.ok(item.price > 0);
