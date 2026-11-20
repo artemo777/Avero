@@ -291,8 +291,11 @@ export async function submitDailyVaultAttempt(
   }
 
   const contractDate = now.toISOString().slice(0, 10);
-  const attemptKey = { ...key, contractDate, contractId: "vault_attempt" };
-  const rewardKey = { ...key, contractDate, contractId: "vault_reward" };
+  // Daily puzzle state is server-scoped because the code is derived from guildId.
+  // Wallet and ledger records remain global across servers.
+  const vaultKey = { guildId: requireIdentifier(guildId, "guildId"), userId: key.userId };
+  const attemptKey = { ...vaultKey, contractDate, contractId: "vault_attempt" };
+  const rewardKey = { ...vaultKey, contractDate, contractId: "vault_reward" };
 
   try {
     return await prisma.$transaction(async (tx) => {
