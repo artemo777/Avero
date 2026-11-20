@@ -6,7 +6,7 @@ import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
 function fakePrisma(itemIds = [], balance = 800) {
-  return {
+  const prisma = {
     currencyPurchase: {
       findMany: async () => itemIds.map((itemId, index) => ({ itemId, purchasedAt: new Date(index) })),
       findUnique: async ({ where }) => itemIds.includes(where.guildId_userId_itemId.itemId)
