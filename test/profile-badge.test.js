@@ -59,6 +59,7 @@ test("badge removal removes only that badge from the profile showcase", async ()
     profileShowcaseBadgeIds: ["vault_badge", "neon_badge", "star_pin"]
   };
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     memberProfile: {
       findUnique: async () => savedProfile,
       upsert: async (args) => { savedProfile = { ...savedProfile, ...args.create, ...args.update }; return savedProfile; }
