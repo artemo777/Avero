@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { runJobShift } from "../src/db/work-repository.js";
 
 test("a stale career snapshot cannot award a salary after a job-state change", async () => {
-  const current = { guildId: "__avero_global__", userId: "user-1", jobId: "assistant", shifts: 2, promotions: 0, lastShiftAt: null };
+  const current = { guildId: "__avero_global__", userId: "user-1", jobId: "barista", shifts: 2, promotions: 0, lastShiftAt: null };
   let salaryWrites = 0;
   let ledgerWrites = 0;
   const tx = {
