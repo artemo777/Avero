@@ -202,7 +202,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.reply({ content: "Profile customization is available inside a server.", flags: MessageFlags.Ephemeral });
         return;
       }
-      await handleProfileBioModal(interaction, getPrismaClient());
+      const prisma = getPrismaClient();
+      const settings = await getGuildSettings(prisma, interaction.guildId);
+      await handleProfileBioModal(interaction, prisma, settings);
     } catch (error) {
       console.error("Profile bio update failed:", error);
       const payload = { content: "Avero couldn't save your profile bio. Please try again.", flags: MessageFlags.Ephemeral };
