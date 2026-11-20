@@ -69,6 +69,21 @@ test("vault command shows daily clues before a code is submitted", async () => {
   assert.equal(vaultCommand.data.options[0].required, false);
 });
 
+test("Vault clue panel explains that currency rewards are paused", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const { interaction, response } = interactionFor(null);
+
+  await vaultCommand.execute(interaction, {
+    now,
+    prisma: { currencyPurchase: { findMany: async () => [] } },
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Currency rewards are paused/);
+  assert.doesNotMatch(text, /can earn 25 coins/);
+});
+
 test("vault win records a free game result and shares the reward cooldown", async () => {
   const now = new Date("2026-10-30T12:00:00.000Z");
   const challenge = createVaultChallenge("guild-1", now);
@@ -122,6 +137,27 @@ test("vault wins respect the shared game reward cooldown", async () => {
   assert.equal(transactions.filter((entry) => entry.type === "vault_reward").length, 0);
   assert.equal(transactions.filter((entry) => entry.type === "vault_win").length, 1);
   assert.equal(account.balance, 75);
+});
+
+test("Vault remains playable but does not award coins while server currency is paused", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const challenge = createVaultChallenge("guild-1", now);
+  const { interaction, response } = interactionFor(challenge.code);
+  const { prisma, transactions, account, claims } = makePrisma();
+
+  await vaultCommand.execute(interaction, {
+    prisma,
+    now,
+    settings: { gamesEnabled: true, currencyEnabled: false }
+  });
+
+  const text = response().components[0].toJSON().components[0].content;
+  assert.match(text, /Vault unlocked/);
+  assert.match(text, /Currency rewards are paused/);
+  assert.deepEqual(transactions.map((entry) => entry.type), ["vault_win"]);
+  assert.deepEqual(claims.map((claim) => claim.contractId), ["vault_attempt"]);
+  assert.equal(account.balance, 0);
+  assert.equal(account.lastGameRewardAt, null);
 });
 
 test("vault loss records a result but never changes the balance", async () => {
@@ -205,4 +241,19 @@ test("Field Notebook reveals a useful digit-sum hint without changing the Vault 
   const text = response.components[0].toJSON().components.filter((part) => part.type === 10).map((part) => part.content).join("\n");
   const sum = challenge.code.split("").reduce((total, digit) => total + Number(digit), 0);
   assert.match(text, new RegExp("digits add up to \\*\\*" + sum + "\\*\\*"));
+});
+
+
+test("daily Vault attempts are independently scoped to each server", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const { prisma, transactions, claims } = makePrisma();
+  for (const guildId of ["guild-1", "guild-2"]) {
+    const challenge = createVaultChallenge(guildId, now);
+    const wrong = challenge.code === "000" ? "001" : "000";
+    const attempt = interactionFor(wrong, guildId);
+    await vaultCommand.execute(attempt.interaction, { prisma, now });
+    assert.match(attempt.response().components[0].toJSON().components[0].content, /Vault stays locked/);
+  }
+  assert.deepEqual(claims.filter((claim) => claim.contractId === "vault_attempt").map((claim) => claim.guildId), ["guild-1", "guild-2"]);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_loss").length, 2);
 });

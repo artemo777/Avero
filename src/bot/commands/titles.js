@@ -5,9 +5,6 @@ import { equipMemberTitle, getMemberTitles, purchaseMemberTitle, unlockMemberTit
 import { buildCollectionSetProgress } from "../collection-sets.js";
 import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../title-catalog.js";
 
-function titleChoices() {
-  return TITLE_CATALOG.map((title) => ({ name: title.name, value: title.id }));
-}
 
 async function syncMilestoneTitles(prisma, guildId, userId, stats, purchases) {
   const itemIds = [...new Set(purchases.map((purchase) => purchase.itemId))];
@@ -25,7 +22,11 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     getCurrencyPurchases(prisma, guildId, user.id),
     getCurrencyAccount(prisma, guildId, user.id)
   ]);
-  const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0 };
+  const setProgress = buildCollectionSetProgress([...new Set(purchases.map((purchase) => purchase.itemId))]);
+  const collectionSetStats = Object.fromEntries(
+    setProgress.map((set) => ["collectionSet:" + set.id, Number(set.complete)])
+  );
+  const milestoneStats = { ...stats, dailyStreak: account?.dailyStreak ?? 0, ...collectionSetStats };
   const newlyUnlocked = await syncMilestoneTitles(prisma, guildId, user.id, milestoneStats, purchases);
   const [owned, profile] = await Promise.all([
     getMemberTitles(prisma, guildId, user.id),
@@ -93,11 +94,21 @@ export const titlesCommand = Object.freeze({
         name: "title",
         description: "Title to buy or equip.",
         required: false,
-        choices: titleChoices()
+        autocomplete: true
       }
     ]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async autocomplete(interaction) {
+    const query = interaction.options.getFocused().trim().toLocaleLowerCase();
+    const matches = TITLE_CATALOG.filter((title) =>
+      [title.name, title.id].join(" ").toLocaleLowerCase().includes(query)
+    ).slice(0, 25);
+    await interaction.respond(matches.map((title) => ({
+      name: title.name.slice(0, 100),
+      value: title.id
+    })));
+  },
+  async execute(interaction, { prisma, settings } = {}) {
     if (!prisma) throw new Error("Titles command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Titles are available inside a server.", flags: MessageFlags.Ephemeral });
@@ -113,6 +124,10 @@ export const titlesCommand = Object.freeze({
     }
 
     if (action === "buy") {
+      if (settings?.currencyEnabled === false) {
+        await interaction.reply({ content: "Currency is paused by this server's admins. Title purchases are unavailable right now.", flags: MessageFlags.Ephemeral });
+        return;
+      }
       if (!selected.price) {
         await interaction.reply({ content: "That title is earned through a milestone, not bought.", flags: MessageFlags.Ephemeral });
         return;

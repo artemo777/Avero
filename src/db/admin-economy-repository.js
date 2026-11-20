@@ -55,5 +55,5 @@ export async function adjustAdminInventory(prisma, guildId, targetUserId, actorU
       data: { guildId, targetUserId, actorUserId, action: "item_" + operation, itemId, reason: cleanReason }
     });
     return { updated: true, itemId, operation };
-  });
+  }, { isolationLevel: "Serializable" });
 }

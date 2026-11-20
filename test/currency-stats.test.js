@@ -14,20 +14,25 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     { type: "rps_tie", _count: { _all: 1 }, _sum: { amount: 0 } },
     { type: "daily", _count: { _all: 2 }, _sum: { amount: 200 } },
     { type: "work", _count: { _all: 4 }, _sum: { amount: 320 } },
+    { type: "work_shift", _count: { _all: 2 }, _sum: { amount: 240 } },
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 55 } },
-    { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } }
+    { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } },
+    { type: "mine_play", _count: { _all: 2 }, _sum: { amount: 0 } },
+    { type: "pick3_play", _count: { _all: 1 }, _sum: { amount: 0 } },
+    { type: "weekly_streak_gem", currency: "gems", _count: { _all: 7 }, _sum: { amount: 7 } },
+    { type: "shop_purchase", currency: "gems", _count: { _all: 1 }, _sum: { amount: -1 } }
   ];
   const prisma = {
     currencyTransaction: {
       async groupBy(args) {
         query = args;
-        return rows;
+        return rows.filter((row) => (row.currency ?? "coins") === args.where.currency);
       }
     }
   };
 
   assert.deepEqual(await getCurrencyStats(prisma, "guild-1", "user-1"), {
-    lifetimeEarned: 725,
+    lifetimeEarned: 965,
     lifetimeSpent: 450,
     gameWins: 12,
     guessWins: 8,
@@ -39,12 +44,14 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     vaultLosses: 0,
     gameLosses: 5,
     gameTies: 1,
-    gamesPlayed: 18,
+    minePlays: 2,
+    pick3Plays: 1,
+    gamesPlayed: 21,
     dailyClaims: 2,
-    workShifts: 4,
+    workShifts: 6,
     scavenges: 1,
     itemsPurchased: 2
   });
-  assert.deepEqual(query.where, { guildId: "__avero_global__", userId: "user-1" });
+  assert.deepEqual(query.where, { guildId: "__avero_global__", userId: "user-1", currency: "coins" });
   assert.deepEqual(query.by, ["type"]);
 });

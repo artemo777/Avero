@@ -6,9 +6,9 @@ import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
-import { profileCommand } from "../src/bot/commands/profile.js";
+import { profileCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
+import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
 
 test("bot configuration requires a token without exposing its value", () => {
@@ -224,6 +224,75 @@ test("shop category select and pagination preserve the selected category", async
   assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
 });
 
+test("legacy Guess, Coinflip, and RPS rounds do not award coins while currency is paused", async () => {
+  const ledger = [];
+  const prisma = {
+    currencyTransaction: {
+      create: async ({ data }) => { ledger.push(data); return data; }
+    },
+    $transaction: async () => {
+      throw new Error("A paused game must not attempt a currency reward transaction.");
+    }
+  };
+
+  await runCoinflip(prisma, "12345678901234567", "heads", "user-1", false);
+  await runRps(prisma, "12345678901234567", "rock", "user-1", false);
+  await handleGameComponent({
+    customId: "avero|user-1|guess|1",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    update: async () => {},
+    reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+  }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+  assert.equal(ledger.length, 3);
+  assert.ok(ledger.every((entry) => entry.amount === 0));
+  assert.ok(ledger.some((entry) => entry.type === "guess_win_play" || entry.type === "guess_loss"));
+  assert.ok(ledger.some((entry) => ["coinflip_win", "coinflip_loss"].includes(entry.type)));
+  assert.ok(ledger.some((entry) => ["rps_win", "rps_loss", "rps_tie"].includes(entry.type)));
+});
+
+test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
+  for (const scenario of [
+    { action: "mine_pick", arg: "session-1:0", gameId: "mine", payload: { oreByTile: ["gold", ...Array(24).fill(null)], revealed: Array(25).fill(false) }, activityType: "mine_play" },
+    { action: "pick3", arg: "session-2:1", gameId: "pick3", payload: { star: 1 }, activityType: "pick3_play" }
+  ]) {
+    const ledger = [];
+    const sessionUpdates = [];
+    const prisma = {
+      gameSession: {
+        findFirst: async () => ({
+          id: scenario.gameId === "mine" ? "session-1" : "session-2",
+          gameId: scenario.gameId,
+          payload: scenario.payload
+        })
+      },
+      $transaction: async (callback) => callback({
+        gameSession: {
+          updateMany: async (args) => { sessionUpdates.push(args); return { count: 1 }; }
+        },
+        currencyTransaction: {
+          create: async (args) => { ledger.push(args.data); return args.data; }
+        }
+      })
+    };
+    let response;
+    await handleGameComponent({
+      customId: "avero|user-1|" + scenario.action + "|" + scenario.arg,
+      user: { id: "user-1" },
+      guildId: "12345678901234567",
+      update: async (payload) => { response = payload; },
+      reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+    }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+    assert.match(panelText(response), /Currency rewards are paused/);
+    assert.equal(sessionUpdates.length, 1);
+    assert.equal(sessionUpdates[0].data.status, "completed");
+    assert.deepEqual(ledger.map((entry) => entry.type), [scenario.activityType]);
+    assert.equal(ledger[0].amount, 0);
+  }
+});
+
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
   const response = renderGames("user-1");
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
@@ -239,7 +308,7 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   assert.doesNotMatch(text, /one code attempt per UTC day/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 14);
 });
 
 test("help command groups the real commands into a compact Components V2 panel", async () => {
@@ -340,6 +409,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   let profile = { profileAccentColor: 0x8b7cff, profileBanner: "midnight", profileShowcaseBadgeIds: [] };
   const ownedIds = new Set(["halo_ring", "aurora_frame", "neon_badge"]);
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyAccount: { findUnique: async () => ({ balance: 250, dailyStreak: 2 }) },
     currencyPurchase: {
       findMany: async () => [...ownedIds].map((itemId) => ({ itemId })),
@@ -400,6 +470,19 @@ test("daily Vault button opens the current puzzle clues from the games hub", asy
 });
 
 
+test("daily Vault hub panel explains when currency rewards are paused", async () => {
+  let response;
+  await handleGameComponent({
+    customId: "avero|user-1|vault",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, { prisma: {}, settings: { gamesEnabled: true, currencyEnabled: false } });
+  assert.match(panelText(response), /Currency rewards are paused/);
+  assert.doesNotMatch(panelText(response), /can earn 25 coins/);
+});
+
 test("collection atlas panel shows route-linked set progress", async () => {
   const response = await renderCollectionSets({
     currencyPurchase: {
@@ -408,6 +491,10 @@ test("collection atlas panel shows route-linked set progress", async () => {
         { itemId: "vault_badge" },
         { itemId: "avero_relic" }
       ]
+    },
+    memberTitle: {
+      findUnique: async () => null,
+      create: async ({ data }) => data
     }
   }, "12345678901234567", "user-1");
   const text = panelText(response);
@@ -585,4 +672,36 @@ test("config dashboard groups compact monochrome controls inside its Components 
   assert.ok(buttons.every((button) => button.style === 2));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|diagnostics"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
+});
+
+
+test("profile bio modal cannot bypass a currency pause applied after opening the editor", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile customization must not write to the database."); } });
+  const handled = await handleProfileBioModal({
+    customId: "avero-profile-bio|user-1",
+    user: { id: "user-1" },
+    fields: { getTextInputValue: () => "Updated bio" },
+    reply: async (payload) => { response = payload; }
+  }, prisma, { currencyEnabled: false });
+  assert.equal(handled, true);
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
+});
+
+
+test("profile command blocks bio and banner edits while currency is paused but leaves viewing available", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile edits must not access the database."); } });
+  await profileCommand.execute({
+    guildId: "guild-1", user: { id: "user-1" },
+    options: { getUser: () => null, getAttachment: () => null, getString: () => "New bio" },
+    reply: async (payload) => { response = payload; }
+  }, { prisma, settings: { currencyEnabled: false } });
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
 });

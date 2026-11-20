@@ -37,16 +37,31 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
   if (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId)) {
     throw new TypeError("Badge item ID must be a simple lowercase identifier.");
   }
-  const owned = await prisma.currencyPurchase.findUnique({
-    where: { guildId_userId_itemId: { ...key, itemId } }
-  });
-  if (!owned) return { equipped: false, reason: "not_owned" };
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: { ...key, equippedBadgeItemId: itemId },
-    update: { equippedBadgeItemId: itemId }
-  });
-  return { equipped: true, profile };
+  if (!SHOWCASE_BADGES.has(itemId)) {
+    throw new TypeError("That collectible cannot be showcased as a badge.");
+  }
+  return prisma.$transaction(async (tx) => {
+    const owned = await tx.currencyPurchase.findUnique({
+      where: { guildId_userId_itemId: { ...key, itemId } }
+    });
+    if (!owned) return { equipped: false, reason: "not_owned" };
+    const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds) && current.profileShowcaseBadgeIds.length
+      ? current.profileShowcaseBadgeIds
+      : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
+    if (!showcased.includes(itemId) && showcased.length >= 5) {
+      return { equipped: false, reason: "showcase_full" };
+    }
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedBadgeItemId: itemId, profileShowcaseBadgeIds: [itemId] },
+      update: {
+        equippedBadgeItemId: itemId,
+        profileShowcaseBadgeIds: showcased.includes(itemId) ? showcased : [...showcased, itemId]
+      }
+    });
+    return { equipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 const PROFILE_FRAME_ITEM_IDS = new Set([
@@ -58,16 +73,18 @@ const PROFILE_FRAME_ITEM_IDS = new Set([
 export async function equipProfileFrame(prisma, guildId, userId, itemId) {
   const key = memberWhere(guildId, userId).guildId_userId;
   if (!PROFILE_FRAME_ITEM_IDS.has(itemId)) throw new TypeError("That collectible cannot be used as a profile frame.");
-  const owned = await prisma.currencyPurchase.findUnique({
-    where: { guildId_userId_itemId: { ...key, itemId } }
-  });
-  if (!owned) return { equipped: false, reason: "not_owned" };
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: { ...key, equippedFrameItemId: itemId },
-    update: { equippedFrameItemId: itemId }
-  });
-  return { equipped: true, profile };
+  return prisma.$transaction(async (tx) => {
+    const owned = await tx.currencyPurchase.findUnique({
+      where: { guildId_userId_itemId: { ...key, itemId } }
+    });
+    if (!owned) return { equipped: false, reason: "not_owned" };
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedFrameItemId: itemId },
+      update: { equippedFrameItemId: itemId }
+    });
+    return { equipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 export async function unequipProfileFrame(prisma, guildId, userId) {
@@ -80,14 +97,26 @@ export async function unequipProfileFrame(prisma, guildId, userId) {
   return { unequipped: true, profile };
 }
 
-export async function unequipProfileBadge(prisma, guildId, userId) {
+export async function unequipProfileBadge(prisma, guildId, userId, itemId = null) {
   const key = memberWhere(guildId, userId).guildId_userId;
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: key,
-    update: { equippedBadgeItemId: null }
-  });
-  return { unequipped: true, profile };
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds) && current.profileShowcaseBadgeIds.length
+      ? current.profileShowcaseBadgeIds
+      : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
+    const remaining = itemId === null ? [] : showcased.filter((id) => id !== itemId);
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
+      update: {
+        equippedBadgeItemId: itemId === null || current?.equippedBadgeItemId === itemId
+          ? null
+          : (showcased.includes(current?.equippedBadgeItemId) ? current.equippedBadgeItemId : (remaining[0] ?? null)),
+        profileShowcaseBadgeIds: remaining
+      }
+    });
+    return { unequipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 const PROFILE_ACCENT_COLORS = new Set([0x8b7cff, 0x42d6c5, 0x65a9ff, 0xff9b70, 0xf078a8, 0xe5c45d, 0x9ba5b4, 0xffffff]);
@@ -100,6 +129,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
   if (!changes || typeof changes !== "object" || Array.isArray(changes)) {
     throw new TypeError("Profile customization changes must be an object.");
   }
+  return prisma.$transaction(async (tx) => {
   const data = {};
   if (Object.hasOwn(changes, "profileAccentColor")) {
     if (!PROFILE_ACCENT_COLORS.has(changes.profileAccentColor)) throw new RangeError("Choose an accent color from the Avero palette.");
@@ -136,7 +166,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
     const itemId = changes.equippedAvatarDecorationId;
     if (itemId !== null && !AVATAR_DECORATIONS.has(itemId)) throw new RangeError("That avatar decoration is not available.");
     if (itemId !== null) {
-      const owned = await prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
+      const owned = await tx.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
       if (!owned) return { updated: false, reason: "not_owned" };
     }
     data.equippedAvatarDecorationId = itemId;
@@ -148,16 +178,18 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
       throw new RangeError("Choose up to five unique badges from your collection.");
     }
     for (const itemId of ids) {
-      const owned = await prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
+      const owned = await tx.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
       if (!owned) return { updated: false, reason: "not_owned" };
     }
     data.profileShowcaseBadgeIds = ids;
+    data.equippedBadgeItemId = ids[0] ?? null;
   }
   if (!Object.keys(data).length) throw new TypeError("No supported profile customization was provided.");
-  const profile = await prisma.memberProfile.upsert({
+  const profile = await tx.memberProfile.upsert({
     where: { guildId_userId: key },
     create: { ...key, ...data },
     update: data
   });
   return { updated: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
