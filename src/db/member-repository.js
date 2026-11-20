@@ -109,9 +109,9 @@ export async function unequipProfileBadge(prisma, guildId, userId, itemId = null
       where: { guildId_userId: key },
       create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
       update: {
-        equippedBadgeItemId: current?.equippedBadgeItemId === itemId || itemId === null
-          ? (remaining[0] ?? null)
-          : current?.equippedBadgeItemId ?? (remaining[0] ?? null),
+        equippedBadgeItemId: itemId === null || current?.equippedBadgeItemId === itemId
+          ? null
+          : (showcased.includes(current?.equippedBadgeItemId) ? current.equippedBadgeItemId : (remaining[0] ?? null)),
         profileShowcaseBadgeIds: remaining
       }
     });
