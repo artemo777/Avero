@@ -8,10 +8,11 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 - Added Node tests for fresh, wrong-owner, expired, completed and malformed-timing scenarios.
 - This helper is pure and is not a substitute for persisted session records, database uniqueness, or transactional reward claims.
 
-## Persistence groundwork
+## Persistence groundwork and implemented paths
 - Added the `GameSession` Prisma model and SQL migration with expiry/status indexes.
-- Added repository helpers for creating, fetching active owned sessions, completion and expiry. Session creation supersedes older active sessions of the same game; an atomic conditional claim helper is available to prevent multiple callers from claiming the same active session. Mocked repository tests cover these paths.
-- Session persistence is not yet wired to game components or payout claims; callers must enforce transactional idempotency.
+- Added repository helpers for creating, fetching active owned sessions, completion, expiry, and transactional reward settlement.
+- Mine Tiles and Pick the Star use persisted sessions and database-backed settlement paths; repository/session concurrency and replay protection are covered by tests. This does not mean every game in the bot uses persisted sessions.
+- Session creation supersedes older active sessions of the same game. PostgreSQL advisory locking serializes concurrent session creation for the same guild/user/game combination.
 
 ## Reliability gates
 - All coin and gem writes must go through existing transactional repository methods.
@@ -26,8 +27,7 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 1. **Fishing timing game**: skill-based timing challenge, fish journal, cosmetic rods and regions.
    Core scoring lives in `src/bot/fishing-core.js`; this module intentionally does not issue currency.
    Reward integration requires session persistence and an idempotent claim path.
-2. **Mine grid**: a small visual board with deterministic server-side board state, limited turns,
-   tool cosmetics and ore journal.
+2. **Mine grid**: additional visual-board mechanics, limited turns, tool cosmetics and ore journal.
 3. **Tower**: branching puzzles and non-combat challenge floors, checkpoint records and cosmetic badges.
 4. **Reaction arena**: server-side timing windows, anti-replay session IDs, accuracy records.
 5. **Farm**: timestamp-based crop growth, inventory-based seed ownership and atomic harvest.
@@ -42,12 +42,10 @@ ledger, collections, achievements, contracts, work, shop, or shared game reward 
 
 ## Release sequence
 1. Review existing ledger, sessions, command routing and feature toggles.
-2. Integrate and persist Fishing sessions and claims.
+2. Integrate and persist remaining eligible game sessions and claims.
 3. Add tests for duplicate button clicks, expired sessions, user-bound IDs, cooldowns and restart persistence.
-4. Build Mine Grid and Reaction Arena.
-5. Build Tower and Farm after their persistence model and reward balance are reviewed.
-6. Run `npm run verify`, migrations (if any), and a live Discord acceptance checklist before deployment.
+4. Build further game modes only after their persistence model and reward balance are reviewed.
+5. Run `npm run verify`, migrations (if any), and a live Discord acceptance checklist before deployment.
 
-
-### Atomic reward settlement (foundation)
-A session reward settlement helper now claims an active, owned, unexpired session, applies the shared game-reward cooldown, increments the account, and writes the ledger entry within a single Prisma transaction. Cooldown denial restores the session to active in that transaction; stale/replayed claims are rejected. Mocked tests cover these outcomes. This helper remains unintegrated with Discord game controls and must be reviewed and tested against a real database before use.
+### Atomic reward settlement
+The session reward settlement helper claims an active, owned, unexpired session, applies the shared game-reward cooldown, increments the account, and writes the ledger entry within a single Prisma transaction. Cooldown denial restores the session to active in that transaction; stale/replayed claims are rejected. PostgreSQL integration tests exercise settlement and concurrency. Treat this helper as a shared foundation, not proof every game control uses it.
