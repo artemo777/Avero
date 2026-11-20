@@ -38,7 +38,7 @@ Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`
 
 ### 2. Daily Contracts
 
-Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts (+80 coins), scavenge three times (+90), play three recorded game rounds (+75), and unlock one collectible (+100) from either the shop or a new scavenging drop. Progress is derived from the server/member transaction ledger for the current UTC day. Each completed contract has a unique per-member/server/day claim record and is credited atomically with a ledger entry. New scavenge drops write a zero-value `scavenge_collectible` ledger event so they count toward the collector goal without changing coin balances. No wagers or entry fees are involved.
+Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts (+80 coins), scavenge three times (+90), play three recorded game rounds (+75), and unlock one collectible (+100) from either the shop or a new scavenging drop. Progress is derived from the global member transaction ledger for the current UTC day. Each completed contract has a unique per-member/day claim record and is credited atomically with a ledger entry. New scavenge drops write a zero-value `scavenge_collectible` ledger event so they count toward the collector goal without changing coin balances. No wagers or entry fees are involved.
 
 ### 3. The Vault
 
