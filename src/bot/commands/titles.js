@@ -5,9 +5,6 @@ import { equipMemberTitle, getMemberTitles, purchaseMemberTitle, unlockMemberTit
 import { buildCollectionSetProgress } from "../collection-sets.js";
 import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../title-catalog.js";
 
-function titleChoices() {
-  return TITLE_CATALOG.map((title) => ({ name: title.name, value: title.id }));
-}
 
 async function syncMilestoneTitles(prisma, guildId, userId, stats, purchases) {
   const itemIds = [...new Set(purchases.map((purchase) => purchase.itemId))];
@@ -97,10 +94,20 @@ export const titlesCommand = Object.freeze({
         name: "title",
         description: "Title to buy or equip.",
         required: false,
-        choices: titleChoices()
+        autocomplete: true
       }
     ]
   }),
+  async autocomplete(interaction) {
+    const query = interaction.options.getFocused().trim().toLocaleLowerCase();
+    const matches = TITLE_CATALOG.filter((title) =>
+      [title.name, title.id].join(" ").toLocaleLowerCase().includes(query)
+    ).slice(0, 25);
+    await interaction.respond(matches.map((title) => ({
+      name: title.name.slice(0, 100),
+      value: title.id
+    })));
+  },
   async execute(interaction, { prisma, settings } = {}) {
     if (!prisma) throw new Error("Titles command requires a database client.");
     if (!interaction.guildId) {
