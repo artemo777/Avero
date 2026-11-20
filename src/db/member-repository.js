@@ -37,16 +37,18 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
   if (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId)) {
     throw new TypeError("Badge item ID must be a simple lowercase identifier.");
   }
-  const owned = await prisma.currencyPurchase.findUnique({
-    where: { guildId_userId_itemId: { ...key, itemId } }
-  });
-  if (!owned) return { equipped: false, reason: "not_owned" };
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: { ...key, equippedBadgeItemId: itemId },
-    update: { equippedBadgeItemId: itemId }
-  });
-  return { equipped: true, profile };
+  return prisma.$transaction(async (tx) => {
+    const owned = await tx.currencyPurchase.findUnique({
+      where: { guildId_userId_itemId: { ...key, itemId } }
+    });
+    if (!owned) return { equipped: false, reason: "not_owned" };
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedBadgeItemId: itemId },
+      update: { equippedBadgeItemId: itemId }
+    });
+    return { equipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 const PROFILE_FRAME_ITEM_IDS = new Set([
@@ -58,16 +60,18 @@ const PROFILE_FRAME_ITEM_IDS = new Set([
 export async function equipProfileFrame(prisma, guildId, userId, itemId) {
   const key = memberWhere(guildId, userId).guildId_userId;
   if (!PROFILE_FRAME_ITEM_IDS.has(itemId)) throw new TypeError("That collectible cannot be used as a profile frame.");
-  const owned = await prisma.currencyPurchase.findUnique({
-    where: { guildId_userId_itemId: { ...key, itemId } }
-  });
-  if (!owned) return { equipped: false, reason: "not_owned" };
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: { ...key, equippedFrameItemId: itemId },
-    update: { equippedFrameItemId: itemId }
-  });
-  return { equipped: true, profile };
+  return prisma.$transaction(async (tx) => {
+    const owned = await tx.currencyPurchase.findUnique({
+      where: { guildId_userId_itemId: { ...key, itemId } }
+    });
+    if (!owned) return { equipped: false, reason: "not_owned" };
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedFrameItemId: itemId },
+      update: { equippedFrameItemId: itemId }
+    });
+    return { equipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 export async function unequipProfileFrame(prisma, guildId, userId) {
@@ -100,6 +104,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
   if (!changes || typeof changes !== "object" || Array.isArray(changes)) {
     throw new TypeError("Profile customization changes must be an object.");
   }
+  return prisma.$transaction(async (tx) => {
   const data = {};
   if (Object.hasOwn(changes, "profileAccentColor")) {
     if (!PROFILE_ACCENT_COLORS.has(changes.profileAccentColor)) throw new RangeError("Choose an accent color from the Avero palette.");
@@ -136,7 +141,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
     const itemId = changes.equippedAvatarDecorationId;
     if (itemId !== null && !AVATAR_DECORATIONS.has(itemId)) throw new RangeError("That avatar decoration is not available.");
     if (itemId !== null) {
-      const owned = await prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
+      const owned = await tx.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { ...key, itemId } } });
       if (!owned) return { updated: false, reason: "not_owned" };
     }
     data.equippedAvatarDecorationId = itemId;
@@ -154,10 +159,11 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
     data.profileShowcaseBadgeIds = ids;
   }
   if (!Object.keys(data).length) throw new TypeError("No supported profile customization was provided.");
-  const profile = await prisma.memberProfile.upsert({
+  const profile = await tx.memberProfile.upsert({
     where: { guildId_userId: key },
     create: { ...key, ...data },
     update: data
   });
   return { updated: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
