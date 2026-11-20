@@ -34,13 +34,9 @@ const PROFILE_ACCENT_EMOJIS = new Map([
 const PROFILE_DECORATION_NAMES = new Map([
   ["halo_ring", "Halo Ring"], ["orbit_spark", "Orbit Sparks"], ["pixel_wings", "Pixel Wings"]
 ]);
-const PROFILE_FRAME_NAMES = new Map([
-  ["aurora_frame", "Aurora Frame"], ["nebula_cape", "Nebula Cape"], ["moonlit_token", "Moonlit Token"],
-  ["prism_crown", "Prism Crown"], ["pixel_cape", "Pixel Cape"], ["cloud_specs", "Cloud Specs"],
-  ["comet_trail", "Comet Trail"], ["mossy_mug", "Mossy Mug"], ["paper_crown", "Paper Crown"],
-  ["blueprint_frame", "Blueprint Frame"], ["mono_frame", "Mono Frame"], ["chibi_frame", "Professor Chibi Frame"],
-  ["cobalt_frame", "Cobalt Orbit Frame"], ["frost_frame", "Frostline Frame"], ["ember_frame", "Ember Frame"], ["starlight_frame", "Starlight Frame"]
-]);
+const PROFILE_FRAME_NAMES = new Map(
+  PROFILE_FRAME_IDS.map((id) => [id, SHOP_ITEMS.find((item) => item.id === id)?.name ?? id])
+);
 
 function profileSelect(userId, action, placeholder, options, { minValues = 1, maxValues = 1, disabled = false } = {}) {
   return new ActionRowBuilder().addComponents(
