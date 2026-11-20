@@ -7,6 +7,7 @@ import { downloadProfileBanner } from "../src/bot/commands/profile.js";
 test("profile canvas customization persists the supported visual settings", async () => {
   let saved;
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async ({ where }) => ({ itemId: where.guildId_userId_itemId.itemId }) },
     memberProfile: { upsert: async (args) => { saved = args; return { ...args.create, ...args.update }; } }
   };
@@ -27,6 +28,7 @@ test("profile canvas customization persists the supported visual settings", asyn
 
 test("profile customization requires ownership of avatar decorations and showcase badges", async () => {
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async () => null },
     memberProfile: { upsert: async () => { throw new Error("must not save"); } }
   };
@@ -41,7 +43,7 @@ test("profile customization requires ownership of avatar decorations and showcas
 });
 
 test("profile customization rejects unsupported colors, banners, and oversized bios", async () => {
-  const prisma = { memberProfile: { upsert: async () => ({}) } };
+  const prisma = { $transaction: async (callback) => callback(prisma), memberProfile: { upsert: async () => ({}) } };
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileAccentColor: 0x123456 }), /accent color/i);
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileBanner: "unknown" }), /banner/i);
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileBio: "x".repeat(121) }), /120 characters/i);
@@ -58,6 +60,7 @@ test("custom profile banner bytes and MIME type are persisted together", async (
   let saved;
   const bytes = Buffer.from("valid-test-image");
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     memberProfile: {
       upsert: async (args) => { saved = args.update; return args.update; }
     }
@@ -73,7 +76,7 @@ test("custom profile banner bytes and MIME type are persisted together", async (
 
 test("custom profile banner can be cleared when switching back to a preset", async () => {
   let saved;
-  const prisma = { memberProfile: { upsert: async (args) => { saved = args.update; return args.update; } } };
+  const prisma = { $transaction: async (callback) => callback(prisma), memberProfile: { upsert: async (args) => { saved = args.update; return args.update; } } };
   await updateProfileCustomization(prisma, "guild-1", "user-1", {
     profileBanner: "aurora",
     profileBannerImage: null,
