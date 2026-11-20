@@ -409,6 +409,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   let profile = { profileAccentColor: 0x8b7cff, profileBanner: "midnight", profileShowcaseBadgeIds: [] };
   const ownedIds = new Set(["halo_ring", "aurora_frame", "neon_badge"]);
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyAccount: { findUnique: async () => ({ balance: 250, dailyStreak: 2 }) },
     currencyPurchase: {
       findMany: async () => [...ownedIds].map((itemId) => ({ itemId })),
