@@ -18,13 +18,15 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 55 } },
     { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } },
     { type: "mine_play", _count: { _all: 2 }, _sum: { amount: 0 } },
-    { type: "pick3_play", _count: { _all: 1 }, _sum: { amount: 0 } }
+    { type: "pick3_play", _count: { _all: 1 }, _sum: { amount: 0 } },
+    { type: "weekly_streak_gem", currency: "gems", _count: { _all: 7 }, _sum: { amount: 7 } },
+    { type: "shop_purchase", currency: "gems", _count: { _all: 1 }, _sum: { amount: -1 } }
   ];
   const prisma = {
     currencyTransaction: {
       async groupBy(args) {
         query = args;
-        return rows;
+        return rows.filter((row) => (row.currency ?? "coins") === args.where.currency);
       }
     }
   };
@@ -50,6 +52,6 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     scavenges: 1,
     itemsPurchased: 2
   });
-  assert.deepEqual(query.where, { guildId: "__avero_global__", userId: "user-1" });
+  assert.deepEqual(query.where, { guildId: "__avero_global__", userId: "user-1", currency: "coins" });
   assert.deepEqual(query.by, ["type"]);
 });
