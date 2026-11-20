@@ -3,7 +3,7 @@ export const SHOP_CATEGORIES = Object.freeze([
   Object.freeze({ id: "featured", label: "Weekly picks", description: "Three items selected for this week." }),
   Object.freeze({ id: "cosmetics", label: "Cosmetics", description: "Profile styles and visual customizations." }),
   Object.freeze({ id: "badges", label: "Badges", description: "Collectible profile badges." }),
-  Object.freeze({ id: "tools", label: "Tools", description: "Utility collectibles for future Avero features." }),
+  Object.freeze({ id: "tools", label: "Tools", description: "Gameplay utilities and collectible tools." }),
   Object.freeze({ id: "coins", label: "Coins Shop", description: "Items priced in virtual coins." }),
   Object.freeze({ id: "gems", label: "Gems Shop", description: "Premium-style virtual collectibles priced in earned gems." })
 ]);
