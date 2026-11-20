@@ -87,3 +87,19 @@ test("all collection-set display titles exist in the equipable title catalog", a
     assert.ok(TITLE_CATALOG.some((title) => title.name === set.title), set.title + " must be equipable");
   }
 });
+
+
+test("title autocomplete exposes every catalog title within Discord's 25-choice limit", async () => {
+  let response;
+  const interaction = {
+    options: { getFocused: () => "" },
+    respond: async (choices) => { response = choices; }
+  };
+  await titlesCommand.autocomplete(interaction);
+  assert.equal(response.length, 25);
+  assert.ok(response.some((choice) => choice.value === "archive_keeper"));
+
+  interaction.options.getFocused = () => "moonlit";
+  await titlesCommand.autocomplete(interaction);
+  assert.deepEqual(response.map((choice) => choice.value), ["moonlit_curator"]);
+});
