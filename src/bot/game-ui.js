@@ -385,11 +385,11 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     getMemberProfile(prisma, guildId, userId)
   ]);
   const owned = purchases.some((purchase) => purchase.itemId === item.id);
-  const equipped = Array.isArray(profile?.profileShowcaseBadgeIds)
+  const equipped = owned && (Array.isArray(profile?.profileShowcaseBadgeIds)
     ? profile.profileShowcaseBadgeIds.includes(item.id)
-    : profile?.equippedBadgeItemId === item.id;
-  const frameEquipped = profile?.equippedFrameItemId === item.id;
-  const avatarDecorationEquipped = profile?.equippedAvatarDecorationId === item.id;
+    : profile?.equippedBadgeItemId === item.id);
+  const frameEquipped = owned && profile?.equippedFrameItemId === item.id;
+  const avatarDecorationEquipped = owned && profile?.equippedAvatarDecorationId === item.id;
   return gamePayload(createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
