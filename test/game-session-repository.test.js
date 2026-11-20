@@ -159,3 +159,14 @@ test("completion records activity only when the session transitions",async()=>{
  const rejected=await completeGameSession(prisma,"guild","user","session",{now,activityType:"mine_play"});
  assert.equal(rejected.count,0);assert.equal(calls.length,2);
 });
+
+test("session creation acquires a transaction advisory lock for its owner/game",async()=>{
+ const calls=[];
+ const p={gameSession:{updateMany:async(args)=>calls.push(["updateMany",args]),create:async(args)=>{calls.push(["create",args]);return args.data;}},
+  $transaction:async(fn)=>fn({$queryRaw:async(strings,...values)=>{calls.push(["lock",strings.join("?"),values]);return [];},gameSession:{updateMany:async(args)=>calls.push(["updateMany",args]),create:async(args)=>{calls.push(["create",args]);return args.data;}}})};
+ await createGameSession(p,"guild","user","mining",{},{now:new Date("2026-11-20T12:00:00Z")});
+ assert.equal(calls[0][0],"lock");
+ assert.deepEqual(calls[0][2],["guild:user:mining"]);
+ assert.equal(calls.filter(x=>x[0]==="updateMany").length,2);
+ assert.equal(calls.at(-1)[0],"create");
+});
