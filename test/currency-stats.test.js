@@ -14,6 +14,7 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     { type: "rps_tie", _count: { _all: 1 }, _sum: { amount: 0 } },
     { type: "daily", _count: { _all: 2 }, _sum: { amount: 200 } },
     { type: "work", _count: { _all: 4 }, _sum: { amount: 320 } },
+    { type: "work_shift", _count: { _all: 2 }, _sum: { amount: 240 } },
     { type: "scavenge", _count: { _all: 1 }, _sum: { amount: 55 } },
     { type: "shop_purchase", _count: { _all: 2 }, _sum: { amount: -450 } },
     { type: "mine_play", _count: { _all: 2 }, _sum: { amount: 0 } },
@@ -45,7 +46,7 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
     pick3Plays: 1,
     gamesPlayed: 21,
     dailyClaims: 2,
-    workShifts: 4,
+    workShifts: 6,
     scavenges: 1,
     itemsPurchased: 2
   });
