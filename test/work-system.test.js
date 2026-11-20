@@ -19,6 +19,9 @@ function fakePrisma() {
       async updateMany({ where, data }) {
         if (!job) return { count: 0 };
         if (where.jobId && job.jobId !== where.jobId) return { count: 0 };
+        if (where.shifts !== undefined && job.shifts !== where.shifts) return { count: 0 };
+        if (where.promotions !== undefined && job.promotions !== where.promotions) return { count: 0 };
+        if (where.lastShiftAt !== undefined && job.lastShiftAt !== where.lastShiftAt) return { count: 0 };
         const allowed = where.OR
           ? where.OR.some((condition) => condition.lastShiftAt === null
             ? job.lastShiftAt === null
@@ -27,6 +30,7 @@ function fakePrisma() {
         if (!allowed) return { count: 0 };
         if (data.jobId !== undefined) job.jobId = data.jobId;
         if (data.shifts?.increment) job.shifts += data.shifts.increment;
+        if (data.shifts !== undefined && typeof data.shifts === "number") job.shifts = data.shifts;
         if (data.promotions !== undefined) job.promotions = data.promotions;
         if (data.lastShiftAt) job.lastShiftAt = data.lastShiftAt;
         return { count: 1 };
