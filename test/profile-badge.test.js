@@ -22,6 +22,21 @@ test("badge equip requires ownership and saves the selected item", async () => {
   assert.deepEqual(upsertArgs.update.profileShowcaseBadgeIds, ["neon_badge"]);
 });
 
+test("badge equip rejects owned collectibles outside the showcase badge catalog", async () => {
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyPurchase: { findUnique: async () => ({ itemId: "aurora_frame" }) },
+    memberProfile: {
+      findUnique: async () => null,
+      upsert: async () => { throw new Error("must not save a non-badge"); }
+    }
+  };
+  await assert.rejects(
+    equipProfileBadge(prisma, "guild-1", "user-1", "aurora_frame"),
+    /cannot be showcased as a badge/
+  );
+});
+
 test("badge unequip clears the saved selection", async () => {
   let upsertArgs;
   const prisma = {
