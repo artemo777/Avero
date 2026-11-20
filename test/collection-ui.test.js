@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { renderBalance, renderCollectionSets, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
@@ -17,8 +17,21 @@ function fakePrisma(itemIds = [], balance = 800) {
     },
     memberProfile: {
       findUnique: async () => null
+    },
+    memberTitle: {
+      records: new Map(),
+      findUnique: async ({ where }) => {
+        const key = where.guildId_userId_titleId.titleId;
+        return prisma.memberTitle.records.get(key) ?? null;
+      },
+      create: async ({ data }) => {
+        const row = { ...data, titleId: data.titleId };
+        prisma.memberTitle.records.set(data.titleId, row);
+        return row;
+      }
     }
   };
+  return prisma;
 }
 function panel(response) {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
@@ -168,4 +181,13 @@ test("shop catalogue entries resolve to local product artwork", () => {
   assert.equal(getCollectibleAssetId("other_cosmetic", "cosmetics"), "collectible-prism-crown");
   assert.equal(getCollectibleAssetId("other_tool", "tools"), "collectible-vault-badge");
   assert.equal(getCollectibleAssetId("other_coin", "coins"), "coin");
+});
+
+
+test("completed collection sets persist their title entitlement immediately", async () => {
+  const prisma = fakePrisma(["neon_badge", "vault_badge", "avero_relic"]);
+  await renderCollectionSets(prisma, "guild-1", "user-1");
+  assert.ok(prisma.memberTitle.records.has("archive_keeper"));
+  assert.ok(!prisma.memberTitle.records.has("circuit_breaker"));
+  assert.ok(!prisma.memberTitle.records.has("moonlit_curator"));
 });
