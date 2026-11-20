@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { equipProfileBadge, unequipProfileBadge } from "../src/db/member-repository.js";
+import { renderItemDetails } from "../src/bot/game-ui.js";
 
 test("badge equip requires ownership and saves the selected item", async () => {
   let upsertArgs;
@@ -82,4 +83,30 @@ test("badge equip refuses a sixth showcase badge", async () => {
     }
   };
   assert.deepEqual(await equipProfileBadge(prisma, "guild-1", "user-1", "sixth"), { equipped: false, reason: "showcase_full" });
+});
+
+
+test("item details reflects the profile showcase badge list", async () => {
+  const makePrisma = (showcase) => ({
+    currencyPurchase: {
+      findMany: async () => [{ itemId: "neon_badge" }]
+    },
+    currencyAccount: {
+      findUnique: async () => ({ balance: 100, gemBalance: 0 })
+    },
+    memberProfile: {
+      findUnique: async () => ({ profileShowcaseBadgeIds: showcase })
+    }
+  });
+  const equipped = await renderItemDetails(makePrisma(["neon_badge"]), "guild-1", "user-1", "neon_badge");
+  const equippedButtons = equipped.components[0].toJSON().components
+    .filter((component) => component.type === 1)
+    .flatMap((row) => row.components.map((button) => button.custom_id));
+  assert.ok(equippedButtons.includes("avero|user-1|unequip_badge|neon_badge"));
+
+  const notEquipped = await renderItemDetails(makePrisma([]), "guild-1", "user-1", "neon_badge");
+  const availableButtons = notEquipped.components[0].toJSON().components
+    .filter((component) => component.type === 1)
+    .flatMap((row) => row.components.map((button) => button.custom_id));
+  assert.ok(availableButtons.includes("avero|user-1|equip_badge|neon_badge"));
 });
