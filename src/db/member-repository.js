@@ -96,22 +96,24 @@ export async function unequipProfileFrame(prisma, guildId, userId) {
 
 export async function unequipProfileBadge(prisma, guildId, userId, itemId = null) {
   const key = memberWhere(guildId, userId).guildId_userId;
-  const current = await prisma.memberProfile.findUnique({ where: { guildId_userId: key } });
-  const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
-    ? current.profileShowcaseBadgeIds
-    : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
-  const remaining = itemId === null ? [] : showcased.filter((id) => id !== itemId);
-  const profile = await prisma.memberProfile.upsert({
-    where: { guildId_userId: key },
-    create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
-    update: {
-      equippedBadgeItemId: current?.equippedBadgeItemId === itemId || itemId === null
-        ? null
-        : current?.equippedBadgeItemId ?? null,
-      profileShowcaseBadgeIds: remaining
-    }
-  });
-  return { unequipped: true, profile };
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
+      ? current.profileShowcaseBadgeIds
+      : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
+    const remaining = itemId === null ? [] : showcased.filter((id) => id !== itemId);
+    const profile = await tx.memberProfile.upsert({
+      where: { guildId_userId: key },
+      create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
+      update: {
+        equippedBadgeItemId: current?.equippedBadgeItemId === itemId || itemId === null
+          ? null
+          : current?.equippedBadgeItemId ?? null,
+        profileShowcaseBadgeIds: remaining
+      }
+    });
+    return { unequipped: true, profile };
+  }, { isolationLevel: "Serializable" });
 }
 
 const PROFILE_ACCENT_COLORS = new Set([0x8b7cff, 0x42d6c5, 0x65a9ff, 0xff9b70, 0xf078a8, 0xe5c45d, 0x9ba5b4, 0xffffff]);
