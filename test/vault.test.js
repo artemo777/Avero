@@ -242,3 +242,18 @@ test("Field Notebook reveals a useful digit-sum hint without changing the Vault 
   const sum = challenge.code.split("").reduce((total, digit) => total + Number(digit), 0);
   assert.match(text, new RegExp("digits add up to \\*\\*" + sum + "\\*\\*"));
 });
+
+
+test("daily Vault attempts are independently scoped to each server", async () => {
+  const now = new Date("2026-10-30T12:00:00.000Z");
+  const { prisma, transactions, claims } = makePrisma();
+  for (const guildId of ["guild-1", "guild-2"]) {
+    const challenge = createVaultChallenge(guildId, now);
+    const wrong = challenge.code === "000" ? "001" : "000";
+    const attempt = interactionFor(wrong, guildId);
+    await vaultCommand.execute(attempt.interaction, { prisma, now });
+    assert.match(attempt.response().components[0].toJSON().components[0].content, /Vault stays locked/);
+  }
+  assert.deepEqual(claims.filter((claim) => claim.contractId === "vault_attempt").map((claim) => claim.guildId), ["guild-1", "guild-2"]);
+  assert.equal(transactions.filter((entry) => entry.type === "vault_loss").length, 2);
+});
