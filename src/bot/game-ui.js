@@ -298,8 +298,13 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
   const pageItems = items.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-  const totalMarketValue = items.reduce((sum, item) => sum + item.price, 0);
-  const pageMarketValue = pageItems.reduce((sum, item) => sum + item.price, 0);
+  const marketValue = (entries) => entries.reduce((total, item) => {
+    const currency = item.currency === "gems" ? "gems" : "coins";
+    total[currency] += item.price;
+    return total;
+  }, { coins: 0, gems: 0 });
+  const totalMarketValue = marketValue(items);
+  const pageMarketValue = marketValue(pageItems);
   const collection = pageItems.length
     ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\\n")
     : "No collectibles yet. Browse the shop to get your first one.";
@@ -316,7 +321,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your inventory",
     eyebrow: "COLLECTION",
-    description: "**Total Market Value:** " + totalMarketValue.toLocaleString("en-US") + "\\n**Page Market Value:** " + pageMarketValue.toLocaleString("en-US"),
+    description: "**Total Market Value:** " + totalMarketValue.coins.toLocaleString("en-US") + " coins · " + totalMarketValue.gems.toLocaleString("en-US") + " gems\\n**Page Market Value:** " + pageMarketValue.coins.toLocaleString("en-US") + " coins · " + pageMarketValue.gems.toLocaleString("en-US") + " gems",
     sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\\n**Sets completed:** " + completedSets + "/3"],
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️")), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))],
