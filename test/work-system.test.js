@@ -115,3 +115,12 @@ test("owned work tools add a small shift bonus and shorten cooldown without chan
   const ready = await runJobShift(prisma, "guild", "member", { now: new Date(start.getTime() + 55 * 60 * 1000), cooldownMs: 55 * 60 * 1000 });
   assert.equal(ready.worked, true);
 });
+
+test("resignation cannot overwrite a career state that changed concurrently", async () => {
+  const prisma = fakePrisma();
+  await applyForJob(prisma, "guild", "member", "barista");
+  prisma.memberJob.updateMany = async () => ({ count: 0 });
+  const result = await resignFromJob(prisma, "guild", "member");
+  assert.equal(result.resigned, false);
+  assert.equal(result.reason, "state_changed");
+});
