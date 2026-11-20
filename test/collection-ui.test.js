@@ -99,6 +99,20 @@ test("avatar decoration details show equipped state and offer removal", async ()
   assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|unequip_avatar_decoration|halo_ring"));
 });
 
+test("unowned item details ignore stale equipped profile references", async () => {
+  const prisma = fakePrisma([]);
+  prisma.memberProfile.findUnique = async () => ({
+    equippedBadgeItemId: "neon_badge",
+    profileShowcaseBadgeIds: ["neon_badge"],
+    equippedFrameItemId: "moonlit_token",
+    equippedAvatarDecorationId: "halo_ring"
+  });
+  const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", "neon_badge", 0));
+  assert.match(allText(json), /Not collected yet/);
+  assert.doesNotMatch(allText(json), /Equipped badge|Equipped profile frame|Equipped avatar decoration/);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|neon_badge"));
+});
+
 test("unowned item detail offers a direct unlock action", async () => {
   const response = await renderItemDetails(fakePrisma([], 500), "guild-1", "user-1", "vault_badge", 0);
   const json = panel(response);
