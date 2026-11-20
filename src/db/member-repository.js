@@ -37,6 +37,9 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
   if (typeof itemId !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(itemId)) {
     throw new TypeError("Badge item ID must be a simple lowercase identifier.");
   }
+  if (!SHOWCASE_BADGES.has(itemId)) {
+    throw new TypeError("That collectible cannot be showcased as a badge.");
+  }
   return prisma.$transaction(async (tx) => {
     const owned = await tx.currencyPurchase.findUnique({
       where: { guildId_userId_itemId: { ...key, itemId } }
