@@ -491,6 +491,10 @@ test("collection atlas panel shows route-linked set progress", async () => {
         { itemId: "vault_badge" },
         { itemId: "avero_relic" }
       ]
+    },
+    memberTitle: {
+      findUnique: async () => null,
+      create: async ({ data }) => data
     }
   }, "12345678901234567", "user-1");
   const text = panelText(response);
