@@ -23,7 +23,8 @@ test("achievements show global milestone progress and unique collection counts",
     currencyPurchase: { findMany: async () => [
       { itemId: "neon_badge" },
       { itemId: "vault_badge" },
-      { itemId: "starlight_badge" }
+      { itemId: "starlight_badge" },
+      { itemId: "retired_collectible_from_old_catalog" }
     ] }
   };
 
