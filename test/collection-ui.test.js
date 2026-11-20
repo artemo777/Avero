@@ -100,17 +100,19 @@ test("avatar decoration details show equipped state and offer removal", async ()
 });
 
 test("unowned item details ignore stale equipped profile references", async () => {
-  const prisma = fakePrisma([]);
-  prisma.memberProfile.findUnique = async () => ({
-    equippedBadgeItemId: "neon_badge",
-    profileShowcaseBadgeIds: ["neon_badge"],
-    equippedFrameItemId: "moonlit_token",
-    equippedAvatarDecorationId: "halo_ring"
-  });
-  const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", "neon_badge", 0));
-  assert.match(allText(json), /Not collected yet/);
-  assert.doesNotMatch(allText(json), /Equipped badge|Equipped profile frame|Equipped avatar decoration/);
-  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|neon_badge"));
+  const cases = [
+    { itemId: "neon_badge", profile: { equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: ["neon_badge"] }, label: /Equipped badge/ },
+    { itemId: "moonlit_token", profile: { equippedFrameItemId: "moonlit_token" }, label: /Equipped profile frame/ },
+    { itemId: "halo_ring", profile: { equippedAvatarDecorationId: "halo_ring" }, label: /Equipped avatar decoration/ }
+  ];
+  for (const entry of cases) {
+    const prisma = fakePrisma([]);
+    prisma.memberProfile.findUnique = async () => entry.profile;
+    const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", entry.itemId, 0));
+    assert.match(allText(json), /Not collected yet/);
+    assert.doesNotMatch(allText(json), entry.label);
+    assert.ok(buttons(json).some((button) => button.custom_id === "avero|user-1|buy|" + entry.itemId));
+  }
 });
 
 test("unowned item detail offers a direct unlock action", async () => {
