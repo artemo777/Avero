@@ -34,7 +34,7 @@ const PROFILE_ACCENT_EMOJIS = new Map([
 const PROFILE_DECORATION_NAMES = new Map([
   ["halo_ring", "Halo Ring"], ["orbit_spark", "Orbit Sparks"], ["pixel_wings", "Pixel Wings"]
 ]);
-const PROFILE_FRAME_NAMES = new Map(
+export const PROFILE_FRAME_NAMES = new Map(
   PROFILE_FRAME_IDS.map((id) => [id, SHOP_ITEMS.find((item) => item.id === id)?.name ?? id])
 );
 
