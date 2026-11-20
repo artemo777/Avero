@@ -216,7 +216,7 @@ export const profileCommand = Object.freeze({
       { type: 3, name: "bio", description: "Set your profile bio (120 characters max). Use clear to remove it.", required: false, max_length: 120 }
     ]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async execute(interaction, { prisma, settings } = {}) {
     if (!prisma) throw new Error("Profile command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Profiles are available inside a server.", flags: MessageFlags.Ephemeral });
@@ -225,6 +225,10 @@ export const profileCommand = Object.freeze({
     const target = interaction.options.getUser("member") ?? interaction.user;
     const upload = interaction.options.getAttachment?.("banner") ?? null;
     const bio = interaction.options.getString?.("bio") ?? null;
+    if ((upload || bio !== null) && settings?.currencyEnabled === false) {
+      await interaction.reply({ content: "Currency is paused by this server's admins. Profile customization is unavailable right now.", flags: MessageFlags.Ephemeral });
+      return;
+    }
     if ((upload || bio !== null) && target.id !== interaction.user.id) {
       await interaction.reply({ content: "You can only upload a banner to your own profile.", flags: MessageFlags.Ephemeral });
       return;
