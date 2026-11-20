@@ -5,6 +5,7 @@ import { equipProfileBadge, unequipProfileBadge } from "../src/db/member-reposit
 test("badge equip requires ownership and saves the selected item", async () => {
   let upsertArgs;
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async ({ where }) => where.guildId_userId_itemId.itemId === "neon_badge" ? { itemId: "neon_badge" } : null },
     memberProfile: { upsert: async (args) => { upsertArgs = args; return { ...args.create, ...args.update }; } }
   };
