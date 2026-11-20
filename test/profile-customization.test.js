@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { updateProfileCustomization } from "../src/db/member-repository.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../averoui/profile-card.js";
-import { downloadProfileBanner } from "../src/bot/commands/profile.js";
+import { downloadProfileBanner, renderProfilePayload } from "../src/bot/commands/profile.js";
 
 test("profile canvas customization persists the supported visual settings", async () => {
   let saved;
@@ -117,4 +117,26 @@ test("clearing the badge showcase also clears the legacy equipped badge field", 
   assert.equal(result.updated, true);
   assert.deepEqual(saved.update.profileShowcaseBadgeIds, []);
   assert.equal(saved.update.equippedBadgeItemId, null);
+});
+
+
+test("profile rendering keeps a legacy equipped badge when the showcase array is empty", async () => {
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 0, gemBalance: 0, dailyStreak: 0 }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
+    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: [] }) },
+    currencyTransaction: { groupBy: async () => [] },
+    memberTitle: { findMany: async () => [] }
+  };
+  const target = {
+    id: "user-1",
+    username: "Tester",
+    globalName: "Tester",
+    displayAvatarURL: () => null
+  };
+  const response = await renderProfilePayload(prisma, "guild-1", target, "user-1");
+  const content = response.components[0].toJSON().components
+    .filter((component) => component.type === 10)
+    .map((component) => component.content).join("\\n");
+  assert.match(content, /Showcased badges.*Avero Enamel Pin/);
 });
