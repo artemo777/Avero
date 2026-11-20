@@ -42,10 +42,20 @@ export async function equipProfileBadge(prisma, guildId, userId, itemId) {
       where: { guildId_userId_itemId: { ...key, itemId } }
     });
     if (!owned) return { equipped: false, reason: "not_owned" };
+    const current = await tx.memberProfile.findUnique({ where: { guildId_userId: key } });
+    const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
+      ? current.profileShowcaseBadgeIds
+      : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
+    if (!showcased.includes(itemId) && showcased.length >= 5) {
+      return { equipped: false, reason: "showcase_full" };
+    }
     const profile = await tx.memberProfile.upsert({
       where: { guildId_userId: key },
-      create: { ...key, equippedBadgeItemId: itemId },
-      update: { equippedBadgeItemId: itemId }
+      create: { ...key, equippedBadgeItemId: itemId, profileShowcaseBadgeIds: [itemId] },
+      update: {
+        equippedBadgeItemId: itemId,
+        profileShowcaseBadgeIds: showcased.includes(itemId) ? showcased : [...showcased, itemId]
+      }
     });
     return { equipped: true, profile };
   }, { isolationLevel: "Serializable" });
@@ -84,12 +94,22 @@ export async function unequipProfileFrame(prisma, guildId, userId) {
   return { unequipped: true, profile };
 }
 
-export async function unequipProfileBadge(prisma, guildId, userId) {
+export async function unequipProfileBadge(prisma, guildId, userId, itemId = null) {
   const key = memberWhere(guildId, userId).guildId_userId;
+  const current = await prisma.memberProfile.findUnique({ where: { guildId_userId: key } });
+  const showcased = Array.isArray(current?.profileShowcaseBadgeIds)
+    ? current.profileShowcaseBadgeIds
+    : (current?.equippedBadgeItemId ? [current.equippedBadgeItemId] : []);
+  const remaining = itemId === null ? [] : showcased.filter((id) => id !== itemId);
   const profile = await prisma.memberProfile.upsert({
     where: { guildId_userId: key },
-    create: key,
-    update: { equippedBadgeItemId: null }
+    create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
+    update: {
+      equippedBadgeItemId: current?.equippedBadgeItemId === itemId || itemId === null
+        ? null
+        : current?.equippedBadgeItemId ?? null,
+      profileShowcaseBadgeIds: remaining
+    }
   });
   return { unequipped: true, profile };
 }
