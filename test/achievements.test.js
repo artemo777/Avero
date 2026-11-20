@@ -17,7 +17,7 @@ test("achievements show global milestone progress and unique collection counts",
   ];
   const prisma = {
     currencyTransaction: { groupBy: async ({ where }) => {
-      assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1" });
+      assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1", currency: "coins" });
       return rows;
     } },
     currencyPurchase: { findMany: async () => [
