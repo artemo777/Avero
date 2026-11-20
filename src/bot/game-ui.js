@@ -17,6 +17,8 @@ import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES, getWeeklyFeaturedItems } from "./shop-catalog.js";
 import { WORK_JOBS } from "./work-catalog.js";
 import { buildCollectionSetProgress } from "./collection-sets.js";
+import { unlockMemberTitle } from "../db/title-repository.js";
+import { TITLE_CATALOG } from "./title-catalog.js";
 import { createVaultChallenge } from "./vault-puzzle.js";
 import { renderAchievementsPage } from "./commands/achievements.js";
 import { renderTitlesPage } from "./commands/titles.js";
@@ -332,7 +334,16 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
 export async function renderCollectionSets(prisma, guildId, userId, controlUserId = userId, page = 0) {
   const purchases = await getCurrencyPurchases(prisma, guildId, userId);
   const sets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
-  const completed = sets.filter((set) => set.complete).length;
+  const completedSets = sets.filter((set) => set.complete);
+  const completed = completedSets.length;
+  await Promise.all(completedSets.map((set) => {
+    const title = TITLE_CATALOG.find((entry) => entry.name === set.title);
+    return title ? unlockMemberTitle(prisma, guildId, userId, title.id, "milestone") : null;
+  }));
+  if (completed === sets.length) {
+    const allSetsTitle = TITLE_CATALOG.find((entry) => entry.id === "shelf_lord");
+    if (allSetsTitle) await unlockMemberTitle(prisma, guildId, userId, allSetsTitle.id, "milestone");
+  }
   const pageSize = 7;
   const pageCount = Math.max(1, Math.ceil(sets.length / pageSize));
   const currentPage = Math.min(Math.max(Number.isInteger(page) ? page : 0, 0), pageCount - 1);
