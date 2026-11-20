@@ -488,7 +488,7 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const key = currencyKey(guildId, userId);
   const rows = await prisma.currencyTransaction.groupBy({
     by: ["type"],
-    where: key,
+    where: { ...key, currency: "coins" },
     _count: { _all: true },
     _sum: { amount: true }
   });
