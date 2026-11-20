@@ -110,8 +110,8 @@ export async function unequipProfileBadge(prisma, guildId, userId, itemId = null
       create: { ...key, equippedBadgeItemId: null, profileShowcaseBadgeIds: [] },
       update: {
         equippedBadgeItemId: current?.equippedBadgeItemId === itemId || itemId === null
-          ? null
-          : current?.equippedBadgeItemId ?? null,
+          ? (remaining[0] ?? null)
+          : current?.equippedBadgeItemId ?? (remaining[0] ?? null),
         profileShowcaseBadgeIds: remaining
       }
     });
@@ -182,6 +182,7 @@ export async function updateProfileCustomization(prisma, guildId, userId, change
       if (!owned) return { updated: false, reason: "not_owned" };
     }
     data.profileShowcaseBadgeIds = ids;
+    data.equippedBadgeItemId = ids[0] ?? null;
   }
   if (!Object.keys(data).length) throw new TypeError("No supported profile customization was provided.");
   const profile = await tx.memberProfile.upsert({
