@@ -16,6 +16,12 @@ export async function createGameSession(prisma, guildId, userId, gameId, payload
   const data = { id: randomUUID(), guildId, userId, gameId, status: "active", payload, createdAt: now, expiresAt };
   if (typeof prisma.$transaction === "function") {
     return prisma.$transaction(async (tx) => {
+      // Serialize creation for this owner/game pair so concurrent launches cannot
+      // race past the supersede step and leave multiple active sessions.
+      if (typeof tx.$queryRaw === "function") {
+        const lockKey = guildId + ":" + userId + ":" + gameId;
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+      }
       await tx.gameSession.updateMany({ where: { status: "active", expiresAt: { lte: now } }, data: { status: "expired" } });
       await tx.gameSession.updateMany({ where: { guildId, userId, gameId, status: "active" }, data: { status: "superseded" } });
       return tx.gameSession.create({ data });
