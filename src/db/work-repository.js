@@ -65,12 +65,12 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     const updatedJob = await tx.memberJob.updateMany({
       where: {
         ...memberKey,
-        OR: [
-          { lastShiftAt: null },
-          { lastShiftAt: { lte: new Date(now.getTime() - cooldownMs) } }
-        ]
+        jobId: current.jobId,
+        shifts: current.shifts,
+        promotions: current.promotions,
+        lastShiftAt: current.lastShiftAt
       },
-      data: { shifts: { increment: 1 }, promotions: nextPromotions, lastShiftAt: now }
+      data: { shifts: nextShifts, promotions: nextPromotions, lastShiftAt: now }
     });
     if (updatedJob.count !== 1) {
       const latest = await tx.memberJob.findUnique({ where: { guildId_userId: memberKey } });
