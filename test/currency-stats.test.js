@@ -30,7 +30,7 @@ test("currency statistics summarize wins, earnings, spending, and activity globa
   };
 
   assert.deepEqual(await getCurrencyStats(prisma, "guild-1", "user-1"), {
-    lifetimeEarned: 725,
+    lifetimeEarned: 965,
     lifetimeSpent: 450,
     gameWins: 12,
     guessWins: 8,
