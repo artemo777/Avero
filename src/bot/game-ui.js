@@ -744,7 +744,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       break;
     case "equip_badge": {
       const item = SHOP_ITEMS.find((candidate) => candidate.id === parsed.arg);
-      if (!item) {
+      if (!item || item.category !== "badges") {
         await interaction.reply({ content: "That badge is no longer available.", flags: MessageFlags.Ephemeral });
         return true;
       }
