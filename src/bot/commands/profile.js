@@ -264,10 +264,14 @@ export function showProfileBioModal(interaction) {
   return interaction.showModal(modal);
 }
 
-export async function handleProfileBioModal(interaction, prisma) {
+export async function handleProfileBioModal(interaction, prisma, settings = {}) {
   const [, ownerId] = interaction.customId.split("|");
   if (ownerId !== interaction.user.id) {
     await interaction.reply({ content: "That profile editor belongs to another member.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  if (settings.currencyEnabled === false) {
+    await interaction.reply({ content: "Currency is paused by this server's admins. Profile customization is unavailable right now.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const bio = interaction.fields.getTextInputValue("bio");
