@@ -285,7 +285,7 @@ export async function renderWorkJobsPage(userId, page = 0) {
   const jobs = WORK_JOBS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const professor = await professorArtwork(72);
   const sections = jobs.map((job, index) =>
-    "**" + (currentPage * pageSize + index + 1) + ". " + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift\n" + job.description
+    "**" + (currentPage * pageSize + index + 1) + ". " + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift\n" + job.description + "\n-# Unlock requirement: " + (job.requiredShifts === 0 ? "Available immediately" : job.requiredShifts + " lifetime shifts")
   );
   sections.push("**Professor’s tip** · Apply with `/work apply`, then complete a shift. The Repair Kit and Pocket Hourglass improve your routine.");
   const buttons = pageCount > 1 ? [
