@@ -117,7 +117,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     if (sectionRow?.length) {
       const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
         const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(ButtonStyle.Secondary);
-        setButtonEmoji(builder, entry.emoji);
+        // Button emojis omitted to avoid invalid Discord component emoji payloads.
         if (entry.disabled) builder.setDisabled(true);
         return builder;
       }));
@@ -129,7 +129,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(ButtonStyle.Secondary);
-      setButtonEmoji(builder, button.emoji);
+      // Button emojis omitted to avoid invalid Discord component emoji payloads.
       if (button.disabled) builder.setDisabled(true);
       return builder;
     }));
