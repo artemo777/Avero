@@ -330,8 +330,8 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your inventory",
     eyebrow: "COLLECTION",
-    description: "**Total Market Value:** " + totalMarketValue.coins.toLocaleString("en-US") + " coins · " + totalMarketValue.gems.toLocaleString("en-US") + " gems\\n**Page Market Value:** " + pageMarketValue.coins.toLocaleString("en-US") + " coins · " + pageMarketValue.gems.toLocaleString("en-US") + " gems",
-    sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\\n**Sets completed:** " + completedSets + "/3"],
+    description: "**Total Market Value:** " + totalMarketValue.coins.toLocaleString("en-US") + " coins · " + totalMarketValue.gems.toLocaleString("en-US") + " gems\n**Page Market Value:** " + pageMarketValue.coins.toLocaleString("en-US") + " coins · " + pageMarketValue.gems.toLocaleString("en-US") + " gems",
+    sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\n**Sets completed:** " + completedSets + "/3"],
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️")), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))],
     footer: "PAGE " + (currentPage + 1) + " OF " + pageCount,
