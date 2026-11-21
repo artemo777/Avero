@@ -166,7 +166,7 @@ async function collectibleArtwork(items, size = 192) {
 }
 function setButtonEmoji(builder, value) {
   if (!value) return builder;
-  const custom = /^<(a?):([A-Za-z0-9_]+):(\\d+)>$/.exec(value);
+  const custom = /^<(a?):([A-Za-z0-9_]+):(\d+)>$/.exec(value);
   if (custom) builder.setEmoji({ id: custom[3], name: custom[2], animated: custom[1] === "a" });
   else builder.setEmoji(value);
   return builder;
