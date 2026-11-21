@@ -6,7 +6,7 @@ import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
-import { profileCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
+import { profileCommand, profileEditCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
 import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
@@ -694,7 +694,7 @@ test("profile bio modal cannot bypass a currency pause applied after opening the
 test("profile command blocks bio and banner edits while currency is paused but leaves viewing available", async () => {
   let response;
   const prisma = new Proxy({}, { get() { throw new Error("Paused profile edits must not access the database."); } });
-  await profileCommand.execute({
+  await profileEditCommand.execute({
     guildId: "guild-1", user: { id: "user-1" },
     options: { getUser: () => null, getAttachment: () => null, getString: () => "New bio" },
     reply: async (payload) => { response = payload; }
