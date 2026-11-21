@@ -17,10 +17,16 @@ const PREFIX_COMMAND_ALIASES = Object.freeze({
   flip: "coinflip", cf: "coinflip",
   rockpaper: "rps", rockpaperscissors: "rps"
 });
-\nconst GAME_COMMANDS = new Set(["games", "coinflip", "guess", "rps", "vault"]);
+
+const GAME_COMMANDS = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const CURRENCY_COMMANDS = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
 
-export function resolvePrefixCommandName(name) {\n  const normalized = String(name ?? "").toLowerCase();\n  return PREFIX_COMMAND_ALIASES[normalized] ?? normalized;\n}\n\nexport function tokenizePrefixArguments(input) {
+export function resolvePrefixCommandName(name) {
+  const normalized = String(name ?? "").toLowerCase();
+  return PREFIX_COMMAND_ALIASES[normalized] ?? normalized;
+}
+
+export function tokenizePrefixArguments(input) {
   const tokens = [];
   const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
   let match;
