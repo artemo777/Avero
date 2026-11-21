@@ -100,11 +100,11 @@ export const reputationCommand = Object.freeze({
         { type: 3, name: "user_id", description: "Or enter the member Discord ID.", required: false }
       ] },
       { type: 1, name: "give", description: "Give positive or negative reputation.", options: [
-        { type: 6, name: "member", description: "Member receiving reputation.", required: false },
-        { type: 3, name: "user_id", description: "Or enter the recipient Discord ID.", required: false },
         { type: 3, name: "type", description: "Choose positive or negative reputation.", required: true, choices: [
           { name: "Positive (+1)", value: "positive" }, { name: "Negative (−1)", value: "negative" }
         ] },
+        { type: 6, name: "member", description: "Member receiving reputation.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the recipient Discord ID.", required: false },
         { type: 3, name: "reason", description: "Required for negative reputation; keep it respectful.", required: false, max_length: 180 }
       ] },
       { type: 1, name: "history", description: "View a member's recent reputation activity.", options: [
@@ -122,6 +122,7 @@ export const reputationCommand = Object.freeze({
     const action = interaction.options.getSubcommand();
     if (action === "profile") {
       const target = await getTargetUser(interaction);
+      if (target.id !== interaction.user.id && !await interaction.guild.members.fetch(target.id).catch(() => null)) throw new RangeError("That account is not a member of this server.");
       await showProfile(interaction, prisma, target);
       return;
     }
@@ -155,7 +156,7 @@ export const reputationCommand = Object.freeze({
       return;
     }
     if (action === "history") {
-      const target = interaction.options.getUser("member") ?? interaction.user;
+      const target = await getTargetUser(interaction);
       await interaction.reply(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, target.id)));
       return;
     }
@@ -174,8 +175,8 @@ export async function handleReputationPrefix(message, prisma) {
     return false;
   }
   const value = match[1] === "+" ? 1 : -1;
-  const receiverId = match[2];
-  const reason = match[3]?.trim() ?? "";
+  const receiverId = match[2] ?? match[3];
+  const reason = match[4]?.trim() ?? "";
   try {
     const member = await message.guild.members.fetch(receiverId);
     if (member.user.bot) throw new RangeError("Bots cannot receive reputation.");
