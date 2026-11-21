@@ -103,6 +103,15 @@ export async function renderProfileCard({
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  // Subtle editorial grid and accent glow details.
+  ctx.save();
+  ctx.globalAlpha = 0.055;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1;
+  for (let x = 88; x < WIDTH - 80; x += 48) { ctx.beginPath(); ctx.moveTo(x, 96); ctx.lineTo(x, HEIGHT - 72); ctx.stroke(); }
+  for (let y = 112; y < HEIGHT - 72; y += 48) { ctx.beginPath(); ctx.moveTo(72, y); ctx.lineTo(WIDTH - 72, y); ctx.stroke(); }
+  ctx.restore();
+
   ctx.fillStyle = accent;
   ctx.font = "700 17px sans-serif";
   ctx.textAlign = "left";
