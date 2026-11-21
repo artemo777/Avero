@@ -56,7 +56,7 @@ export const contractsCommand = Object.freeze({
       description,
       sections,
       color: result?.claimed ? THEME.colors.success : THEME.colors.primary,
-      footer: "DAILY GOALS · SERVER PROGRESS"
+      footer: "DAILY GOALS · GLOBAL MEMBER PROGRESS"
     })));
   }
 });

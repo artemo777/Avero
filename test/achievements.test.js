@@ -17,13 +17,14 @@ test("achievements show global milestone progress and unique collection counts",
   ];
   const prisma = {
     currencyTransaction: { groupBy: async ({ where }) => {
-      assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1" });
+      assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1", currency: "coins" });
       return rows;
     } },
     currencyPurchase: { findMany: async () => [
       { itemId: "neon_badge" },
       { itemId: "vault_badge" },
-      { itemId: "starlight_badge" }
+      { itemId: "starlight_badge" },
+      { itemId: "retired_collectible_from_old_catalog" }
     ] }
   };
 

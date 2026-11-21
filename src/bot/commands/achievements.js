@@ -26,8 +26,10 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
     getCurrencyStats(prisma, guildId, target.id),
     getCurrencyPurchases(prisma, guildId, target.id)
   ]);
-  const ownedCount = new Set(purchases.map((purchase) => purchase.itemId)).size;
-  const collectionSets = buildCollectionSetProgress(purchases.map((purchase) => purchase.itemId));
+  const currentCatalogIds = new Set(SHOP_ITEMS.map((item) => item.id));
+  const ownedItemIds = [...new Set(purchases.map((purchase) => purchase.itemId))];
+  const ownedCount = ownedItemIds.filter((itemId) => currentCatalogIds.has(itemId)).length;
+  const collectionSets = buildCollectionSetProgress(ownedItemIds);
   const achievements = buildAchievements(stats, ownedCount, collectionSets);
   const unlocked = achievements.filter((achievement) => achievement.progress >= achievement.target).length;
   const pageSize = 7;

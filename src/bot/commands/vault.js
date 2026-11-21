@@ -17,7 +17,7 @@ export const vaultCommand = Object.freeze({
       max_length: 3
     }]
   }),
-  async execute(interaction, { prisma, now = new Date() } = {}) {
+  async execute(interaction, { prisma, settings, now = new Date() } = {}) {
     if (!interaction.guildId) {
       await interaction.reply({ content: "The Vault is available inside a server.", flags: MessageFlags.Ephemeral });
       return;
@@ -26,7 +26,7 @@ export const vaultCommand = Object.freeze({
     if (guess === null || guess === undefined) {
       const purchases = prisma ? await getCurrencyPurchases(prisma, interaction.guildId, interaction.user.id) : [];
       const hasNotebook = purchases.some((purchase) => purchase.itemId === "field_notebook");
-      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook }));
+      await interaction.reply(renderVaultChallenge(createVaultChallenge(interaction.guildId, now), interaction.user.id, { hasNotebook, rewardsEnabled: settings?.currencyEnabled !== false }));
       return;
     }
     if (!prisma) throw new Error("Vault command requires a database client.");
@@ -43,7 +43,7 @@ export const vaultCommand = Object.freeze({
       interaction.user.id,
       won ? "win" : "loss",
       GUESS_REWARD,
-      { cooldownMs: GUESS_REWARD_COOLDOWN_MS, now }
+      { cooldownMs: GUESS_REWARD_COOLDOWN_MS, now, currencyEnabled: settings?.currencyEnabled !== false }
     );
     if (!attempt.submitted) {
       await interaction.reply({
@@ -58,6 +58,7 @@ export const vaultCommand = Object.freeze({
       challenge,
       won,
       reward: attempt.reward,
+      rewardsEnabled: settings?.currencyEnabled !== false,
       userId: interaction.user.id
     }));
   }

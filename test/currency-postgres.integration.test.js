@@ -6,7 +6,8 @@ import {
   awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem, submitDailyVaultAttempt
 } from "../src/db/currency-repository.js";
 import { applyForJob, getMemberJob, runJobShift } from "../src/db/work-repository.js";
-import { getMemberProfile, ensureMemberProfile } from "../src/db/member-repository.js";
+import { getMemberProfile, ensureMemberProfile, equipProfileBadge } from "../src/db/member-repository.js";
+import { adjustAdminInventory } from "../src/db/admin-economy-repository.js";
 import { getMemberTitles, unlockMemberTitle } from "../src/db/title-repository.js";
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -24,6 +25,9 @@ async function createAccount(balance = 0) {
 }
 
 async function cleanGuild(guildId, userId) {
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new TypeError("A member ID is required for integration-test cleanup.");
+  }
   await prisma.dailyContractClaim.deleteMany({ where: { guildId, userId } });
   await prisma.currencyTransaction.deleteMany({ where: { guildId, userId } });
   await prisma.currencyPurchase.deleteMany({ where: { guildId, userId } });
@@ -50,7 +54,7 @@ test("PostgreSQL allows only one concurrent daily claim", { skip: !enabled }, as
 
 test("PostgreSQL prevents concurrent different-item purchases from overspending", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(300);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
 
   const results = await Promise.all([
     purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
@@ -70,7 +74,7 @@ test("PostgreSQL prevents concurrent different-item purchases from overspending"
 
 test("PostgreSQL rolls back a duplicate concurrent purchase without double charging", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(500);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
 
   const results = await Promise.all([
     purchaseCurrencyItem(prisma, guildId, userId, "neon_badge", 150),
@@ -89,7 +93,7 @@ test("PostgreSQL rolls back a duplicate concurrent purchase without double charg
 
 test("PostgreSQL awards a concurrent game reward only once inside its cooldown", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount();
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T13:00:00.000Z");
 
   const results = await Promise.all([
@@ -109,7 +113,7 @@ test("PostgreSQL awards a concurrent game reward only once inside its cooldown",
 
 test("PostgreSQL records only one Vault submission per member and UTC day", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount();
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T18:00:00.000Z");
 
   const results = await Promise.all([
@@ -147,7 +151,7 @@ test("PostgreSQL records only one Vault submission per member and UTC day", { sk
 
 test("PostgreSQL allows only one concurrent claim for a completed daily contract", { skip: !enabled }, async (t) => {
   const { guildId, userId } = await createAccount(10);
-  t.after(() => cleanGuild(guildId));
+  t.after(() => cleanGuild(guildId, userId));
   const now = new Date("2026-10-30T15:00:00.000Z");
   await prisma.currencyTransaction.createMany({
     data: [
@@ -192,6 +196,29 @@ test("PostgreSQL shares wallet, cooldowns, and item ownership across guild conte
   });
   assert.equal(account.balance, 250 - 100 + 100);
   assert.equal(await prisma.currencyPurchase.count({ where: { guildId: "__avero_global__", userId, itemId: "global_test_badge" } }), 1);
+});
+
+test("PostgreSQL serializes equipment against concurrent admin inventory removal", { skip: !enabled }, async (t) => {
+  const userId = "7" + randomUUID().replaceAll("-", "").slice(0, 16);
+  const actorUserId = "8" + randomUUID().replaceAll("-", "").slice(0, 16);
+  const guildId = "12345678901234567";
+  const globalGuildId = "__avero_global__";
+  t.after(async () => {
+    await prisma.adminEconomyAudit.deleteMany({ where: { guildId, targetUserId: userId, actorUserId } });
+    await prisma.memberProfile.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.currencyPurchase.deleteMany({ where: { guildId: globalGuildId, userId } });
+  });
+  await prisma.currencyPurchase.create({ data: { guildId: globalGuildId, userId, itemId: "starter_badge" } });
+  const outcomes = await Promise.allSettled([
+    equipProfileBadge(prisma, guildId, userId, "starter_badge"),
+    adjustAdminInventory(prisma, guildId, userId, actorUserId, "starter_badge", "remove", "concurrency test")
+  ]);
+  assert.ok(outcomes.some((result) => result.status === "fulfilled"));
+  const [purchase, profile] = await Promise.all([
+    prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { guildId: globalGuildId, userId, itemId: "starter_badge" } } }),
+    prisma.memberProfile.findUnique({ where: { guildId_userId: { guildId: globalGuildId, userId } } })
+  ]);
+  if (!purchase) assert.notEqual(profile?.equippedBadgeItemId, "starter_badge");
 });
 
 test("PostgreSQL shares profiles, titles, and careers across guild contexts", { skip: !enabled }, async (t) => {

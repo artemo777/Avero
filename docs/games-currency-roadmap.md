@@ -7,7 +7,7 @@ This roadmap keeps the games and economy focused, polished, and reliable. Curren
 Commands already in the feature branch:
 
 - Economy: `/balance`, `/daily`, `/work`, `/scavenge`, `/contracts`
-- Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`
+- Games: `/games`, `/guess`, `/rps`, `/coinflip`, `/vault`, plus the Pick the Star and Mine Tiles visual mini-games in the Games Hub
 - Collectibles: `/shop`, `/buy`, `/inventory`
 - Expeditions: `/scavenge route` with Old Server Archive, Neon Plaza, and Moonlit Garden loot pools
 - Progress and discovery: `/profile`, `/achievements`, `/collections`, `/help`
@@ -38,7 +38,7 @@ Career earnings are handled only by `runJobShift` in `src/db/work-repository.js`
 
 ### 2. Daily Contracts
 
-Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts (+80 coins), scavenge three times (+90), play three recorded game rounds (+75), and unlock one collectible (+100) from either the shop or a new scavenging drop. Progress is derived from the server/member transaction ledger for the current UTC day. Each completed contract has a unique per-member/server/day claim record and is credited atomically with a ledger entry. New scavenge drops write a zero-value `scavenge_collectible` ledger event so they count toward the collector goal without changing coin balances. No wagers or entry fees are involved.
+Implemented on the feature branch as `/contracts` with four daily goals: complete two work shifts (+80 coins), scavenge three times (+90), play three recorded game rounds (+75), and unlock one collectible (+100) from either the shop or a new scavenging drop. Progress is derived from the global member transaction ledger for the current UTC day. Each completed contract has a unique per-member/day claim record and is credited atomically with a ledger entry. New scavenge drops write a zero-value `scavenge_collectible` ledger event so they count toward the collector goal without changing coin balances. No wagers or entry fees are involved.
 
 ### 3. The Vault
 
@@ -56,6 +56,18 @@ Implemented: `/scavenge` offers three themed expedition routes (Old Server Archi
 
 Implemented: owned badges and owned cosmetic collectibles can be equipped independently as a profile badge and profile frame. Equipment is global per member and can be removed from the item detail panel. Further theme and title-style options remain planned. Cosmetics never change gameplay rewards.
 
+## Mini-game expansion and server pause behavior
+
+Pick the Star and Mine Tiles are integrated into the Games Hub as free, no-wager rounds. Their persisted sessions bind actions to the member and game, expire, and settle rewards through the shared game-reward cooldown. Activity is recorded for member statistics and daily-contract progress.
+
+The separate server controls remain independent:
+- Pausing **games** blocks game commands and game components.
+- Pausing **currency** leaves free game play available but suppresses coin rewards for Guess, Coinflip, RPS, Pick the Star, Mine Tiles, and the Vault.
+- Zero-value activity records and the Vault's one-attempt-per-UTC-day rule remain active while currency rewards are paused.
+- Both slash-command and Games Hub entry points receive the same setting and explain when a reward is unavailable.
+- Pending `/ask` transfers cannot be accepted while currency is paused; declining remains available, and accepted transfers can resume after currency is re-enabled if the request has not expired.
+- `/titles buy` is blocked while currency is paused; viewing and equipping already-owned titles remain available.
+
 ## Live acceptance checklist
 
 After the branch stack is integrated and the database migrations are applied in a confirmed development/test Codespace:
@@ -70,9 +82,10 @@ After the branch stack is integrated and the database migrations are applied in 
 8. Open `/contracts`, complete each objective, claim each reward, and verify repeated claims never pay twice.
 9. Open `/shop`, inspect an item, buy it, and try buying it again; ownership and balance must remain correct.
 10. Open `/inventory`, page through it, equip and unequip a badge, and verify `/profile` shows only the selected badge.
-11. Check coin balances, games, coinflip, guess, RPS, and Vault rewards without ranking members.
-12. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
-13. Repeat balance and inventory checks in a second server to confirm the same global member wallet and inventory are visible there.
+11. Check coin balances, games, coinflip, guess, RPS, Pick the Star, Mine Tiles, and Vault rewards without ranking members.
+12. Pause currency in `/config`; confirm free game rounds still record activity but no game awards are paid, then re-enable currency and verify normal reward cooldowns resume.
+13. Restart the bot and verify balances, cooldowns, purchases, and equipped badge persist.
+14. Repeat balance and inventory checks in a second server to confirm the same global member wallet and inventory are visible there.
 
 Do not run production migrations, register global commands, deploy, or merge stacked PRs as part of this checklist without the repository owner's explicit go-ahead.
 

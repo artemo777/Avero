@@ -5,11 +5,20 @@ import { collectionsCommand } from "../src/bot/commands/collections.js";
 
 test("collections command renders route-linked set progress for a global member", async () => {
   let response;
+  const unlockedTitles = new Map();
   const prisma = {
     currencyPurchase: {
       findMany: async ({ where }) => {
         assert.deepEqual(where, { guildId: "__avero_global__", userId: "user-1" });
         return [{ itemId: "neon_badge" }, { itemId: "vault_badge" }, { itemId: "avero_relic" }];
+      }
+    },
+    memberTitle: {
+      findUnique: async ({ where }) => unlockedTitles.get(where.guildId_userId_titleId.titleId) ?? null,
+      create: async ({ data }) => {
+        const title = { ...data };
+        unlockedTitles.set(data.titleId, title);
+        return title;
       }
     }
   };
