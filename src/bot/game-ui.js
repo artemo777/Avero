@@ -117,7 +117,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     if (sectionRow?.length) {
       const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
         const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(ButtonStyle.Secondary);
-        if (entry.emoji) builder.setEmoji(entry.emoji);
+        setButtonEmoji(builder, entry.emoji);
         if (entry.disabled) builder.setDisabled(true);
         return builder;
       }));
@@ -129,7 +129,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(ButtonStyle.Secondary);
-      if (button.emoji) builder.setEmoji(button.emoji);
+      setButtonEmoji(builder, button.emoji);
       if (button.disabled) builder.setDisabled(true);
       return builder;
     }));
@@ -163,6 +163,13 @@ async function collectibleArtwork(items, size = 192) {
     files.push(new AttachmentBuilder(image, { name: filename }));
   }
   return { filenames, files };
+}
+function setButtonEmoji(builder, value) {
+  if (!value) return builder;
+  const custom = /^<(a?):([A-Za-z0-9_]+):(\\d+)>$/.exec(value);
+  if (custom) builder.setEmoji({ id: custom[3], name: custom[2], animated: custom[1] === "a" });
+  else builder.setEmoji(value);
+  return builder;
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
