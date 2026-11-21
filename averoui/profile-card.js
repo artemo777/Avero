@@ -56,7 +56,9 @@ export async function renderProfileCard({
   avatarDecoration = null,
   badges = [],
   coins = 0,
-  collectionCount = 0
+  collectionCount = 0,
+  gamesPlayed = 0,
+  dailyStreak = 0
 } = {}) {
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext("2d");
