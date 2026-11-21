@@ -213,7 +213,7 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: getAssetSymbol("coin") + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
-    sections: ["**Earn coins**\n" + uiEmoji("daily", "✨") + " /daily · every 24h\n" + uiEmoji("work", "🧰") + " /work · every 60m\n" + uiEmoji("scavenge", "🧭") + " /scavenge · every 20m\n📜 /contracts · daily goals\n" + uiEmoji("game", "🎮") + " /games · free mini-games", "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
+    sections: ["**Earn coins**\n" + "✨ /daily · every 24h\n🧰 /work · every 60m\n🧭 /scavenge · every 20m\n📜 /contracts · daily goals\n🎮 /games · free mini-games", "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
     footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
@@ -315,7 +315,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const totalMarketValue = marketValue(items);
   const pageMarketValue = marketValue(pageItems);
   const collection = pageItems.length
-    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\\n")
+    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No collectibles yet. Browse the shop to get your first one.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   const completedSets = buildCollectionSetProgress(items.map((item) => item.id)).filter((set) => set.complete).length;
