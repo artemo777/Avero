@@ -95,7 +95,9 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     avatarDecoration: equippedDecoration?.id ?? null,
     badges,
     coins: account?.balance ?? 0,
-    collectionCount: ownedItems.length
+    collectionCount: ownedItems.length,
+    gamesPlayed: stats.gamesPlayed,
+    dailyStreak: account?.dailyStreak ?? 0
   });
   const professor = await renderRegisteredAsset("mascot-professor", 72);
   const container = new ContainerBuilder().setAccentColor(accent);
