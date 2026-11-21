@@ -20,7 +20,7 @@ export async function createGameSession(prisma, guildId, userId, gameId, payload
       // race past the supersede step and leave multiple active sessions.
       if (typeof tx.$queryRaw === "function") {
         const lockKey = guildId + ":" + userId + ":" + gameId;
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))::text AS lock_result`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
       }
       await tx.gameSession.updateMany({ where: { status: "active", expiresAt: { lte: now } }, data: { status: "expired" } });
       await tx.gameSession.updateMany({ where: { guildId, userId, gameId, status: "active" }, data: { status: "superseded" } });
