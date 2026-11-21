@@ -6,7 +6,7 @@ import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
-import { profileCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
+import { profileCommand, profileEditCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
 import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
@@ -188,7 +188,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("autoresponder"));
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
-  assert.equal(names.length, 26);
+  assert.equal(names.length, 27);
   assert.ok(names.includes("rep"));
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
@@ -344,16 +344,13 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Ada/);
-  assert.match(text, /Title/);
-  assert.match(text, /Frame/);
-  assert.equal(response.files.length, 2);
-  assert.deepEqual(response.files.map((file) => file.name).sort(), ["avero-professor.png", "profile-card.png"]);
+  assert.doesNotMatch(text, /Title|Frame/);
+  assert.equal(response.files.length, 1);
+  assert.deepEqual(response.files.map((file) => file.name), ["profile-card.png"]);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
-  assert.equal(selectorRows.length, 5);
-  assert.deepEqual(selectorRows.map((row) => row.components[0].custom_id.split("|")[2]), [
-    "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"
-  ]);
+  assert.equal(selectorRows.length, 0);
+  assert.equal(selectorRows.length, 0);
 });
 
 
@@ -375,9 +372,9 @@ test("profile lists all owned badges but displays only the selected badge beside
   }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 2);
+  assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
-  assert.match(panelText(response), /Showcased badges.*Archive Key/);
+  assert.match(panelText(response), /Archive Key/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
@@ -400,7 +397,7 @@ test("profile shows the actual equipped collectible artwork beside the username"
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 2);
+  assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
 });
@@ -695,7 +692,7 @@ test("profile bio modal cannot bypass a currency pause applied after opening the
 test("profile command blocks bio and banner edits while currency is paused but leaves viewing available", async () => {
   let response;
   const prisma = new Proxy({}, { get() { throw new Error("Paused profile edits must not access the database."); } });
-  await profileCommand.execute({
+  await profileEditCommand.execute({
     guildId: "guild-1", user: { id: "user-1" },
     options: { getUser: () => null, getAttachment: () => null, getString: () => "New bio" },
     reply: async (payload) => { response = payload; }

@@ -117,7 +117,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
     if (sectionRow?.length) {
       const row = new ActionRowBuilder().addComponents(sectionRow.map((entry) => {
         const builder = new ButtonBuilder().setCustomId(entry.customId).setLabel(entry.label).setStyle(ButtonStyle.Secondary);
-        if (entry.emoji) builder.setEmoji(entry.emoji);
+        // Button emojis omitted to avoid invalid Discord component emoji payloads.
         if (entry.disabled) builder.setDisabled(true);
         return builder;
       }));
@@ -129,7 +129,7 @@ export function createGamePanel({ title, description, sections = [], sectionButt
   for (let index = 0; index < buttons.length; index += 5) {
     const row = new ActionRowBuilder().addComponents(buttons.slice(index, index + 5).map((button) => {
       const builder = new ButtonBuilder().setCustomId(button.customId).setLabel(button.label).setStyle(ButtonStyle.Secondary);
-      if (button.emoji) builder.setEmoji(button.emoji);
+      // Button emojis omitted to avoid invalid Discord component emoji payloads.
       if (button.disabled) builder.setDisabled(true);
       return builder;
     }));
@@ -163,6 +163,13 @@ async function collectibleArtwork(items, size = 192) {
     files.push(new AttachmentBuilder(image, { name: filename }));
   }
   return { filenames, files };
+}
+function setButtonEmoji(builder, value) {
+  if (!value) return builder;
+  const custom = /^<(a?):([A-Za-z0-9_]+):(\d+)>$/.exec(value);
+  if (custom) builder.setEmoji({ id: custom[3], name: custom[2], animated: custom[1] === "a" });
+  else builder.setEmoji(value);
+  return builder;
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
@@ -206,7 +213,7 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: getAssetSymbol("coin") + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
-    sections: ["**Earn coins**\n" + uiEmoji("daily", "✨") + " /daily · every 24h\n" + uiEmoji("work", "🧰") + " /work · every 60m\n" + uiEmoji("scavenge", "🧭") + " /scavenge · every 20m\n📜 /contracts · daily goals\n" + uiEmoji("game", "🎮") + " /games · free mini-games", "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
+    sections: ["**Earn coins**\n" + "✨ /daily · every 24h\n🧰 /work · every 60m\n🧭 /scavenge · every 20m\n📜 /contracts · daily goals\n🎮 /games · free mini-games", "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."],
     footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
@@ -278,7 +285,7 @@ export async function renderWorkJobsPage(userId, page = 0) {
   const jobs = WORK_JOBS.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const professor = await professorArtwork(72);
   const sections = jobs.map((job, index) =>
-    "**" + (currentPage * pageSize + index + 1) + ". " + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift\n" + job.description
+    "**" + (currentPage * pageSize + index + 1) + ". " + job.name + "** · " + job.salary.toLocaleString("en-US") + " coins/shift\n" + job.description + "\n-# Unlock requirement: " + (job.requiredShifts === 0 ? "Available immediately" : job.requiredShifts + " lifetime shifts")
   );
   sections.push("**Professor’s tip** · Apply with `/work apply`, then complete a shift. The Repair Kit and Pocket Hourglass improve your routine.");
   const buttons = pageCount > 1 ? [
@@ -308,7 +315,7 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   const totalMarketValue = marketValue(items);
   const pageMarketValue = marketValue(pageItems);
   const collection = pageItems.length
-    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\\n")
+    ? pageItems.map((item) => collectibleIcon(item) + " **" + item.name + "** · " + item.rarity).join("\n")
     : "No collectibles yet. Browse the shop to get your first one.";
   const progress = Math.round((items.length / SHOP_ITEMS.length) * 100);
   const completedSets = buildCollectionSetProgress(items.map((item) => item.id)).filter((set) => set.complete).length;
@@ -323,8 +330,8 @@ export async function renderInventory(prisma, guildId, userId, page = 0) {
   return gamePayload(createGamePanel({
     title: "Your inventory",
     eyebrow: "COLLECTION",
-    description: "**Total Market Value:** " + totalMarketValue.coins.toLocaleString("en-US") + " coins · " + totalMarketValue.gems.toLocaleString("en-US") + " gems\\n**Page Market Value:** " + pageMarketValue.coins.toLocaleString("en-US") + " coins · " + pageMarketValue.gems.toLocaleString("en-US") + " gems",
-    sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\\n**Sets completed:** " + completedSets + "/3"],
+    description: "**Total Market Value:** " + totalMarketValue.coins.toLocaleString("en-US") + " coins · " + totalMarketValue.gems.toLocaleString("en-US") + " gems\n**Page Market Value:** " + pageMarketValue.coins.toLocaleString("en-US") + " coins · " + pageMarketValue.gems.toLocaleString("en-US") + " gems",
+    sections: [collection, "**Collection progress:** " + items.length + "/" + SHOP_ITEMS.length + " · " + progress + "%\n**Sets completed:** " + completedSets + "/3"],
     color: items.length === SHOP_ITEMS.length ? THEME.colors.success : THEME.colors.primary,
     buttons: [...itemButtons, ...pageButtons, button(userId, "collections", "Set atlas", "", ButtonStyle.Secondary, uiEmoji("collections", "🗺️")), button(userId, "shop", "Shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))],
     footer: "PAGE " + (currentPage + 1) + " OF " + pageCount,

@@ -57,6 +57,34 @@ async function resolveUser(interaction, userId) {
   return interaction.guild.members.fetch(userId).then((member) => member.user);
 }
 
+async function getTargetUser(interaction, optionName = "member") {
+  const selected = interaction.options.getUser(optionName);
+  const rawId = interaction.options.getString("user_id")?.trim();
+  if (selected && rawId) throw new TypeError("Choose either a member or a user ID, not both.");
+  const id = selected?.id ?? rawId;
+  if (!id) return interaction.user;
+  if (!/^[0-9]{15,22}$/.test(id)) throw new TypeError("Enter a valid Discord user ID (15–22 digits).");
+  const user = await interaction.client.users.fetch(id).catch(() => null);
+  if (!user) throw new RangeError("I couldn’t find a Discord account with that ID.");
+  return user;
+}
+
+function reputationConfirmation(giver, target, value, reason = null) {
+  const positive = value > 0;
+  return { embeds: [new EmbedBuilder().setColor(positive ? 0x38b779 : 0xc65c67)
+    .setAuthor({ name: "AVERO • REPUTATION UPDATE" })
+    .setTitle(positive ? "Reputation awarded" : "Reputation recorded")
+    .setDescription((positive ? "A positive reputation point has been awarded to " : "A negative reputation point has been recorded for ") + target + ".")
+    .addFields(
+      { name: "Given by", value: giver.toString(), inline: true },
+      { name: "Recipient", value: target.toString(), inline: true },
+      ...(reason ? [{ name: "Reason", value: reason }] : [])
+    )
+    .setFooter({ text: "Avero Reputation • One vote per member every 24 hours" })],
+    allowedMentions: { users: [target.id] }
+  };
+}
+
 async function showProfile(interaction, prisma, user) {
   const summary = await getReputationSummary(prisma, interaction.guildId, user.id);
   await interaction.reply(profilePayload(user, summary));
@@ -68,17 +96,20 @@ export const reputationCommand = Object.freeze({
     description: "Give, view, and explore server reputation.",
     options: [
       { type: 1, name: "profile", description: "View a member's reputation.", options: [
-        { type: 6, name: "member", description: "Member to inspect.", required: false }
+        { type: 6, name: "member", description: "Member to inspect.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the member Discord ID.", required: false }
       ] },
       { type: 1, name: "give", description: "Give positive or negative reputation.", options: [
-        { type: 6, name: "member", description: "Member receiving reputation.", required: true },
         { type: 3, name: "type", description: "Choose positive or negative reputation.", required: true, choices: [
           { name: "Positive (+1)", value: "positive" }, { name: "Negative (−1)", value: "negative" }
         ] },
+        { type: 6, name: "member", description: "Member receiving reputation.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the recipient Discord ID.", required: false },
         { type: 3, name: "reason", description: "Required for negative reputation; keep it respectful.", required: false, max_length: 180 }
       ] },
       { type: 1, name: "history", description: "View a member's recent reputation activity.", options: [
-        { type: 6, name: "member", description: "Member to inspect.", required: false }
+        { type: 6, name: "member", description: "Member to inspect.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the member Discord ID.", required: false }
       ] },
     ]
   }),
@@ -90,7 +121,8 @@ export const reputationCommand = Object.freeze({
     }
     const action = interaction.options.getSubcommand();
     if (action === "profile") {
-      const target = interaction.options.getUser("member") ?? interaction.user;
+      const target = await getTargetUser(interaction);
+      if (target.id !== interaction.user.id && !await interaction.guild.members.fetch(target.id).catch(() => null)) throw new RangeError("That account is not a member of this server.");
       await showProfile(interaction, prisma, target);
       return;
     }
@@ -120,11 +152,11 @@ export const reputationCommand = Object.freeze({
         await interaction.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", flags: MessageFlags.Ephemeral });
         return;
       }
-      await interaction.reply({ content: (value > 0 ? "🟩 You gave positive reputation to " : "🟥 You gave negative reputation to ") + target + ".", allowedMentions: { users: [target.id] } });
+      await interaction.reply(reputationConfirmation(interaction.user, target, value, interaction.options.getString("reason")));
       return;
     }
     if (action === "history") {
-      const target = interaction.options.getUser("member") ?? interaction.user;
+      const target = await getTargetUser(interaction);
       await interaction.reply(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, target.id)));
       return;
     }
@@ -134,17 +166,17 @@ export const reputationCommand = Object.freeze({
 
 export async function handleReputationPrefix(message, prisma) {
   if (!message.guildId || message.author.bot || message.webhookId) return false;
-  const match = String(message.content ?? "").trim().match(/^([+-])rep\s+<@!?([0-9]{15,22})>(?:\s+([\s\S]+))?$/i);
+  const match = String(message.content ?? "").trim().match(/^([+-])rep\s+(?:<@!?(\d{15,22})>|(\d{15,22}))(?:\s+([\s\S]+))?$/i);
   if (!match) {
     if (/^[+-]rep\b/i.test(String(message.content ?? "").trim())) {
-      await message.reply({ content: "Use `+rep @member` or `-rep @member a short reason`.", allowedMentions: { parse: [] } });
+      await message.reply({ content: "Use `+rep @member` or `+rep USER_ID`; for negative reputation, add a short respectful reason.", allowedMentions: { parse: [] } });
       return true;
     }
     return false;
   }
   const value = match[1] === "+" ? 1 : -1;
-  const receiverId = match[2];
-  const reason = match[3]?.trim() ?? "";
+  const receiverId = match[2] ?? match[3];
+  const reason = match[4]?.trim() ?? "";
   try {
     const member = await message.guild.members.fetch(receiverId);
     if (member.user.bot) throw new RangeError("Bots cannot receive reputation.");

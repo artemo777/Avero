@@ -237,6 +237,7 @@ model MemberJob {
   userId       String
   jobId        String
   shifts       Int      @default(0)
+  careerShifts Int      @default(0)
   promotions   Int      @default(0)
   lastShiftAt  DateTime?
   createdAt    DateTime @default(now())

@@ -3,8 +3,28 @@ import { getPrismaClient } from "../db/client.js";
 import { getGuildSettings } from "../db/guild-settings-repository.js";
 import { answerAveroQuestion } from "./ai.js";
 
+const PREFIX_COMMAND_ALIASES = Object.freeze({
+  wallet: "balance", bal: "balance", coins: "balance",
+  claim: "daily", payday: "daily",
+  expedition: "scavenge", explore: "scavenge",
+  bag: "inventory", items: "inventory",
+  collectibles: "collections", collection: "collections",
+  careers: "work", job: "work",
+  mini: "games", play: "games",
+  store: "shop", market: "shop",
+  rep: "reputation", reputation: "reputation",
+  helpme: "help", commands: "help",
+  flip: "coinflip", cf: "coinflip",
+  rockpaper: "rps", rockpaperscissors: "rps"
+});
+
 const GAME_COMMANDS = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const CURRENCY_COMMANDS = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
+
+export function resolvePrefixCommandName(name) {
+  const normalized = String(name ?? "").toLowerCase();
+  return PREFIX_COMMAND_ALIASES[normalized] ?? normalized;
+}
 
 export function tokenizePrefixArguments(input) {
   const tokens = [];
