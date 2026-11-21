@@ -212,15 +212,41 @@ export async function renderProfileCard({
     ctx.fillText(safeBio, textX + 2, 350, 760);
   }
 
-  const statY = 410;
-  drawPill(ctx, textX, statY, Number(coins).toLocaleString("en-US") + " COINS", accent, 190);
-  drawPill(ctx, textX + 206, statY, String(collectionCount) + " COLLECTIBLES", accent, 220);
+  // Compact premium stat tiles with clear hierarchy.
+  const statY = 402;
+  const statItems = [
+    { label: "COINS", value: Number(coins).toLocaleString("en-US"), icon: "◆" },
+    { label: "COLLECTIBLES", value: String(collectionCount), icon: "✦" },
+    { label: "GAMES PLAYED", value: Number(gamesPlayed).toLocaleString("en-US"), icon: "◈" },
+    { label: "DAILY STREAK", value: String(dailyStreak) + " days", icon: "↗" }
+  ];
+  statItems.forEach((item, index) => {
+    const x = textX + index * 202;
+    rounded(ctx, x, statY, 184, 76, 18);
+    ctx.fillStyle = "rgba(9,12,20,0.48)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.11)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.font = "700 19px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(item.icon, x + 16, statY + 25);
+    ctx.fillStyle = "rgba(255,255,255,0.52)";
+    ctx.font = "700 12px sans-serif";
+    ctx.fillText(item.label, x + 44, statY + 25);
+    ctx.fillStyle = "#f7f8fc";
+    ctx.font = "700 23px sans-serif";
+    ctx.fillText(item.value, x + 16, statY + 54, 152);
+  });
 
   ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#f1f3f8";
-  ctx.font = "700 18px sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = "700 15px sans-serif";
   ctx.fillText("BADGE SHOWCASE", 68, 505);
+  ctx.fillStyle = "rgba(255,255,255,0.16)";
+  ctx.fillRect(68, 514, WIDTH - 136, 1);
   const visibleBadges = badges.slice(0, 5);
   if (!visibleBadges.length) {
     ctx.fillStyle = "rgba(255,255,255,0.48)";
@@ -229,15 +255,17 @@ export async function renderProfileCard({
   } else {
     visibleBadges.forEach((badge, index) => {
       const x = 68 + index * 214;
-      rounded(ctx, x, 520, 198, 54, 15);
+      rounded(ctx, x, 526, 198, 52, 14);
       ctx.fillStyle = "rgba(255,255,255,0.08)";
       ctx.fill();
       ctx.strokeStyle = "rgba(255,255,255,0.13)";
       ctx.stroke();
       ctx.font = "600 16px sans-serif";
-      ctx.fillStyle = "#f5f6fa";
+      ctx.fillStyle = accent;
       ctx.textBaseline = "middle";
-      ctx.fillText(String(badge.icon ?? "✦") + "  " + String(badge.name).slice(0, 18), x + 14, 547, 170);
+      ctx.fillText(String(badge.icon ?? "✦"), x + 14, 552);
+      ctx.fillStyle = "#f5f6fa";
+      ctx.fillText(String(badge.name).slice(0, 18), x + 42, 552, 140);
     });
   }
 
