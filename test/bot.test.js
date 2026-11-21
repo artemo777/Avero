@@ -350,9 +350,7 @@ test("profile command combines wallet and collection data", async () => {
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
   assert.equal(selectorRows.length, 0);
-  assert.deepEqual(selectorRows.map((row) => row.components[0].custom_id.split("|")[2]), [
-    "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"
-  ]);
+  assert.equal(selectorRows.length, 0);
 });
 
 
