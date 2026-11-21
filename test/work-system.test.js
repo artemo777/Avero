@@ -30,6 +30,7 @@ function fakePrisma() {
         if (!allowed) return { count: 0 };
         if (data.jobId !== undefined) job.jobId = data.jobId;
         if (data.shifts?.increment) job.shifts += data.shifts.increment;
+        if (data.careerShifts?.increment) job.careerShifts = (job.careerShifts ?? 0) + data.careerShifts.increment;
         if (data.shifts !== undefined && typeof data.shifts === "number") job.shifts = data.shifts;
         if (data.promotions !== undefined) job.promotions = data.promotions;
         if (data.lastShiftAt) job.lastShiftAt = data.lastShiftAt;
@@ -93,6 +94,7 @@ test("resigning removes the active career and allows a new application", async (
   await runJobShift(prisma, "guild", "member", { now: firstShiftAt });
   assert.equal((await resignFromJob(prisma, "guild", "member")).resigned, true);
   assert.equal(await getMemberJob(prisma, "guild", "member"), null);
+  await prisma.memberJob.update({ data: { careerShifts: 15 } });
   const reapplied = await applyForJob(prisma, "guild", "member", "developer");
   assert.equal(reapplied.applied, true);
   const blocked = await runJobShift(prisma, "guild", "member", { now: new Date(firstShiftAt.getTime() + 1000) });
