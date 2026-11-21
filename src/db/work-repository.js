@@ -19,6 +19,8 @@ export async function applyForJob(prisma, guildId, userId, jobId) {
   const job = WORK_JOBS.find((entry) => entry.id === jobId);
   if (!job) throw new RangeError("Choose a job from the Avero work list.");
   const existing = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
+  const careerShifts = existing?.careerShifts ?? 0;
+  if (careerShifts < job.requiredShifts) return { applied: false, reason: "locked", requiredShifts: job.requiredShifts, careerShifts, job };
   if (existing?.jobId === "unemployed") {
     const updated = await prisma.memberJob.updateMany({
       where: { ...memberKey, jobId: "unemployed" },
@@ -80,7 +82,7 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
         promotions: current.promotions,
         lastShiftAt: current.lastShiftAt
       },
-      data: { shifts: nextShifts, promotions: nextPromotions, lastShiftAt: now }
+      data: { shifts: nextShifts, careerShifts: { increment: 1 }, promotions: nextPromotions, lastShiftAt: now }
     });
     if (updatedJob.count !== 1) {
       const latest = await tx.memberJob.findUnique({ where: { guildId_userId: memberKey } });
