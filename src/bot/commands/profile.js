@@ -107,7 +107,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
     new MediaGalleryItemBuilder().setURL("attachment://profile-card.png").setDescription("Avero member profile card")
   ));
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
+  if (editable) container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
     "**Title** · " + (equippedTitle?.name ?? "None"),
     "**Frame** · " + (equippedFrame?.name ?? "Default"),
     "**Avatar decoration** · " + (equippedDecoration?.name ?? "None"),
@@ -157,10 +157,8 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
         ownedBadges.length ? { minValues: 0, maxValues: Math.min(5, ownedBadges.length) } : { minValues: 1, maxValues: 1, disabled: true })
     );
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-      "-# Select an option to apply it instantly. Upload a custom image with **/profile banner:** or set text with **/profile bio:**. Badges support multi-select."
+      "-# Select an option to apply it instantly. Upload a custom image with **/profile-edit banner:** or set text with **/profile-edit bio:**. Badges support multi-select."
     ));
-  } else {
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# AVERO • GLOBAL PROFILE"));
   }
   return {
     flags: MessageFlags.IsComponentsV2,
