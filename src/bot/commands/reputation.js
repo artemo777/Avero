@@ -166,7 +166,7 @@ export const reputationCommand = Object.freeze({
 
 export async function handleReputationPrefix(message, prisma) {
   if (!message.guildId || message.author.bot || message.webhookId) return false;
-  const match = String(message.content ?? "").trim().match(/^([+-])rep\s+<@!?([0-9]{15,22})>(?:\s+([\s\S]+))?$/i);
+  const match = String(message.content ?? "").trim().match(/^([+-])rep\s+(?:<@!?(\d{15,22})>|(\d{15,22}))(?:\s+([\s\S]+))?$/i);
   if (!match) {
     if (/^[+-]rep\b/i.test(String(message.content ?? "").trim())) {
       await message.reply({ content: "Use `+rep @member` or `+rep USER_ID`; for negative reputation, add a short respectful reason.", allowedMentions: { parse: [] } });
