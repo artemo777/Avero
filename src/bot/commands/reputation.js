@@ -57,7 +57,35 @@ async function resolveUser(interaction, userId) {
   return interaction.guild.members.fetch(userId).then((member) => member.user);
 }
 
-async function getTargetUser(interaction, optionName = "member") {\n  const selected = interaction.options.getUser(optionName);\n  const rawId = interaction.options.getString("user_id")?.trim();\n  if (selected && rawId) throw new TypeError("Choose either a member or a user ID, not both.");\n  const id = selected?.id ?? rawId;\n  if (!id) return interaction.user;\n  if (!/^[0-9]{15,22}$/.test(id)) throw new TypeError("Enter a valid Discord user ID (15–22 digits).");\n  const user = await interaction.client.users.fetch(id).catch(() => null);\n  if (!user) throw new RangeError("I couldn’t find a Discord account with that ID.");\n  return user;\n}\n\nfunction reputationConfirmation(giver, target, value, reason = null) {\n  const positive = value > 0;\n  return { embeds: [new EmbedBuilder().setColor(positive ? 0x38b779 : 0xc65c67)\n    .setAuthor({ name: "AVERO • REPUTATION UPDATE" })\n    .setTitle(positive ? "Reputation awarded" : "Reputation recorded")\n    .setDescription((positive ? "A positive reputation point has been awarded to " : "A negative reputation point has been recorded for ") + target + ".")\n    .addFields(\n      { name: "Given by", value: giver.toString(), inline: true },\n      { name: "Recipient", value: target.toString(), inline: true },\n      ...(reason ? [{ name: "Reason", value: reason }] : [])\n    )\n    .setFooter({ text: "Avero Reputation • One vote per member every 24 hours" })],\n    allowedMentions: { users: [target.id] }\n  };\n}\n\nasync function showProfile(interaction, prisma, user) {
+async function getTargetUser(interaction, optionName = "member") {
+  const selected = interaction.options.getUser(optionName);
+  const rawId = interaction.options.getString("user_id")?.trim();
+  if (selected && rawId) throw new TypeError("Choose either a member or a user ID, not both.");
+  const id = selected?.id ?? rawId;
+  if (!id) return interaction.user;
+  if (!/^[0-9]{15,22}$/.test(id)) throw new TypeError("Enter a valid Discord user ID (15–22 digits).");
+  const user = await interaction.client.users.fetch(id).catch(() => null);
+  if (!user) throw new RangeError("I couldn’t find a Discord account with that ID.");
+  return user;
+}
+
+function reputationConfirmation(giver, target, value, reason = null) {
+  const positive = value > 0;
+  return { embeds: [new EmbedBuilder().setColor(positive ? 0x38b779 : 0xc65c67)
+    .setAuthor({ name: "AVERO • REPUTATION UPDATE" })
+    .setTitle(positive ? "Reputation awarded" : "Reputation recorded")
+    .setDescription((positive ? "A positive reputation point has been awarded to " : "A negative reputation point has been recorded for ") + target + ".")
+    .addFields(
+      { name: "Given by", value: giver.toString(), inline: true },
+      { name: "Recipient", value: target.toString(), inline: true },
+      ...(reason ? [{ name: "Reason", value: reason }] : [])
+    )
+    .setFooter({ text: "Avero Reputation • One vote per member every 24 hours" })],
+    allowedMentions: { users: [target.id] }
+  };
+}
+
+async function showProfile(interaction, prisma, user) {
   const summary = await getReputationSummary(prisma, interaction.guildId, user.id);
   await interaction.reply(profilePayload(user, summary));
 }
