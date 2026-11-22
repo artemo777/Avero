@@ -22,7 +22,7 @@ export const askCommand = Object.freeze({
     try {
       const request = await createMoneyRequest(prisma, interaction.guildId, interaction.user.id, target.id, interaction.options.getInteger("amount", true));
       const payload = gamePayload(createGamePanel({
-        title: getServerEmoji("coin", "🪙") + " Coin request",
+        title: getServerEmoji("money-request", getServerEmoji("coin", "🪙")) + " Coin request",
         eyebrow: "AVERO / WALLET",
         description: "<@" + target.id + "> · **" + getServerEmoji("coin", "🪙") + " " + request.amount.toLocaleString("en-US") + " virtual coins**\n\nThis request expires in 10 minutes. The recipient can accept or decline.",
         footer: "GLOBAL COINS · NO REAL-MONEY VALUE",
