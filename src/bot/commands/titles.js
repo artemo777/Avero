@@ -4,6 +4,7 @@ import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../.
 import { equipMemberTitle, getMemberTitles, purchaseMemberTitle, unlockMemberTitle } from "../../db/title-repository.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
 import { getEligibleMilestoneTitles, TITLE_CATALOG } from "../title-catalog.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 
 
 async function syncMilestoneTitles(prisma, guildId, userId, stats, purchases) {
@@ -39,7 +40,7 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     .map((title) => (profile?.equippedTitleId === title.id ? "▶ " : "• ") + "**" + title.name + "**" + (title.price ? " · shop" : " · earned"));
   const lockedLines = TITLE_CATALOG.filter((title) => !ownedIds.has(title.id))
     .map((title) => {
-      if (title.price) return "◇ **" + title.name + "** · " + title.price.toLocaleString("en-US") + " coins";
+      if (title.price) return "◇ **" + title.name + "** · " + getServerEmoji("coin", "🪙") + " " + title.price.toLocaleString("en-US") + " coins";
       const current = title.unlock.stat === "completedSets" ? buildCollectionSetProgress([...new Set(purchases.map((purchase) => purchase.itemId))]).filter((set) => set.complete).length : (milestoneStats[title.unlock.stat] ?? 0);
       return "◇ **" + title.name + "** · " + Math.min(current, title.unlock.target) + "/" + title.unlock.target + " · " + title.description;
     });
@@ -134,10 +135,10 @@ export const titlesCommand = Object.freeze({
       }
       const result = await purchaseMemberTitle(prisma, interaction.guildId, interaction.user.id, selected.id, selected.price);
       const message = result.purchased
-        ? "Unlocked **" + selected.name + "** for **" + selected.price.toLocaleString("en-US") + " coins**."
+        ? "Unlocked **" + selected.name + "** for **" + getServerEmoji("coin", "🪙") + " " + selected.price.toLocaleString("en-US") + " coins**."
         : result.reason === "owned"
           ? "You already own **" + selected.name + "**."
-          : "You need **" + selected.price.toLocaleString("en-US") + " coins**. Your balance is **" + (result.account?.balance ?? 0).toLocaleString("en-US") + "**.";
+          : "You need **" + getServerEmoji("coin", "🪙") + " " + selected.price.toLocaleString("en-US") + " coins**. Your balance is **" + getServerEmoji("coin", "🪙") + " " + (result.account?.balance ?? 0).toLocaleString("en-US") + "**.";
       await interaction.reply({
         ...gamePayload(createGamePanel({
           title: "Title shop",
