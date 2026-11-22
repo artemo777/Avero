@@ -172,9 +172,9 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     color: THEME.colors.primary,
     sections: [
       "**STATUS** · " + (settings.enabled ? getServerEmoji("success", "✓") + " Enabled" : getServerEmoji("staff-alert", "⚠️") + " Paused"),
-      "**" + getServerEmoji("moderator", "🛡️") + " ROLE & USER REACTIONS**\\n" + perkLines,
-      "**IGNORED CHANNELS**\\n" + (settings.ignoredChannelIds.length ? settings.ignoredChannelIds.map((id) => "<#" + id + ">").join(", ") : "All text channels are eligible."),
-      "**HOW IT WORKS**\\nOnly messages that mention another user trigger reactions. Each matching role and individually selected member can have a different emoji. Duplicate emojis are added only once. You can pause the feature or exclude specific channels."
+      "**" + getServerEmoji("moderator", "🛡️") + " ROLE & USER REACTIONS**\n" + perkLines,
+      "**IGNORED CHANNELS**\n" + (settings.ignoredChannelIds.length ? settings.ignoredChannelIds.map((id) => "<#" + id + ">").join(", ") : "All text channels are eligible."),
+      "**HOW IT WORKS**\nOnly messages that mention another user trigger reactions. Each matching role and individually selected member can have a different emoji. Duplicate emojis are added only once. You can pause the feature or exclude specific channels."
     ],
     buttons,
     footer: "MANAGE SERVER REQUIRED • ONLY AFFECTS THIS SERVER",
@@ -583,8 +583,8 @@ export async function handleConfigSelect(interaction, prisma) {
     const visibleCustomCount = Math.min(customEmojis.length, 25);
     await interaction.update({
       content: "Choose a quick emoji below, or select **Paste any emoji** to enter any Unicode emoji or paste a custom emoji from any server Avero shares (including animated emojis)." +
-        (customEmojis.length > 25 ? "\\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
-        (customEmojis.length === 0 ? "\\nThis server has no available custom emojis; you can still paste Unicode or a custom emoji from another server Avero shares." : ""),
+        (customEmojis.length > 25 ? "\nThe custom emoji menu shows the first 25; paste any other server emoji using its copied emoji text." : "") +
+        (customEmojis.length === 0 ? "\nThis server has no available custom emojis; you can still paste Unicode or a custom emoji from another server Avero shares." : ""),
       components: emojiPickerRows(interaction.guild, roleId, customEmojis.slice(0, visibleCustomCount))
     });
     return true;
@@ -650,7 +650,7 @@ export async function handleConfigSelect(interaction, prisma) {
 
     await upsertAutoReactionRolePerk(prisma, interaction.guildId, roleId, emoji);
     await interaction.update({
-      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\\nAvero will add this reaction when a member with that role mentions another user.",
+      content: "Saved reaction perk: " + role.toString() + " → " + emoji + "\nAvero will add this reaction when a member with that role mentions another user.",
       components: []
     });
     return true;
