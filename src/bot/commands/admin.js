@@ -87,8 +87,8 @@ export const adminCommand = Object.freeze({
         : "no global wallet row";
       await interaction.reply(response(
         "**Economy records · " + target.username + "**\\n" +
-        "Global wallet: **" + (globalAccount?.balance ?? 0).toLocaleString("en-US") + "** coins · **" +
-        (globalAccount?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n" +
+        "Global wallet: **" + getServerEmoji("coin", "🪙") + " " + (globalAccount?.balance ?? 0).toLocaleString("en-US") + "** coins · **" +
+        getServerEmoji("gem-currency", "◆") + " " + (globalAccount?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n" +
         "Global inventory items: **" + globalItems.length + "**\\n" +
         "Legacy wallet rows: **" + legacyWallets.length + "** · Legacy inventory rows: **" + legacyItems.length + "**\\n" +
         "Global wallet last updated: **" + updated + "**\\n" +
