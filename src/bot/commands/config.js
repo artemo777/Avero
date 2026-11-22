@@ -241,7 +241,7 @@ export async function buildDiagnosticsPanel(prisma, guildId, guildName) {
   const activeRules = await count(prisma.autoResponseRule, { guildId, enabled: true });
   const display = (value) => value === null ? "Unavailable" : value.toLocaleString("en-US");
   return gamePayload(createGamePanel({
-    title: "Avero diagnostics",
+    title: getServerEmoji("diagnostics", "🧪") + " Avero diagnostics",
     eyebrow: "AVERO / CONTROL CENTER",
     description: "Operational snapshot for **" + guildName + "**. Counts are server-scoped and do not expose member message content.",
     sections: [
