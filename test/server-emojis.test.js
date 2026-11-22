@@ -57,7 +57,7 @@ test("Avero shared emoji names map to their matching command purposes", () => {
     "duck_lesgo", "platewwin", "bag", "crown", "icon", "unlock", "check",
     "slow_siren", "exclamation", "vipgif", "dmforsupport_ids", "adminroleicon",
     "bluemodroleicon", "staffroleicon", "staff", "alertastaff2000", "wavey",
-    "rainbowwemoji", "bughunter", "easydot_ids"
+    "rainbowwemoji", "bughunter", "easydot_ids", "trade_ids"
   ];
   setServerEmojis(names.map((name, index) => ({
     id: String(15693790000000000n + BigInt(index)),
@@ -74,7 +74,7 @@ test("Avero shared emoji names map to their matching command purposes", () => {
     ["vip", "vipgif"], ["support", "dmforsupport_ids"], ["admin", "adminroleicon"],
     ["moderator", "bluemodroleicon"], ["staff", "staffroleicon"],
     ["staff-member", "staff"], ["staff-alert", "alertastaff2000"],
-    ["welcome", "wavey"], ["celebration", "rainbowwemoji"], ["bughunter", "bughunter"], ["bullet", "easydot_ids"]
+    ["welcome", "wavey"], ["celebration", "rainbowwemoji"], ["bughunter", "bughunter"], ["bullet", "easydot_ids"], ["money-request", "trade_ids"]
   ];
   for (const [purpose, name] of expected) {
     const emoji = names.indexOf(name);
