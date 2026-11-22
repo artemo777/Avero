@@ -48,6 +48,7 @@ const PURPOSE_ALIASES = Object.freeze({
   prism_crown: ["crown", "prism_crown", "profile_frame", "frame"],
   avero_relic: ["platewwin", "avero_relic", "founders_medal", "medal"],
   support: ["dmforsupport_ids", "support", "helpdesk"],
+  "money-request": ["trade_ids", "transaction", "transfer"],
   admin: ["adminroleicon", "admin", "administrator"],
   moderator: ["bluemodroleicon", "moderator", "mod"],
   staff: ["staffroleicon", "staff"],
