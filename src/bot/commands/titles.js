@@ -46,7 +46,7 @@ export async function renderTitlesPage(prisma, guildId, user, controlUserId, pag
     });
   const allLines = TITLE_CATALOG.map((title) => {
     if (ownedIds.has(title.id)) return (profile?.equippedTitleId === title.id ? "▶ " : "• ") + "**" + title.name + "**" + (title.price ? " · shop" : " · earned");
-    if (title.price) return "◇ **" + title.name + "** · " + title.price.toLocaleString("en-US") + " coins";
+    if (title.price) return "◇ **" + title.name + "** · " + getServerEmoji("coin", "🪙") + " " + title.price.toLocaleString("en-US") + " coins";
     const current = title.unlock.stat === "completedSets" ? buildCollectionSetProgress([...new Set(purchases.map((purchase) => purchase.itemId))]).filter((set) => set.complete).length : (milestoneStats[title.unlock.stat] ?? 0);
     return "◇ **" + title.name + "** · " + Math.min(current, title.unlock.target) + "/" + title.unlock.target + " · " + title.description;
   });
