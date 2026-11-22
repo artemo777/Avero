@@ -238,7 +238,7 @@ export async function renderBalance(prisma, guildId, userId) {
   return gamePayload(createGamePanel({
     title: "Your balance",
     eyebrow: "WALLET",
-    description: getAssetSymbol("coin") + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
+    description: uiEmoji("coin", getAssetSymbol("coin")) + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
     sections: [
       [
         "**Earn coins**",
