@@ -300,7 +300,7 @@ export async function renderShop(prisma, guildId, userId, page = 0, category = "
   );
   return gamePayload(createGamePanel({
     title: "Avero shop",
-    description: getAssetSymbol("coin") + " **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" +
+    description: uiEmoji("coin", getAssetSymbol("coin")) + " **" + (account?.balance ?? 0).toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" +
       (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems  ·  " + filteredItems.length + " items",
     sections,
     sectionButtons,
@@ -457,10 +457,10 @@ export function renderScavenge(result, userId, route, item) {
     const next = new Date(result.account.lastScavengeAt.getTime() + SCAVENGE_COOLDOWN_MS);
     return gamePayload(createGamePanel({
       title: "You're on cooldown.",
-      description: "You've explored recently. Your next run opens <t:" + Math.floor(next.getTime() / 1000) + ":R>.",
+      description: uiEmoji("cooldown", "⏳") + " You've explored recently. Your next run opens <t:" + Math.floor(next.getTime() / 1000) + ":R>.",
       eyebrow: "SCAVENGE",
       color: THEME.colors.warning,
-      footer: "ONE EXPEDITION EVERY 20 MINUTES",
+      footer: uiEmoji("timer", "⏱️") + " ONE EXPEDITION EVERY 20 MINUTES",
       buttons: navButtons(userId, true)
     }));
   }
@@ -471,11 +471,11 @@ export function renderScavenge(result, userId, route, item) {
       : "";
   return gamePayload(createGamePanel({
     title: result.itemId ? "New find!" : "Run complete.",
-    description: "### " + uiEmoji("scavenge", "🧭") + " " + route.name + "\n" + route.description + "\n\n" + uiEmoji("reward-sparkle", "✦") + " **+" + result.amount + " coins**" + dropText +
+    description: "### " + uiEmoji("scavenge", "🧭") + " " + route.name + "\n" + route.description + "\n\n" + uiEmoji(result.itemId || result.amount > 0 ? "win" : "reward-sparkle", "✦") + " **+" + result.amount + " coins**" + dropText +
       "\n\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\nNext run in 20 minutes.",
     eyebrow: "SCAVENGE",
     color: result.itemId ? THEME.colors.success : THEME.colors.primary,
-    footer: "REWARDS SAVED • FREE TO PLAY",
+    footer: uiEmoji("success", "✓") + " REWARDS SAVED • FREE TO PLAY",
     buttons: [button(userId, "scavenge", "Run it back", route.id, ButtonStyle.Primary, uiEmoji("scavenge", "🧭")), ...navButtons(userId, true).slice(0, 4)]
   }));
 }
@@ -514,12 +514,12 @@ export function renderWork(result, userId) {
     return gamePayload(createGamePanel({
       title: result.reason === "not_employed" ? "Choose a career first." : "You're off the clock.",
       description, eyebrow: "WORKSHOP", color: THEME.colors.warning,
-      footer: "CAREER SHIFT • " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " MINUTE COOLDOWN", buttons: navButtons(userId, true)
+      footer: uiEmoji("timer", "⏱️") + " CAREER SHIFT • " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " MINUTE COOLDOWN", buttons: navButtons(userId, true)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Shift done.",
-    description: "### " + uiEmoji("work", "🧰") + " " + result.job.name + "\n\n" + uiEmoji("reward-sparkle", "✦") + " **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " minutes.",
+    description: "### " + uiEmoji("work", "🧰") + " " + result.job.name + "\n\n" + uiEmoji("win") + " **+" + result.salary.toLocaleString("en-US") + " coins**\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**\n" + result.current.shifts + " shifts completed · " + result.current.promotions + "/3 promotions" + (result.promoted ? "\n\n★ Promotion earned!" : "") + "\n\nBack in " + (result.cooldownMs === 55 * 60 * 1000 ? "55" : "60") + " minutes.",
     eyebrow: "WORKSHOP", color: THEME.colors.success,
     footer: "CAREER SHIFT • REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId, true)
   }));
@@ -543,17 +543,17 @@ export function renderDaily(result, userId, { reward = DAILY_REWARD, perk = null
         "\n🔥 Streak: **" + (result.account.dailyStreak ?? 0) + " days**." + perkLine +
         "\n\nNext drop <t:" + Math.floor(nextClaim.getTime() / 1000) + ":R>.",
       eyebrow: "DAILY DROP", color: THEME.colors.warning,
-      footer: "ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
+      footer: uiEmoji("timer", "⏱️") + " ONE CLAIM EVERY 24 HOURS", buttons: navButtons(userId)
     }));
   }
   return gamePayload(createGamePanel({
     title: "Daily claimed.",
-    description: "## ✨ +" + (result.amount ?? reward) + " coins" + (result.streakBonus ? " · +" + result.streakBonus + " streak bonus" : "") + "\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
+    description: "## " + uiEmoji("win", "✨") + " +" + (result.amount ?? reward) + " coins" + (result.streakBonus ? " · +" + result.streakBonus + " streak bonus" : "") + "\nWallet: **" + result.account.balance.toLocaleString("en-US") + " coins**" +
       "\n🔥 Streak: **" + (result.dailyStreak ?? result.account.dailyStreak ?? 1) + " days**." +
       (result.gemsAwarded ? "\n" + uiEmoji("gem-currency", "◆") + " **+" + result.gemsAwarded + " gem** · 7-day streak reward." : "") + perkLine +
       "\n\nSee you tomorrow.",
     eyebrow: "DAILY DROP", color: THEME.colors.success,
-    footer: "REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId)
+    footer: uiEmoji("success", "✓") + " REWARD ADDED TO YOUR GLOBAL WALLET", buttons: navButtons(userId)
   }));
 }
 export function renderGuess(guess, answer, result, userId, rewardsEnabled = true) {
