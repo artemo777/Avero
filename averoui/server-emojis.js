@@ -23,7 +23,7 @@ const PURPOSE_ALIASES = Object.freeze({
   crown: ["crown", "winner", "top"],
   shop: ["shop", "store", "shopping", "cart"],
   inventory: ["inventory", "backpack", "collection"],
-  daily: ["daily", "calendar", "gift", "streak"],
+  daily: ["daily", "calendar", "gift", "streak"],\n  contracts: ["contract", "contracts", "quest", "mission"],
   work: ["work", "toolbox", "briefcase", "career"],
   scavenge: ["scavenge", "search", "magnifying_glass", "explore"],
   guess: ["guess", "target", "dart", "bullseye"],
