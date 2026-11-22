@@ -192,9 +192,9 @@ function safeComponentEmoji(value) {
   };
   if (glyphFallbacks[value]) return glyphFallbacks[value];
   const isUnicodeEmoji =
-    /\\p{Extended_Pictographic}/u.test(value) ||
-    /^[#*0-9]\\uFE0F?\\u20E3$/u.test(value) ||
-    /^\\p{Regional_Indicator}{2}$/u.test(value);
+    /\p{Extended_Pictographic}/u.test(value) ||
+    /^[#*0-9]\uFE0F?\u20E3$/u.test(value) ||
+    /^\p{Regional_Indicator}{2}$/u.test(value);
   return isUnicodeEmoji ? value : undefined;
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
