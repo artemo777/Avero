@@ -239,7 +239,17 @@ export async function renderBalance(prisma, guildId, userId) {
     title: "Your balance",
     eyebrow: "WALLET",
     description: getAssetSymbol("coin") + " **" + balance.toLocaleString("en-US") + "** coins  ·  " + uiEmoji("gem-currency", "◆") + " **" + (account?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n-# Global wallet · virtual currency only",
-    sections: [\n      "**Earn coins**",\n      uiEmoji("daily", "✨") + " /daily · every 24h",\n      uiEmoji("work", "🧰") + " /work · every 60m",\n      uiEmoji("scavenge", "🧭") + " /scavenge · every 20m",\n      uiEmoji("contracts", "📜") + " /contracts · daily goals",\n      uiEmoji("game", "🎮") + " /games · free mini-games",\n      "**Earn gems**",\n      uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."\n    ],
+    sections: [
+      [
+        "**Earn coins**",
+        uiEmoji("daily", "✨") + " /daily · every 24h",
+        uiEmoji("work", "🧰") + " /work · every 60m",
+        uiEmoji("scavenge", "🧭") + " /scavenge · every 20m",
+        uiEmoji("contracts", "📜") + " /contracts · daily goals",
+        uiEmoji("game", "🎮") + " /games · free mini-games"
+      ].join("\n"),
+      "**Earn gems**\n" + uiEmoji("gem-currency", "◆") + " Keep a 7-day daily-claim streak to earn 1 gem for the Gem Shop."
+    ],
     footer: "GLOBAL WALLET",
     buttons: navButtons(userId, true),
     separators: true
