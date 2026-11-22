@@ -569,7 +569,7 @@ export function renderGuess(guess, answer, result, userId, rewardsEnabled = true
         (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
       : "No coins lost. Try again.";
   return gamePayload(createGamePanel({
-    title: rewarded ? "Perfect guess!" : won ? "Correct guess!" : "Not this time",
+    title: rewarded ? "Perfect guess!" : won ? "Correct guess!" : uiEmoji("error", "⚠️") + " Not this time",
     description: "### " + uiEmoji("guess", "🎯") + " Your pick: **" + guess + "** · Answer: **" + answer + "**\n\n" +
       outcome + "\n\n**Play again**",
     eyebrow: "GUESS",
@@ -607,7 +607,7 @@ export function renderVault({ guess, challenge, won, reward, rewardsEnabled = tr
           ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
         : "\n\nNo coins lost. Your next Vault attempt is available at 00:00 UTC.";
   return gamePayload(createGamePanel({
-    title: won ? "Vault unlocked" : "Vault stays locked",
+    title: won ? "Vault unlocked" : uiEmoji("error", "🔒") + " Vault stays locked",
     eyebrow: "THE VAULT • " + challenge.date,
     description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
