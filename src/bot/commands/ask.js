@@ -1,6 +1,7 @@
 import { MessageFlags } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
 import { createMoneyRequest } from "../../db/money-request-repository.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 
 export const askCommand = Object.freeze({
   data: Object.freeze({
@@ -21,9 +22,9 @@ export const askCommand = Object.freeze({
     try {
       const request = await createMoneyRequest(prisma, interaction.guildId, interaction.user.id, target.id, interaction.options.getInteger("amount", true));
       const payload = gamePayload(createGamePanel({
-        title: "Coin request",
+        title: getServerEmoji("coin", "🪙") + " Coin request",
         eyebrow: "AVERO / WALLET",
-        description: "<@" + target.id + "> · **" + request.amount.toLocaleString("en-US") + " virtual coins**\n\nThis request expires in 10 minutes. The recipient can accept or decline.",
+        description: "<@" + target.id + "> · **" + getServerEmoji("coin", "🪙") + " " + request.amount.toLocaleString("en-US") + " virtual coins**\n\nThis request expires in 10 minutes. The recipient can accept or decline.",
         footer: "GLOBAL COINS · NO REAL-MONEY VALUE",
         buttons: [
           { customId: "avero-ask|" + request.id + "|accept", label: "Accept", style: 3 },
