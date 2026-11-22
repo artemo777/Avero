@@ -53,6 +53,7 @@ const PURPOSE_ALIASES = Object.freeze({
   moderator: ["bluemodroleicon", "moderator", "mod"],
   staff: ["staffroleicon", "staff"],
   "staff-alert": ["alertastaff2000", "slow_siren"],
+  diagnostics: ["bhacker", "debug", "diagnostics"],
   bughunter: ["bughunter"],
   welcome: ["wavey"],
   celebration: ["rainbowwemoji", "duck_lesgo", "platewwin"],
