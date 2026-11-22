@@ -4,15 +4,15 @@
  * "uncommon", and "coin" never accidentally selects "coinflip".
  */
 const PURPOSE_ALIASES = Object.freeze({
-  coin: ["coin", "coins", "currency", "money", "gold", "wallet"],
-  "gem-currency": ["gem_currency", "currency_gem", "crystal", "diamond", "gem"],
+  coin: ["goldenspincoin", "coin", "coins", "currency", "money", "gold", "wallet"],
+  "gem-currency": ["orbsparklegemstone", "gem_currency", "currency_gem", "crystal", "diamond", "gem"],
   "gem-common": ["gem_common", "common_gem", "common"],
   "gem-rare": ["gem_rare", "rare_gem", "rare"],
   "gem-epic": ["gem_epic", "epic_gem", "epic"],
   "gem-legendary": ["gem_legendary", "legendary_gem", "mythic_gem", "legendary", "mythic"],
   badge: ["badge", "medal", "achievement"],
-  "reward-sparkle": ["reward", "sparkle", "star", "shiny", "milestone"],
-  loader: ["loading", "loader", "spinner"],
+  "reward-sparkle": ["sparkle1", "reward", "sparkle", "star", "shiny", "milestone"],
+  loader: ["loading", "loader", "spinner", "timer"],
   "brand-mark-svg": ["brand", "logo", "brand_mark", "avero_logo"],
   success: ["success", "check", "tick", "yes"],
   error: ["error", "cross", "fail"],
@@ -22,7 +22,7 @@ const PURPOSE_ALIASES = Object.freeze({
   profile: ["profile", "user", "member"],
   crown: ["crown", "winner", "top"],
   shop: ["shop", "store", "shopping", "cart"],
-  inventory: ["inventory", "backpack", "collection"],
+  inventory: ["bag", "inventory", "backpack", "collection"],
   daily: ["daily", "calendar", "gift", "streak"],
   contracts: ["contract", "contracts", "quest", "mission"],
   work: ["work", "toolbox", "briefcase", "career"],
