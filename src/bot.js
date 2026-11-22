@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, Events, GatewayIntentBits, MessageFlags, TextDisplayBuilder } from "discord.js";
-import { createEmbed, ICONS, THEME, setServerEmojis } from "../averoui/index.js";
+import { createEmbed, ICONS, THEME, setServerEmojis, listServerEmojis } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
@@ -37,6 +37,7 @@ async function refreshAveroServerEmojis(client) {
   }));
   const count = setServerEmojis(results.flat());
   console.log("Avero loaded " + count + " available custom emoji(s) from shared servers.");
+  console.log("Avero shared emoji registry:", listServerEmojis().map((emoji) => emoji.name + ":" + emoji.id + (emoji.animated ? " (animated)" : "")).join(", ") || "(none)");
   return count;
 }
 
