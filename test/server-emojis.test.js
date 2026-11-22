@@ -50,3 +50,37 @@ test("shop item emoji purposes recognize common server emoji names", () => {
   assert.equal(getServerEmoji("avero_relic", "fallback"), "<:founders_medal:12345678901234582>");
   setServerEmojis([]);
 });
+
+test("Avero shared emoji names map to their matching command purposes", () => {
+  const names = [
+    "goldenspincoin", "orbsparklegemstone", "timer", "timersand", "verify",
+    "duck_lesgo", "platewwin", "bag", "crown", "icon", "unlock", "check",
+    "slow_siren", "exclamation", "vipgif", "dmforsupport_ids", "adminroleicon",
+    "bluemodroleicon", "staffroleicon", "staff", "alertastaff2000", "wavey",
+    "rainbowwemoji", "bughunter"
+  ];
+  setServerEmojis(names.map((name, index) => ({
+    id: String(12345678901234600 + index),
+    name,
+    animated: ["duck_lesgo", "platewwin", "timer", "timersand", "verify", "slow_siren", "vipgif", "staff", "alertastaff2000", "rainbowwemoji"].includes(name),
+    available: true
+  })));
+  const expected = [
+    ["coin", "goldenspincoin"], ["gem-currency", "orbsparklegemstone"],
+    ["daily", "timer"], ["work", "timersand"], ["contracts", "verify"],
+    ["game", "duck_lesgo"], ["win", "platewwin"], ["inventory", "bag"],
+    ["crown", "crown"], ["brand-mark-svg", "icon"], ["vault", "unlock"],
+    ["check", "check"], ["error", "slow_siren"], ["warning", "exclamation"],
+    ["vip", "vipgif"], ["support", "dmforsupport_ids"], ["admin", "adminroleicon"],
+    ["moderator", "bluemodroleicon"], ["staff", "staffroleicon"],
+    ["staff-member", "staff"], ["staff-alert", "alertastaff2000"],
+    ["welcome", "wavey"], ["celebration", "rainbowwemoji"], ["bughunter", "bughunter"]
+  ];
+  for (const [purpose, name] of expected) {
+    const emoji = names.indexOf(name);
+    const id = String(12345678901234600 + emoji);
+    const animated = ["duck_lesgo", "platewwin", "timer", "timersand", "verify", "slow_siren", "vipgif", "staff", "alertastaff2000", "rainbowwemoji"].includes(name);
+    assert.equal(getServerEmoji(purpose, "fallback"), "<" + (animated ? "a" : "") + ":" + name + ":" + id + ">");
+  }
+  setServerEmojis([]);
+});
