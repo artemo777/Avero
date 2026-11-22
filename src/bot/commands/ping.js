@@ -1,5 +1,6 @@
 import { MessageFlags } from "discord.js";
 import { createPanel, ICONS, THEME } from "../../../averoui/index.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 
 export const pingCommand = Object.freeze({
   data: Object.freeze({
