@@ -86,17 +86,17 @@ export const adminCommand = Object.freeze({
         ? new Date(globalAccount.updatedAt).toISOString().replace("T", " ").slice(0, 16) + " UTC"
         : "no global wallet row";
       await interaction.reply(response(
-        "**Economy records · " + target.username + "**\\n" +
+        "**Economy records · " + target.username + "**\n" +
         "Global wallet: **" + getServerEmoji("coin", "🪙") + " " + (globalAccount?.balance ?? 0).toLocaleString("en-US") + "** coins · **" +
-        getServerEmoji("gem-currency", "◆") + " " + (globalAccount?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\\n" +
-        "Global inventory items: **" + globalItems.length + "**\\n" +
-        "Legacy wallet rows: **" + legacyWallets.length + "** · Legacy inventory rows: **" + legacyItems.length + "**\\n" +
-        "Global wallet last updated: **" + updated + "**\\n" +
+        getServerEmoji("gem-currency", "◆") + " " + (globalAccount?.gemBalance ?? 0).toLocaleString("en-US") + "** gems\n" +
+        "Global inventory items: **" + globalItems.length + "**\n" +
+        "Legacy wallet rows: **" + legacyWallets.length + "** · Legacy inventory rows: **" + legacyItems.length + "**\n" +
+        "Global wallet last updated: **" + updated + "**\n" +
         (globalAccount || globalItems.length
           ? "Global economy records exist in the active database."
           : "No global economy records exist in the active database.") +
         ((legacyWallets.length || legacyItems.length)
-          ? "\\nLegacy-scoped records were found. Do not delete them; they may be recoverable."
+          ? "\nLegacy-scoped records were found. Do not delete them; they may be recoverable."
           : "")
       ));
       return;
