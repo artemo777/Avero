@@ -71,7 +71,7 @@ test("daily contracts derive progress from today's global member transaction led
 });
 
 test("daily contracts count only activity in the UTC day", async () => {
-  const prisma = createPrisma({ activity: { work: 2 } });
+  const prisma = createPrisma({ activity: { work_shift: 2 } });
   const snapshot = await getDailyContracts(prisma, "__avero_global__", "user-1", {
     now: new Date("2026-10-31T00:00:00.000Z")
   });
@@ -98,7 +98,7 @@ test("completed daily contract pays once and records a reward transaction", asyn
 });
 
 test("incomplete daily contract cannot be claimed", async () => {
-  const prisma = createPrisma({ activity: { work: 1 }, balance: 15 });
+  const prisma = createPrisma({ activity: { work_shift: 1 }, balance: 15 });
   const result = await claimDailyContract(prisma, "__avero_global__", "user-1", "work_shift");
   assert.deepEqual(result, { claimed: false, reason: "incomplete", progress: 1, target: 2 });
   assert.equal(prisma.claims.length, 0);
@@ -118,6 +118,19 @@ test("daily contracts reject invalid identifiers and timestamps", async () => {
   const prisma = createPrisma();
   await assert.rejects(claimDailyContract(prisma, "__avero_global__", "user-1", "not-real"), /Unknown daily contract/);
   await assert.rejects(getDailyContracts(prisma, "__avero_global__", "user-1", { now: new Date("invalid") }), /valid Date/);
+});
+
+test("contracts command labels progress as global member progress", async () => {
+  const replies = [];
+  await contractsCommand.execute({
+    guildId: "guild-1",
+    user: { id: "user-1" },
+    options: { getString: () => null },
+    reply: async (payload) => replies.push(payload)
+  }, { prisma: createPrisma() });
+
+  const panel = replies[0].components[0];
+  assert.ok(JSON.stringify(panel.toJSON()).includes("GLOBAL MEMBER PROGRESS"));
 });
 
 test("contracts command responds privately outside servers", async () => {

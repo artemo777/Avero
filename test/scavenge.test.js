@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { claimScavengeReward } from "../src/db/currency-repository.js";
-import { runScavenge, SCAVENGE_ROUTES, getScavengeDropChance, buildScavengeSearchPool } from "../src/bot/game-ui.js";
+import { runScavenge, renderScavenge, SCAVENGE_ROUTES, getScavengeDropChance, buildScavengeSearchPool } from "../src/bot/game-ui.js";
 import { scavengeCommand } from "../src/bot/commands/scavenge.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
@@ -191,4 +191,12 @@ test("search tools improve the finding pool without mutating shared route odds",
   assert.ok(expanded.some((entry) => entry.id === "star_pin"));
   assert.ok(expanded.find((entry) => entry.id === "prism_crown").weight > base.find((entry) => entry.id === "prism_crown").weight);
   assert.deepEqual(route.items.map((entry) => entry.weight), base.map((entry) => entry.weight));
+});
+
+
+test("scavenge cooldown panel correctly states the 20-minute cooldown", () => {
+  const now = new Date("2026-10-28T12:00:00.000Z");
+  const response = renderScavenge({ claimed: false, account: { lastScavengeAt: now } }, "user-1", SCAVENGE_ROUTES[0]);
+  assert.match(panelText(response), /ONE EXPEDITION EVERY 20 MINUTES/);
+  assert.doesNotMatch(panelText(response), /10 MINUTES/);
 });

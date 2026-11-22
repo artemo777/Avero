@@ -15,7 +15,7 @@ import { inventoryCommand } from "./inventory.js";
 import { gamesCommand } from "./games.js";
 import { perksCommand } from "./perks.js";
 import { pingCommand } from "./ping.js";
-import { profileCommand } from "./profile.js";
+import { profileCommand, profileEditCommand } from "./profile.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
@@ -34,6 +34,7 @@ export const commands = Object.freeze([
   perksCommand,
   achievementsCommand,
   profileCommand,
+  profileEditCommand,
   balanceCommand,
   askCommand,
   buyCommand,

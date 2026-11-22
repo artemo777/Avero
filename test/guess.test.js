@@ -69,6 +69,18 @@ test("guess command responds and never requires a wager", async () => {
   assert.equal(prisma.transactions.length, 1 + (account?.balance ? 1 : 0));
 });
 
+test("guess slash command keeps free play but suppresses rewards when currency is paused", async () => {
+  const prisma = makePrisma();
+  const { interaction, getResponse } = makeInteraction();
+
+  await guessCommand.execute(interaction, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+  assert.ok(getResponse().components?.length === 1);
+  assert.equal(prisma.transactions.length, 1);
+  assert.equal(prisma.transactions[0].amount, 0);
+  assert.equal(prisma.accounts.get("__avero_global__:user-1")?.balance ?? 0, 0);
+});
+
 test("guess command rejects direct messages", async () => {
   const prisma = makePrisma();
   const { interaction, getResponse } = makeInteraction({ guildId: null });

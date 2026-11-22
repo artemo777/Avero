@@ -275,9 +275,10 @@ export async function submitDailyVaultAttempt(
   userId,
   outcome,
   amount,
-  { cooldownMs = 600_000, now = new Date() } = {}
+  { cooldownMs = 600_000, now = new Date(), currencyEnabled = true } = {}
 ) {
   const key = currencyKey(guildId, userId);
+  if (typeof currencyEnabled !== "boolean") throw new TypeError("currencyEnabled must be a boolean.");
   if (!["win", "loss"].includes(outcome)) {
     throw new TypeError("Vault outcome must be win or loss.");
   }
@@ -290,8 +291,11 @@ export async function submitDailyVaultAttempt(
   }
 
   const contractDate = now.toISOString().slice(0, 10);
-  const attemptKey = { ...key, contractDate, contractId: "vault_attempt" };
-  const rewardKey = { ...key, contractDate, contractId: "vault_reward" };
+  // Daily puzzle state is server-scoped because the code is derived from guildId.
+  // Wallet and ledger records remain global across servers.
+  const vaultKey = { guildId: requireIdentifier(guildId, "guildId"), userId: key.userId };
+  const attemptKey = { ...vaultKey, contractDate, contractId: "vault_attempt" };
+  const rewardKey = { ...vaultKey, contractDate, contractId: "vault_reward" };
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -311,6 +315,9 @@ export async function submitDailyVaultAttempt(
 
       if (outcome !== "win") {
         return { submitted: true, reward: null };
+      }
+      if (!currencyEnabled) {
+        return { submitted: true, reward: { awarded: false, reason: "currency_paused", account: null } };
       }
 
       const existingReward = await tx.dailyContractClaim.findUnique({
@@ -484,7 +491,7 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const key = currencyKey(guildId, userId);
   const rows = await prisma.currencyTransaction.groupBy({
     by: ["type"],
-    where: key,
+    where: { ...key, currency: "coins" },
     _count: { _all: true },
     _sum: { amount: true }
   });
@@ -501,6 +508,8 @@ export async function getCurrencyStats(prisma, guildId, userId) {
   const vaultLosses = count("vault_loss");
   const coinflipWins = count("coinflip_win");
   const coinflipLosses = count("coinflip_loss");
+  const minePlays = count("mine_play");
+  const pick3Plays = count("pick3_play");
   return {
     lifetimeEarned,
     lifetimeSpent,
@@ -514,9 +523,11 @@ export async function getCurrencyStats(prisma, guildId, userId) {
     vaultLosses,
     gameLosses: guessLosses + rpsLosses + vaultLosses + coinflipLosses,
     gameTies: rpsTies,
-    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies + vaultWins + vaultLosses + coinflipWins + coinflipLosses,
+    minePlays,
+    pick3Plays,
+    gamesPlayed: guessWins + guessLosses + rpsWins + rpsLosses + rpsTies + vaultWins + vaultLosses + coinflipWins + coinflipLosses + minePlays + pick3Plays,
     dailyClaims: count("daily"),
-    workShifts: count("work"),
+    workShifts: count("work") + count("work_shift"),
     scavenges: count("scavenge"),
     itemsPurchased: count("shop_purchase")
   };
@@ -524,9 +535,9 @@ export async function getCurrencyStats(prisma, guildId, userId) {
 
 
 export const DAILY_CONTRACTS = Object.freeze([
-  Object.freeze({ id: "work_shift", title: "Clock In", description: "Complete 2 work shifts", target: 2, reward: 80, transactionTypes: ["work"] }),
+  Object.freeze({ id: "work_shift", title: "Clock In", description: "Complete 2 work shifts", target: 2, reward: 80, transactionTypes: ["work", "work_shift"] }),
   Object.freeze({ id: "scavenge_trip", title: "Field Research", description: "Go scavenging 3 times", target: 3, reward: 90, transactionTypes: ["scavenge"] }),
-  Object.freeze({ id: "game_session", title: "Game Regular", description: "Play 3 recorded game rounds", target: 3, reward: 75, transactionTypes: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss"] }),
+  Object.freeze({ id: "game_session", title: "Game Regular", description: "Play 3 recorded game rounds", target: 3, reward: 75, transactionTypes: ["guess_win_play", "guess_win", "guess_loss", "rps_win", "rps_loss", "rps_tie", "vault_win", "vault_loss", "coinflip_win", "coinflip_loss", "mine_play", "pick3_play"] }),
   Object.freeze({ id: "collector", title: "New Addition", description: "Unlock 1 collectible", target: 1, reward: 100, transactionTypes: ["shop_purchase", "scavenge_collectible"] })
 ]);
 

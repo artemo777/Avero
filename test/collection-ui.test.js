@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MessageFlags } from "discord.js";
-import { createGamePanel, renderBalance, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
+import { createGamePanel, renderBalance, renderCollectionSets, renderInventory, renderItemDetails, renderShop } from "../src/bot/game-ui.js";
 import { getCollectibleAssetId, listAssets } from "../averoui/assets.js";
 import { setServerEmojis } from "../averoui/server-emojis.js";
 import { SHOP_ITEMS } from "../src/bot/shop-catalog.js";
 
+
 function fakePrisma(itemIds = [], balance = 800) {
-  return {
+  const prisma = {
     currencyPurchase: {
       findMany: async () => itemIds.map((itemId, index) => ({ itemId, purchasedAt: new Date(index) })),
       findUnique: async ({ where }) => itemIds.includes(where.guildId_userId_itemId.itemId)
@@ -18,8 +19,21 @@ function fakePrisma(itemIds = [], balance = 800) {
     },
     memberProfile: {
       findUnique: async () => null
+    },
+    memberTitle: {
+      records: new Map(),
+      findUnique: async ({ where }) => {
+        const key = where.guildId_userId_titleId.titleId;
+        return prisma.memberTitle.records.get(key) ?? null;
+      },
+      create: async ({ data }) => {
+        const row = { ...data, titleId: data.titleId };
+        prisma.memberTitle.records.set(data.titleId, row);
+        return row;
+      }
     }
   };
+  return prisma;
 }
 function panel(response) {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
@@ -79,6 +93,30 @@ test("item detail shows owned state and does not offer a second purchase", async
   assert.ok(!buttons(json).some((entry) => entry.custom_id === "avero|user-1|buy|neon_badge"));
 });
 
+test("avatar decoration details show equipped state and offer removal", async () => {
+  const prisma = fakePrisma(["halo_ring"]);
+  prisma.memberProfile.findUnique = async () => ({ equippedAvatarDecorationId: "halo_ring" });
+  const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", "halo_ring", 0));
+  assert.match(allText(json), /Equipped avatar decoration/);
+  assert.ok(buttons(json).some((entry) => entry.custom_id === "avero|user-1|unequip_avatar_decoration|halo_ring"));
+});
+
+test("unowned item details ignore stale equipped profile references", async () => {
+  const cases = [
+    { itemId: "neon_badge", profile: { equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: ["neon_badge"] }, label: /Equipped badge/ },
+    { itemId: "moonlit_token", profile: { equippedFrameItemId: "moonlit_token" }, label: /Equipped profile frame/ },
+    { itemId: "halo_ring", profile: { equippedAvatarDecorationId: "halo_ring" }, label: /Equipped avatar decoration/ }
+  ];
+  for (const entry of cases) {
+    const prisma = fakePrisma([]);
+    prisma.memberProfile.findUnique = async () => entry.profile;
+    const json = panel(await renderItemDetails(prisma, "guild-1", "user-1", entry.itemId, 0));
+    assert.match(allText(json), /Not collected yet/);
+    assert.doesNotMatch(allText(json), entry.label);
+    assert.ok(buttons(json).some((button) => button.custom_id === "avero|user-1|buy|" + entry.itemId));
+  }
+});
+
 test("unowned item detail offers a direct unlock action", async () => {
   const response = await renderItemDetails(fakePrisma([], 500), "guild-1", "user-1", "vault_badge", 0);
   const json = panel(response);
@@ -125,6 +163,13 @@ test("inventory displays catalog values and compact separators", async () => {
   assert.match(allText(json), /Total Market Value:\*\* 450/);
   assert.match(allText(json), /Page Market Value:\*\* 450/);
   assert.ok(json.components.some((component) => component.type === 14));
+});
+
+test("inventory reports coin and gem market values separately", async () => {
+  const response = await renderInventory(fakePrisma(["neon_badge", "pixel_wings"]), "guild-1", "user-1");
+  const text = allText(panel(response));
+  assert.ok(text.includes("**Total Market Value:** 150 coins · 12 gems"));
+  assert.ok(text.includes("**Page Market Value:** 150 coins · 12 gems"));
 });
 
 test("balance uses the same compact V2 container style", async () => {
@@ -183,7 +228,6 @@ test("wallet buttons use valid Unicode fallbacks instead of custom emoji markup"
   }
 });
 
-
 test("unmapped custom component emojis fall back to a valid Unicode emoji", () => {
   const json = createGamePanel({
     title: "Emoji fallback",
@@ -192,4 +236,12 @@ test("unmapped custom component emojis fall back to a valid Unicode emoji", () =
   }).toJSON();
   const button = json.components.find((component) => component.type === 1)?.components[0];
   assert.equal(button.emoji.name, "🗺️");
+});
+
+test("completed collection sets persist their title entitlement immediately", async () => {
+  const prisma = fakePrisma(["neon_badge", "vault_badge", "avero_relic"]);
+  await renderCollectionSets(prisma, "guild-1", "user-1");
+  assert.ok(prisma.memberTitle.records.has("archive_keeper"));
+  assert.ok(!prisma.memberTitle.records.has("circuit_breaker"));
+  assert.ok(!prisma.memberTitle.records.has("moonlit_curator"));
 });

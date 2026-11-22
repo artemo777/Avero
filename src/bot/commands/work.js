@@ -35,7 +35,8 @@ export const workCommand = Object.freeze({
       const jobId = interaction.options.getString("job", true);
       const result = await applyForJob(prisma, interaction.guildId, interaction.user.id, jobId);
       const description = result.applied
-        ? "**" + result.job.name + "** · " + result.job.salary + " coins/shift\n" + result.job.description + "\n\nYour first promotion is at 10 completed shifts."
+        ? "**" + result.job.name + "** · " + result.job.salary + " coins/shift\n" + result.job.description + "\n\nCareer progress: **" + (result.current.careerShifts ?? 0) + "** lifetime shifts. Complete five more shifts to unlock the next career."
+        : result.reason === "locked" ? "**Career locked** · This role requires **" + result.requiredShifts + "** lifetime shifts. You have **" + result.careerShifts + "**; complete **" + (result.requiredShifts - result.careerShifts) + "** more shifts."
         : result.reason === "employed" ? "You're already working as **" + result.current.jobId.replaceAll("_", " ") + "**. Resign first to change careers."
           : "You're already employed as **" + result.job.name + "**.";
       return interaction.reply(panel(result.applied ? "Application accepted" : "Already employed", description));

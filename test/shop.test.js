@@ -6,7 +6,7 @@ import { buyCommand } from "../src/bot/commands/buy.js";
 import { shopCommand, SHOP_ITEMS } from "../src/bot/commands/shop.js";
 import { inventoryCommand } from "../src/bot/commands/inventory.js";
 import { renderShop } from "../src/bot/game-ui.js";
-import { getWeeklyFeaturedItems } from "../src/bot/shop-catalog.js";
+import { getWeeklyFeaturedItems, SHOP_CATEGORIES } from "../src/bot/shop-catalog.js";
 import { getAsset, getCollectibleAssetId } from "../averoui/assets.js";
 import { renderRegisteredAsset } from "../averoui/render-asset.js";
 
@@ -110,6 +110,20 @@ test("shop paginates compact category sections and keeps controls within Discord
   assert.ok(secondPanel.components.some((component) => component.type === 1 && component.components.some((button) => button.custom_id === "avero|user-1|shop_page|all:0")));
 });
 
+
+test("shop and buy command descriptions match the catalog experience", () => {
+  assert.match(shopCommand.data.description, /category.*currency.*weekly picks/i);
+  assert.match(buyCommand.data.description, /coins or gems/i);
+});
+
+test("shop tool category describes the current gameplay utilities", () => {
+  const tools = SHOP_ITEMS.filter((item) => item.category === "tools");
+  assert.ok(tools.some((item) => item.effect === "expanded_search"));
+  assert.ok(tools.some((item) => item.effect === "work_bonus"));
+  const category = SHOP_CATEGORIES.find((entry) => entry.id === "tools");
+  assert.match(category.description, /gameplay utilities/i);
+  assert.doesNotMatch(category.description, /future Avero features/i);
+});
 
 test("shop catalog has unique item IDs and positive prices", () => {
   assert.equal(new Set(SHOP_ITEMS.map((item) => item.id)).size, SHOP_ITEMS.length);

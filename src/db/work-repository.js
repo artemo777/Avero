@@ -19,6 +19,9 @@ export async function applyForJob(prisma, guildId, userId, jobId) {
   const job = WORK_JOBS.find((entry) => entry.id === jobId);
   if (!job) throw new RangeError("Choose a job from the Avero work list.");
   const existing = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
+  if (existing && existing.jobId !== "unemployed") return { applied: false, reason: existing.jobId === jobId ? "already_in_job" : "employed", current: existing, job };
+  const careerShifts = existing?.careerShifts ?? 0;
+  if (careerShifts < job.requiredShifts) return { applied: false, reason: "locked", requiredShifts: job.requiredShifts, careerShifts, job };
   if (existing?.jobId === "unemployed") {
     const updated = await prisma.memberJob.updateMany({
       where: { ...memberKey, jobId: "unemployed" },
@@ -39,10 +42,20 @@ export async function resignFromJob(prisma, guildId, userId) {
   const memberKey = key(guildId, userId);
   const current = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
   if (!current || current.jobId === "unemployed") return { resigned: false, reason: "not_employed" };
-  await prisma.memberJob.update({
-    where: { guildId_userId: memberKey },
+  const resigned = await prisma.memberJob.updateMany({
+    where: {
+      ...memberKey,
+      jobId: current.jobId,
+      shifts: current.shifts,
+      promotions: current.promotions,
+      lastShiftAt: current.lastShiftAt
+    },
     data: { jobId: "unemployed", shifts: 0, promotions: 0 }
   });
+  if (resigned.count !== 1) {
+    const latest = await prisma.memberJob.findUnique({ where: { guildId_userId: memberKey } });
+    return { resigned: false, reason: "state_changed", current: latest };
+  }
   return { resigned: true, current };
 }
 
@@ -65,12 +78,12 @@ export async function runJobShift(prisma, guildId, userId, { now = new Date(), c
     const updatedJob = await tx.memberJob.updateMany({
       where: {
         ...memberKey,
-        OR: [
-          { lastShiftAt: null },
-          { lastShiftAt: { lte: new Date(now.getTime() - cooldownMs) } }
-        ]
+        jobId: current.jobId,
+        shifts: current.shifts,
+        promotions: current.promotions,
+        lastShiftAt: current.lastShiftAt
       },
-      data: { shifts: { increment: 1 }, promotions: nextPromotions, lastShiftAt: now }
+      data: { shifts: nextShifts, careerShifts: { increment: 1 }, promotions: nextPromotions, lastShiftAt: now }
     });
     if (updatedJob.count !== 1) {
       const latest = await tx.memberJob.findUnique({ where: { guildId_userId: memberKey } });

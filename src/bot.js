@@ -122,7 +122,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu() || interaction.isUserSelectMenu() || interaction.isChannelSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
-        await handleMoneyRequestButton(interaction, getPrismaClient());
+        const prisma = getPrismaClient();
+        const settings = await getGuildSettings(prisma, interaction.guildId);
+        await handleMoneyRequestButton(interaction, prisma, settings);
       } catch (error) {
         console.error("Money request response failed:", error);
         await interaction.reply({ content: "Avero could not process that request. Please try again.", flags: MessageFlags.Ephemeral }).catch(() => {});
@@ -164,8 +166,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const prisma = getPrismaClient();
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
-      const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame", "equip_avatar_decoration", "unequip_avatar_decoration", "profile_accent", "profile_banner", "profile_avatar", "profile_frame", "profile_badges", "profile_bio", "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"]);
+      const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault", "pick3_start", "pick3", "mine_start", "mine_pick"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame", "equip_avatar_decoration", "unequip_avatar_decoration", "profile_accent", "profile_banner", "profile_avatar", "profile_frame", "profile_badges", "profile_bio", "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_badges_select"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;
@@ -200,7 +202,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await interaction.reply({ content: "Profile customization is available inside a server.", flags: MessageFlags.Ephemeral });
         return;
       }
-      await handleProfileBioModal(interaction, getPrismaClient());
+      const prisma = getPrismaClient();
+      const settings = await getGuildSettings(prisma, interaction.guildId);
+      await handleProfileBioModal(interaction, prisma, settings);
     } catch (error) {
       console.error("Profile bio update failed:", error);
       const payload = { content: "Avero couldn't save your profile bio. Please try again.", flags: MessageFlags.Ephemeral };

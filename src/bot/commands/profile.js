@@ -34,13 +34,9 @@ const PROFILE_ACCENT_EMOJIS = new Map([
 const PROFILE_DECORATION_NAMES = new Map([
   ["halo_ring", "Halo Ring"], ["orbit_spark", "Orbit Sparks"], ["pixel_wings", "Pixel Wings"]
 ]);
-const PROFILE_FRAME_NAMES = new Map([
-  ["aurora_frame", "Aurora Frame"], ["nebula_cape", "Nebula Cape"], ["moonlit_token", "Moonlit Token"],
-  ["prism_crown", "Prism Crown"], ["pixel_cape", "Pixel Cape"], ["cloud_specs", "Cloud Specs"],
-  ["comet_trail", "Comet Trail"], ["mossy_mug", "Mossy Mug"], ["paper_crown", "Paper Crown"],
-  ["blueprint_frame", "Blueprint Frame"], ["mono_frame", "Mono Frame"], ["chibi_frame", "Professor Chibi Frame"],
-  ["cobalt_frame", "Cobalt Orbit Frame"], ["frost_frame", "Frostline Frame"], ["ember_frame", "Ember Frame"], ["starlight_frame", "Starlight Frame"]
-]);
+export const PROFILE_FRAME_NAMES = new Map(
+  PROFILE_FRAME_IDS.map((id) => [id, SHOP_ITEMS.find((item) => item.id === id)?.name ?? id])
+);
 
 function profileSelect(userId, action, placeholder, options, { minValues = 1, maxValues = 1, disabled = false } = {}) {
   return new ActionRowBuilder().addComponents(
@@ -81,7 +77,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   const equippedFrame = SHOP_ITEMS.find((item) => item.id === profile?.equippedFrameItemId && owned.has(item.id));
   const equippedDecoration = SHOP_ITEMS.find((item) => item.id === profile?.equippedAvatarDecorationId && owned.has(item.id));
   const ownedBadges = ownedItems.filter((item) => item.category === "badges");
-  const selectedBadgeIds = Array.isArray(profile?.profileShowcaseBadgeIds)
+  const selectedBadgeIds = Array.isArray(profile?.profileShowcaseBadgeIds) && profile.profileShowcaseBadgeIds.length
     ? profile.profileShowcaseBadgeIds
     : (profile?.equippedBadgeItemId ? [profile.equippedBadgeItemId] : []);
   const badges = selectedBadgeIds.map((id) => ownedBadges.find((item) => item.id === id)).filter(Boolean);
@@ -97,21 +93,21 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     bannerImage: profile?.profileBannerImage ?? null,
     frame: equippedFrame?.id ?? null,
     avatarDecoration: equippedDecoration?.id ?? null,
-    badges,
+    badges: [],
     coins: account?.balance ?? 0,
-    collectionCount: ownedItems.length
+    collectionCount: ownedItems.length,
+    gamesPlayed: stats.gamesPlayed,
+    dailyStreak: account?.dailyStreak ?? 0
   });
-  const professor = await renderRegisteredAsset("mascot-professor", 72);
   const container = new ContainerBuilder().setAccentColor(accent);
-  container.addSectionComponents(new SectionBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(
-      "-# AVERO / PROFILE CANVAS\n## " + (target.globalName ?? target.username) + "\nA customizable snapshot of your Avero identity."
-    ))
-    .setThumbnailAccessory(new ThumbnailBuilder().setURL("attachment://avero-professor.png")));
+  const equippedBadge = ownedBadges.find((item) => item.id === profile?.equippedBadgeItemId);
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
+    "-# AVERO / MEMBER PROFILE\n## " + (target.globalName ?? target.username) + (equippedBadge ? "  " + (equippedBadge.icon ?? "✦") + " **" + equippedBadge.name + "**" : "") + "\nA customizable snapshot of your Avero identity."
+  ));
   container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
     new MediaGalleryItemBuilder().setURL("attachment://profile-card.png").setDescription("Avero member profile card")
   ));
-  container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
+  if (editable) container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
     "**Title** · " + (equippedTitle?.name ?? "None"),
     "**Frame** · " + (equippedFrame?.name ?? "Default"),
     "**Avatar decoration** · " + (equippedDecoration?.name ?? "None"),
@@ -161,15 +157,13 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
         ownedBadges.length ? { minValues: 0, maxValues: Math.min(5, ownedBadges.length) } : { minValues: 1, maxValues: 1, disabled: true })
     );
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
-      "-# Select an option to apply it instantly. Upload a custom image with **/profile banner:** or set text with **/profile bio:**. Badges support multi-select."
+      "-# Select an option to apply it instantly. Upload a custom image with **/profile-edit banner:** or set text with **/profile-edit bio:**. Badges support multi-select."
     ));
-  } else {
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent("-# AVERO • GLOBAL PROFILE"));
   }
   return {
     flags: MessageFlags.IsComponentsV2,
     components: [container],
-    files: [new AttachmentBuilder(card, { name: "profile-card.png" }), new AttachmentBuilder(professor, { name: "avero-professor.png" })],
+    files: [new AttachmentBuilder(card, { name: "profile-card.png" })],
     allowedMentions: { parse: [] }
   };
 }
@@ -209,12 +203,8 @@ export async function downloadProfileBanner(attachment) {
 export const profileCommand = Object.freeze({
   data: Object.freeze({
     name: "profile",
-    description: "View and customize your Avero profile card.",
-    options: [
-      { type: 6, name: "member", description: "Member profile to view.", required: false },
-      { type: 11, name: "banner", description: "Upload a PNG, JPEG, or WebP custom profile banner (max 5 MB).", required: false },
-      { type: 3, name: "bio", description: "Set your profile bio (120 characters max). Use clear to remove it.", required: false, max_length: 120 }
-    ]
+    description: "View an Avero member profile.",
+    options: [{ type: 6, name: "member", description: "Member profile to view.", required: false }]
   }),
   async execute(interaction, { prisma } = {}) {
     if (!prisma) throw new Error("Profile command requires a database client.");
@@ -223,8 +213,33 @@ export const profileCommand = Object.freeze({
       return;
     }
     const target = interaction.options.getUser("member") ?? interaction.user;
+    await interaction.reply(await renderProfilePayload(prisma, interaction.guildId, target, interaction.user.id, false));
+  }
+});
+
+export const profileEditCommand = Object.freeze({
+  data: Object.freeze({
+    name: "profile-edit",
+    description: "Customize your Avero profile card.",
+    options: [
+      { type: 6, name: "member", description: "Member profile to view.", required: false },
+      { type: 11, name: "banner", description: "Upload a PNG, JPEG, or WebP custom profile banner (max 5 MB).", required: false },
+      { type: 3, name: "bio", description: "Set your profile bio (120 characters max). Use clear to remove it.", required: false, max_length: 120 }
+    ]
+  }),
+  async execute(interaction, { prisma, settings } = {}) {
+    if (!prisma) throw new Error("Profile command requires a database client.");
+    if (!interaction.guildId) {
+      await interaction.reply({ content: "Profiles are available inside a server.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const target = interaction.options.getUser("member") ?? interaction.user;
     const upload = interaction.options.getAttachment?.("banner") ?? null;
     const bio = interaction.options.getString?.("bio") ?? null;
+    if ((upload || bio !== null) && settings?.currencyEnabled === false) {
+      await interaction.reply({ content: "Currency is paused by this server's admins. Profile customization is unavailable right now.", flags: MessageFlags.Ephemeral });
+      return;
+    }
     if ((upload || bio !== null) && target.id !== interaction.user.id) {
       await interaction.reply({ content: "You can only upload a banner to your own profile.", flags: MessageFlags.Ephemeral });
       return;
@@ -264,10 +279,14 @@ export function showProfileBioModal(interaction) {
   return interaction.showModal(modal);
 }
 
-export async function handleProfileBioModal(interaction, prisma) {
+export async function handleProfileBioModal(interaction, prisma, settings = {}) {
   const [, ownerId] = interaction.customId.split("|");
   if (ownerId !== interaction.user.id) {
     await interaction.reply({ content: "That profile editor belongs to another member.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  if (settings.currencyEnabled === false) {
+    await interaction.reply({ content: "Currency is paused by this server's admins. Profile customization is unavailable right now.", flags: MessageFlags.Ephemeral });
     return true;
   }
   const bio = interaction.fields.getTextInputValue("bio");

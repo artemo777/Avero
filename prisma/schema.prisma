@@ -239,6 +239,7 @@ model MemberJob {
   userId       String
   jobId        String
   shifts       Int      @default(0)
+  careerShifts Int      @default(0)
   promotions   Int      @default(0)
   lastShiftAt  DateTime?
   createdAt    DateTime @default(now())
@@ -313,4 +314,19 @@ model AiMemory {
 
   @@unique([userId, content])
   @@index([userId, updatedAt])
+}
+
+model GameSession {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  gameId    String   @db.VarChar(40)
+  status    String   @default("active") @db.VarChar(20)
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([guildId, userId, status])
+  @@index([expiresAt])
 }

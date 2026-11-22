@@ -58,6 +58,23 @@ test("rock paper scissors records game results and rewards wins without wagers",
   assert.equal(records.filter((record) => record.type === "rps_reward").length, records[0].type === "rps_win" ? 1 : 0);
 });
 
+test("RPS slash command keeps free play but suppresses rewards when currency is paused", async () => {
+  const { interaction, getResponse } = makeInteraction();
+  const records = [];
+  const prisma = {
+    currencyTransaction: { create: async ({ data }) => { records.push(data); return data; } },
+    $transaction: async () => { throw new Error("Paused currency must not start a reward transaction."); },
+    currencyAccount: { upsert: async () => { throw new Error("Paused currency must not access the reward account."); } }
+  };
+
+  await rpsCommand.execute(interaction, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+  assert.equal(getResponse().flags, MessageFlags.IsComponentsV2);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].amount, 0);
+  assert.match(records[0].type, /^rps_(win|loss|tie)$/);
+});
+
 test("rock paper scissors rejects direct messages", async () => {
   const { interaction, getResponse } = makeInteraction({ guildId: null });
   await rpsCommand.execute(interaction);

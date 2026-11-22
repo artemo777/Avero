@@ -2,11 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { updateProfileCustomization } from "../src/db/member-repository.js";
 import { renderProfileCard, PROFILE_BANNERS } from "../averoui/profile-card.js";
-import { downloadProfileBanner } from "../src/bot/commands/profile.js";
+import { downloadProfileBanner, renderProfilePayload } from "../src/bot/commands/profile.js";
 
 test("profile canvas customization persists the supported visual settings", async () => {
   let saved;
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async ({ where }) => ({ itemId: where.guildId_userId_itemId.itemId }) },
     memberProfile: { upsert: async (args) => { saved = args; return { ...args.create, ...args.update }; } }
   };
@@ -27,6 +28,7 @@ test("profile canvas customization persists the supported visual settings", asyn
 
 test("profile customization requires ownership of avatar decorations and showcase badges", async () => {
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyPurchase: { findUnique: async () => null },
     memberProfile: { upsert: async () => { throw new Error("must not save"); } }
   };
@@ -41,7 +43,7 @@ test("profile customization requires ownership of avatar decorations and showcas
 });
 
 test("profile customization rejects unsupported colors, banners, and oversized bios", async () => {
-  const prisma = { memberProfile: { upsert: async () => ({}) } };
+  const prisma = { $transaction: async (callback) => callback(prisma), memberProfile: { upsert: async () => ({}) } };
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileAccentColor: 0x123456 }), /accent color/i);
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileBanner: "unknown" }), /banner/i);
   await assert.rejects(updateProfileCustomization(prisma, "g", "u", { profileBio: "x".repeat(121) }), /120 characters/i);
@@ -58,6 +60,7 @@ test("custom profile banner bytes and MIME type are persisted together", async (
   let saved;
   const bytes = Buffer.from("valid-test-image");
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     memberProfile: {
       upsert: async (args) => { saved = args.update; return args.update; }
     }
@@ -73,7 +76,7 @@ test("custom profile banner bytes and MIME type are persisted together", async (
 
 test("custom profile banner can be cleared when switching back to a preset", async () => {
   let saved;
-  const prisma = { memberProfile: { upsert: async (args) => { saved = args.update; return args.update; } } };
+  const prisma = { $transaction: async (callback) => callback(prisma), memberProfile: { upsert: async (args) => { saved = args.update; return args.update; } } };
   await updateProfileCustomization(prisma, "guild-1", "user-1", {
     profileBanner: "aurora",
     profileBannerImage: null,
@@ -98,4 +101,42 @@ test("profile card renderer accepts a custom uploaded banner image", async () =>
   const card = await renderProfileCard({ username: "Custom banner", bannerImage: source });
   assert.equal(card.toString("hex", 0, 8), "89504e470d0a1a0a");
   assert.ok(card.length > 1000);
+});
+
+
+test("clearing the badge showcase also clears the legacy equipped badge field", async () => {
+  let saved;
+  const prisma = {
+    $transaction: async (callback) => callback(prisma),
+    currencyPurchase: { findUnique: async () => null },
+    memberProfile: {
+      upsert: async (args) => { saved = args; return { ...args.create, ...args.update }; }
+    }
+  };
+  const result = await updateProfileCustomization(prisma, "guild-1", "user-1", { profileShowcaseBadgeIds: [] });
+  assert.equal(result.updated, true);
+  assert.deepEqual(saved.update.profileShowcaseBadgeIds, []);
+  assert.equal(saved.update.equippedBadgeItemId, null);
+});
+
+
+test("profile rendering keeps a legacy equipped badge when the showcase array is empty", async () => {
+  const prisma = {
+    currencyAccount: { findUnique: async () => ({ balance: 0, gemBalance: 0, dailyStreak: 0 }) },
+    currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
+    memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge", profileShowcaseBadgeIds: [] }) },
+    currencyTransaction: { groupBy: async () => [] },
+    memberTitle: { findMany: async () => [] }
+  };
+  const target = {
+    id: "user-1",
+    username: "Tester",
+    globalName: "Tester",
+    displayAvatarURL: () => null
+  };
+  const response = await renderProfilePayload(prisma, "guild-1", target, "user-1");
+  const content = response.components[0].toJSON().components
+    .filter((component) => component.type === 10)
+    .map((component) => component.content).join("\\n");
+  assert.match(content, /Showcased badges.*Avero Enamel Pin/);
 });

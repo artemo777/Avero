@@ -20,7 +20,7 @@ export const guessCommand = Object.freeze({
       max_value: MAX_GUESS
     }]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async execute(interaction, { prisma, settings } = {}) {
     if (!prisma) throw new Error("Guess command requires a database client.");
     if (!interaction.guildId) {
       await interaction.reply({ content: "Guess can only be played inside a server.", flags: MessageFlags.Ephemeral });
@@ -34,9 +34,10 @@ export const guessCommand = Object.freeze({
     const answer = randomInt(MIN_GUESS, MAX_GUESS + 1);
     const won = guess === answer;
     await recordGuessResult(prisma, interaction.guildId, interaction.user.id, won);
-    const result = won
+    const rewardsEnabled = settings?.currencyEnabled !== false;
+    const result = won && rewardsEnabled
       ? await awardGameReward(prisma, interaction.guildId, interaction.user.id, GUESS_REWARD, { type: "guess_reward", cooldownMs: GUESS_REWARD_COOLDOWN_MS })
       : null;
-    await interaction.reply(renderGuess(guess, answer, result, interaction.user.id));
+    await interaction.reply(renderGuess(guess, answer, result, interaction.user.id, rewardsEnabled));
   }
 });
