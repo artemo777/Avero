@@ -60,7 +60,7 @@ test("Avero shared emoji names map to their matching command purposes", () => {
     "rainbowwemoji", "bughunter"
   ];
   setServerEmojis(names.map((name, index) => ({
-    id: String(12345678901234600 + index),
+    id: String(15693790000000000n + BigInt(index)),
     name,
     animated: ["duck_lesgo", "platewwin", "timer", "timersand", "verify", "slow_siren", "vipgif", "staff", "alertastaff2000", "rainbowwemoji"].includes(name),
     available: true
@@ -78,7 +78,7 @@ test("Avero shared emoji names map to their matching command purposes", () => {
   ];
   for (const [purpose, name] of expected) {
     const emoji = names.indexOf(name);
-    const id = String(12345678901234600 + emoji);
+    const id = String(15693790000000000n + BigInt(emoji));
     const animated = ["duck_lesgo", "platewwin", "timer", "timersand", "verify", "slow_siren", "vipgif", "staff", "alertastaff2000", "rainbowwemoji"].includes(name);
     assert.equal(getServerEmoji(purpose, "fallback"), "<" + (animated ? "a" : "") + ":" + name + ":" + id + ">");
   }
