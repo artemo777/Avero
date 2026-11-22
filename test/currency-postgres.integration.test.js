@@ -10,8 +10,13 @@ import { getMemberProfile, ensureMemberProfile, equipProfileBadge } from "../src
 import { adjustAdminInventory } from "../src/db/admin-economy-repository.js";
 import { getMemberTitles, unlockMemberTitle } from "../src/db/title-repository.js";
 
-const enabled = Boolean(process.env.DATABASE_URL);
-const prisma = enabled ? new PrismaClient() : null;
+// Never run destructive PostgreSQL integration tests against the bot's DATABASE_URL.
+// Opt in only with a dedicated disposable test database connection.
+const testDatabaseUrl = process.env.CURRENCY_TEST_DATABASE_URL?.trim();
+const enabled = Boolean(testDatabaseUrl);
+const prisma = enabled
+  ? new PrismaClient({ datasources: { db: { url: testDatabaseUrl } } })
+  : null;
 
 after(async () => {
   if (prisma) await prisma.$disconnect();
