@@ -168,20 +168,11 @@ async function collectibleArtwork(items, size = 192) {
 }
 function safeComponentEmoji(value) {
   if (typeof value !== "string" || !value) return undefined;
-  const custom = value.match(/^<a?:([a-zA-Z0-9_]{2,32}):[0-9]{17,20}>$/);
+  const custom = value.match(/^<(a?):([a-zA-Z0-9_]{2,32}):([0-9]{17,20})>$/);
   if (custom) {
-    const name = custom[1].toLowerCase();
-    if (/(coin|money|wallet)/.test(name)) return "🪙";
-    if (/(gem|diamond|crystal)/.test(name)) return "💎";
-    if (/(shop|store|cart)/.test(name)) return "🛍️";
-    if (/(inventory|backpack|collection)/.test(name)) return "🎒";
-    if (/(work|toolbox|briefcase)/.test(name)) return "🧰";
-    if (/(scavenge|search|explore)/.test(name)) return "🔎";
-    if (/(daily|calendar|gift)/.test(name)) return "✨";
-    if (/(guess|target)/.test(name)) return "🎯";
-    if (/(vault|lock|safe)/.test(name)) return "🔐";
-    if (/(atlas|map)/.test(name)) return "🗺️";
-    return "🔹";
+    // Preserve shared-server custom emoji in Discord components. ButtonBuilder.setEmoji
+    // accepts the API emoji shape; converting this to Unicode discards the server asset.
+    return { id: custom[3], name: custom[2], animated: custom[1] === "a" };
   }
   // Component emoji fields accept actual Unicode emoji, not arbitrary text glyphs.
   // The shared asset catalogue uses geometric symbols for message text; map those
