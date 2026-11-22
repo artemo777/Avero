@@ -191,5 +191,5 @@ test("unmapped custom component emojis fall back to a valid Unicode emoji", () =
     buttons: [{ customId: "emoji-test", label: "Test", emoji: "<:unmapped_icon:12345678901234567>" }]
   }).toJSON();
   const button = json.components.find((component) => component.type === 1)?.components[0];
-  assert.equal(button.emoji.name, "🔹");
+  assert.equal(button.emoji.name, "🗺️");
 });
