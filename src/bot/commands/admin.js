@@ -1,6 +1,7 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { adjustAdminInventory } from "../../db/admin-economy-repository.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 
 const ITEM_ACTION_CHOICES = [
   { name: "Grant", value: "grant" },
@@ -15,7 +16,7 @@ function canManageEconomy(interaction) {
 }
 
 function response(content) {
-  return { content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } };
+  return { content: getServerEmoji("admin", "🔒") + " " + content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } };
 }
 
 export const adminCommand = Object.freeze({
