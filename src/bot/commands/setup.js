@@ -1,6 +1,7 @@
 import { GatewayIntentBits, MessageFlags, PermissionFlagsBits } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
 import { getAutoReactionSettings, getAutoReactionRolePerks } from "../../db/auto-reaction-repository.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 
 const REQUIRED_PERMISSIONS = Object.freeze([
   ["View Channel", PermissionFlagsBits.ViewChannel],
@@ -41,14 +42,14 @@ export const setupCommand = Object.freeze({
         : "Paused"));
     }
     const payload = gamePayload(createGamePanel({
-      title: "Server setup",
+      title: getServerEmoji("brand-mark-svg", "◈") + " Server setup",
       eyebrow: "AVERO • SETUP",
       description: missing
         ? "Avero is connected, but needs a few channel permissions before every response can display properly."
         : "Avero is connected and the key channel permissions are in place.",
       sections,
       color: missing ? 0xFBBF24 : undefined,
-      footer: "RUN /HELP FOR THE FULL COMMAND LIST",
+      footer: getServerEmoji("info", "ℹ️") + " RUN /HELP FOR THE FULL COMMAND LIST",
       separators: true
     }));
     await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
