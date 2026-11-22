@@ -563,7 +563,7 @@ export function renderGuess(guess, answer, result, userId, rewardsEnabled = true
     ? new Date(result.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
     : null;
   const outcome = rewarded
-    ? "✦ **+" + GUESS_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
+    ? uiEmoji("win", "✦") + " **+" + GUESS_REWARD + " coins**\nBalance: **" + result.account.balance.toLocaleString("en-US") + "**."
     : won
       ? (rewardsEnabled ? "Correct guess! Your coin reward is still cooling down." : "Correct guess! Currency rewards are paused in this server.") +
         (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
@@ -598,7 +598,7 @@ export function renderVault({ guess, challenge, won, reward, rewardsEnabled = tr
     ? new Date(reward.account.lastGameRewardAt.getTime() + GUESS_REWARD_COOLDOWN_MS)
     : null;
   const outcome = rewarded
-    ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
+    ? "\n\n" + uiEmoji("win", "✦") + " **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
     : won && !rewardsEnabled
       ? "\n\nVault solved! Currency rewards are paused in this server, so no coins were added."
       : won && reward?.reason === "already_claimed"
@@ -622,8 +622,8 @@ export function renderCoinflip(call, result, reward, userId, rewardsEnabled = tr
   const won = call === result;
   const outcome = won
     ? reward?.awarded
-      ? "🎉 **You won · +" + reward.amount + " coins**\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
-      : "🎉 **You won!**\n" + (rewardsEnabled ? "Your shared 10-minute game-reward cooldown is active, so no coins were added." : "Currency rewards are paused in this server, so no coins were added.")
+      ? uiEmoji("win", "🎉") + " **You won · +" + reward.amount + " coins**\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
+      : uiEmoji("win", "🎉") + " **You won!**\n" + (rewardsEnabled ? "Your shared 10-minute game-reward cooldown is active, so no coins were added." : "Currency rewards are paused in this server, so no coins were added.")
     : "Not this time — no coins were lost. Try again whenever you like.";
   return gamePayload(createGamePanel({
     title: won ? "A clean call!" : "The coin landed",
@@ -645,7 +645,7 @@ export function renderRps(playerChoice, botChoice, userId, reward = null, reward
     : won
       ? "\n\n" + (rewardsEnabled ? "You won, but your shared game-reward cooldown is active. No coins were lost." : "You won, but currency rewards are paused in this server. No coins were added.")
       : "\n\nNo coins were lost. No wagers.";
-  const outcome = (tie ? "It's a tie!" : won ? "✦ **You win this round!**" : "**Avero wins this round.**") + rewardText;
+  const outcome = (tie ? "It's a tie!" : won ? uiEmoji("win", "✦") + " **You win this round!**" : "**Avero wins this round.**") + rewardText;
   const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
   return gamePayload(createGamePanel({
     title: "Duel deck — rock, paper, scissors",
@@ -662,7 +662,7 @@ export function renderBuy(result, item, userId) {
   const currency = item.currency === "gems" ? "gems" : "coins";
   const balance = currency === "gems" ? (result.account?.gemBalance ?? 0) : (result.account?.balance ?? 0);
   const success = result.purchased;
-  const title = success ? "Item unlocked!" : result.reason === "owned" ? "Already in your collection" : "Not enough " + currency;
+  const title = success ? uiEmoji("unlock", "🔓") + " Item unlocked!" : result.reason === "owned" ? "Already in your collection" : uiEmoji("warning", "⚠️") + " Not enough " + currency;
   const description = success
     ? "### " + collectibleIcon(item) + " " + item.name + "\nUnlocked for **" + item.price + " " + currency + "**.\n\nBalance: **" + balance.toLocaleString("en-US") + " " + currency + "**."
     : result.reason === "owned" ? "You already own **" + item.name + "**. Your balance was not charged again."
