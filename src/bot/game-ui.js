@@ -183,9 +183,28 @@ function safeComponentEmoji(value) {
     if (/(atlas|map)/.test(name)) return "🗺️";
     return "🔹";
   }
-  // Component emoji fields accept Unicode emoji, not Discord message markup.
+  // Component emoji fields accept actual Unicode emoji, not arbitrary text glyphs.
+  // The shared asset catalogue uses geometric symbols for message text; map those
+  // to valid emoji when they are reused on buttons, and omit any unsupported glyph.
   if (value.startsWith("<")) return undefined;
-  return value;
+  const glyphFallbacks = {
+    "◉": "🪙",
+    "◇": "💎",
+    "⬡": "💎",
+    "✧": "✨",
+    "✦": "✨",
+    "⬢": "🏅",
+    "◌": "⏳",
+    "◈": "🔹",
+    "▣": "🏅",
+    "◆": "💎"
+  };
+  if (glyphFallbacks[value]) return glyphFallbacks[value];
+  const isUnicodeEmoji =
+    /\\p{Extended_Pictographic}/u.test(value) ||
+    /^[#*0-9]\\uFE0F?\\u20E3$/u.test(value) ||
+    /^\\p{Regional_Indicator}{2}$/u.test(value);
+  return isUnicodeEmoji ? value : undefined;
 }
 function button(userId, action, label, arg = "", style = ButtonStyle.Secondary, emoji) {
   return { label, customId: componentId(userId, action, arg), style, emoji };
