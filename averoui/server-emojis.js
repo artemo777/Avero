@@ -14,6 +14,7 @@ const PURPOSE_ALIASES = Object.freeze({
   "bughunter": ["bughunter"],
   "staff-member": ["staff"],
   check: ["check"],
+  bullet: ["easydot_ids"],
   "reward-sparkle": ["sparkle1", "reward", "sparkle", "star", "shiny", "milestone"],
   loader: ["timersand", "loading", "loader", "spinner", "timer"],
   timer: ["timer"],
