@@ -21,11 +21,11 @@ const PURPOSE_ALIASES = Object.freeze({
   cooldown: ["timersand", "timer"],
   "brand-mark-svg": ["icon", "brand", "logo", "brand_mark", "avero_logo"],
   success: ["verify", "check", "success", "tick", "yes"],
-  win: ["platewwin", "duck_lesgo", "win", "winner"],
+  win: ["platewwin", "win", "winner"],
   error: ["slow_siren", "error", "cross", "fail"],
   warning: ["exclamation", "slow_siren", "warning", "alert", "caution"],
   info: ["icon", "info", "information"],
-  game: ["duck_lesgo", "platewwin", "game", "controller", "gaming"],
+  game: ["duck_lesgo", "game", "controller", "gaming"],
   profile: ["icon", "profile", "user", "member"],
   crown: ["crown", "winner", "top"],
   shop: ["shop", "store", "shopping", "cart"],
@@ -56,7 +56,7 @@ const PURPOSE_ALIASES = Object.freeze({
   diagnostics: ["bhacker", "debug", "diagnostics"],
   bughunter: ["bughunter"],
   welcome: ["wavey"],
-  celebration: ["rainbowwemoji", "duck_lesgo", "platewwin"],
+  celebration: ["rainbowwemoji", "platewwin", "duck_lesgo"],
   vip: ["vipgif"],
 });
 
