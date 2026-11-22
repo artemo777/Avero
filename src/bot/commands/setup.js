@@ -27,8 +27,8 @@ export const setupCommand = Object.freeze({
       "**Message Content Intent** · " + (messageContentRequested ? "Requested at runtime · verify it is enabled in the Developer Portal" : "Not requested · text autoresponder triggers will not work")
     ];
     const sections = [
-      "**Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
-      "**Server admins**\nUse /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile.",
+      "**" + getServerEmoji("welcome", "👋") + " Start here**\n1. Run /games to open the game hub.\n2. Run /daily to claim coins.\n3. Visit /shop and /collections to browse items.",
+      "**" + getServerEmoji("admin", "🔒") + " Server admins**\nUse /config (Manage Server required) to enable or pause features, set rewards, configure role perks and customize Avero's server profile.",
       "**Channel permissions**\n" + permissionLines.join("\n"),
       "**Feature status**\n" + featureLines.join("\n")
     ];
