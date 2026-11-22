@@ -4,6 +4,7 @@ import {
   StringSelectMenuOptionBuilder, TextInputBuilder, TextInputStyle
 } from "discord.js";
 import { THEME } from "../../../averoui/theme.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
 import { getGuildSettings, updateGuildSettings, GUILD_PROFILE_THEMES } from "../../db/guild-settings-repository.js";
 import {
@@ -165,13 +166,13 @@ async function buildReactionPerksPanel(prisma, guildId, guildName) {
     { customId: "avero-config|reaction-back", label: "Back to config", style: ButtonStyle.Secondary }
   ];
   return gamePayload(createGamePanel({
-    title: "Reaction Perks",
+    title: getServerEmoji("staff", "🛡️") + " Reaction Perks",
     eyebrow: "AVERO • CONFIG",
     description: "Settings for **" + guildName + "**. Avero reacts when a configured role member or individually selected member mentions someone.",
     color: THEME.colors.primary,
     sections: [
-      "**STATUS** · " + (settings.enabled ? "Enabled" : "Paused"),
-      "**ROLE & USER REACTIONS**\\n" + perkLines,
+      "**STATUS** · " + (settings.enabled ? getServerEmoji("success", "✓") + " Enabled" : getServerEmoji("staff-alert", "⚠️") + " Paused"),
+      "**" + getServerEmoji("moderator", "🛡️") + " ROLE & USER REACTIONS**\\n" + perkLines,
       "**IGNORED CHANNELS**\\n" + (settings.ignoredChannelIds.length ? settings.ignoredChannelIds.map((id) => "<#" + id + ">").join(", ") : "All text channels are eligible."),
       "**HOW IT WORKS**\\nOnly messages that mention another user trigger reactions. Each matching role and individually selected member can have a different emoji. Duplicate emojis are added only once. You can pause the feature or exclude specific channels."
     ],
@@ -191,7 +192,7 @@ export function buildConfigPanel(settings, guildName) {
     style: ButtonStyle.Secondary
   }));
   return gamePayload(createGamePanel({
-    title: "Server settings",
+    title: getServerEmoji("admin", "⚙️") + " Server settings",
     eyebrow: "AVERO / CONTROL CENTER",
     description: "A compact dashboard for **" + guildName + "**. Choose a section below; changes apply only to this server.",
     sections: [
