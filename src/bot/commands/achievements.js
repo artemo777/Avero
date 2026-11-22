@@ -40,7 +40,7 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
   const sections = pageItems.map((achievement) => {
     const complete = achievement.progress >= achievement.target;
     const progress = Math.min(achievement.progress, achievement.target);
-    return (complete ? getServerEmoji("bughunter", "🏅") + " " : "◇ ") + "**" + achievement.name + "**\n" + achievement.description + "\n" +
+    return (complete ? getServerEmoji("bughunter", "🏅") + " " : getServerEmoji("bullet", "◇") + " ") + "**" + achievement.name + "**\n" + achievement.description + "\n" +
       (complete ? getServerEmoji("check", "✓") + " **Unlocked**" : "**Progress:** " + progress.toLocaleString("en-US") + " / " + achievement.target.toLocaleString("en-US"));
   });
   const buttons = pageCount > 1 ? [
