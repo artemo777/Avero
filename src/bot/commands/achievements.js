@@ -1,5 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } from "discord.js";
 import { createGamePanel, gamePayload } from "../game-ui.js";
+import { getServerEmoji } from "../../../averoui/server-emojis.js";
 import { getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { SHOP_ITEMS } from "../shop-catalog.js";
 import { buildCollectionSetProgress } from "../collection-sets.js";
@@ -48,8 +49,8 @@ export async function renderAchievementsPage(prisma, guildId, target, controlUse
   ] : [];
   return {
     ...gamePayload(createGamePanel({
-      title: target.username + "'s achievements",
-      eyebrow: "MILESTONES",
+      title: getServerEmoji("crown", "🏆") + " " + target.username + "'s achievements",
+      eyebrow: getServerEmoji("celebration", "✨") + " MILESTONES",
       description: "**" + unlocked + " / " + achievements.length + " unlocked** · Global milestones\nCosmetic progress only · virtual coins have no cash value.",
       sections,
       buttons,
