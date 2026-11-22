@@ -180,6 +180,7 @@ function safeComponentEmoji(value) {
   if (value.startsWith("<")) return undefined;
   const glyphFallbacks = {
     "◉": "🪙",
+    "avero_coin": "🪙",
     "◇": "💎",
     "⬡": "💎",
     "✧": "✨",
@@ -188,6 +189,7 @@ function safeComponentEmoji(value) {
     "◌": "⏳",
     "◈": "🔹",
     "▣": "🏅",
+    "unmapped_icon": "🗺️",
     "◆": "💎"
   };
   if (glyphFallbacks[value]) return glyphFallbacks[value];
