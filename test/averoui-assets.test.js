@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ASSETS, getAsset, getAssetSymbol, getCollectibleAssetId, getRarityAssetId, listAssets, loadAssetBuffer, loadRegisteredAsset } from "../averoui/index.js";
+import { ASSETS, getAsset, getAssetSymbol, getCollectibleAssetId, getRarityAssetId, listAssets, loadAssetBuffer, loadRegisteredAsset, setServerEmojis } from "../averoui/index.js";
 
 test("shared asset catalogue supports lookup and kind filtering", () => {
   assert.equal(getAsset("brand-mark").value, "◈");
@@ -9,6 +9,9 @@ test("shared asset catalogue supports lookup and kind filtering", () => {
   assert.ok(listAssets({ kind: "svg" }).length >= 8);
   assert.equal(getAsset("coin").path, "icons/coin.svg");
   assert.equal(getAssetSymbol("coin"), "◉");
+  setServerEmojis([{ id: "12345678901234574", name: "avero_coin", available: true }]);
+  assert.equal(getAssetSymbol("coin"), "<:avero_coin:12345678901234574>");
+  setServerEmojis([]);
   assert.equal(getAssetSymbol("missing"), "·");
   assert.equal(getRarityAssetId("EPIC"), "gem-epic");
   assert.equal(getRarityAssetId("MYTHIC"), "gem-legendary");

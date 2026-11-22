@@ -1,5 +1,5 @@
 import { achievementsCommand } from "./achievements.js";
-import { activityCommand } from "./activity.js";
+import { adminCommand } from "./admin.js";
 import { autoresponderCommand } from "./autoresponder.js";
 import { askCommand } from "./ask.js";
 import { balanceCommand } from "./balance.js";
@@ -13,11 +13,9 @@ import { guessCommand } from "./guess.js";
 import { helpCommand } from "./help.js";
 import { inventoryCommand } from "./inventory.js";
 import { gamesCommand } from "./games.js";
-import { leaderboardCommand } from "./leaderboard.js";
 import { perksCommand } from "./perks.js";
 import { pingCommand } from "./ping.js";
-import { profileCommand } from "./profile.js";
-import { rankCommand } from "./rank.js";
+import { profileCommand, profileEditCommand } from "./profile.js";
 import { rpsCommand } from "./rps.js";
 import { shopCommand } from "./shop.js";
 import { scavengeCommand } from "./scavenge.js";
@@ -25,18 +23,18 @@ import { setupCommand } from "./setup.js";
 import { workCommand } from "./work.js";
 import { vaultCommand } from "./vault.js";
 import { titlesCommand } from "./titles.js";
+import { reputationCommand } from "./reputation.js";
 
 export const commands = Object.freeze([
   pingCommand,
   helpCommand,
+  adminCommand,
   configCommand,
-  activityCommand,
   autoresponderCommand,
   perksCommand,
   achievementsCommand,
   profileCommand,
-  rankCommand,
-  leaderboardCommand,
+  profileEditCommand,
   balanceCommand,
   askCommand,
   buyCommand,
@@ -53,5 +51,6 @@ export const commands = Object.freeze([
   scavengeCommand,
   vaultCommand,
   titlesCommand,
-  setupCommand
+  setupCommand,
+  reputationCommand
 ]);

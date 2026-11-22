@@ -6,7 +6,8 @@ import {
   awardGameReward, claimDailyContract, claimDailyReward, purchaseCurrencyItem, submitDailyVaultAttempt
 } from "../src/db/currency-repository.js";
 import { applyForJob, getMemberJob, runJobShift } from "../src/db/work-repository.js";
-import { getMemberProfile, ensureMemberProfile } from "../src/db/member-repository.js";
+import { getMemberProfile, ensureMemberProfile, equipProfileBadge } from "../src/db/member-repository.js";
+import { adjustAdminInventory } from "../src/db/admin-economy-repository.js";
 import { getMemberTitles, unlockMemberTitle } from "../src/db/title-repository.js";
 
 // Never run destructive PostgreSQL integration tests against the bot's DATABASE_URL.
@@ -29,7 +30,9 @@ async function createAccount(balance = 0) {
 }
 
 async function cleanGuild(guildId, userId) {
-  if (!userId) throw new Error("Refusing to clean currency test data without a specific userId.");
+  if (typeof userId !== "string" || userId.length === 0) {
+    throw new TypeError("A member ID is required for integration-test cleanup.");
+  }
   await prisma.dailyContractClaim.deleteMany({ where: { guildId, userId } });
   await prisma.currencyTransaction.deleteMany({ where: { guildId, userId } });
   await prisma.currencyPurchase.deleteMany({ where: { guildId, userId } });
@@ -198,6 +201,29 @@ test("PostgreSQL shares wallet, cooldowns, and item ownership across guild conte
   });
   assert.equal(account.balance, 250 - 100 + 100);
   assert.equal(await prisma.currencyPurchase.count({ where: { guildId: "__avero_global__", userId, itemId: "global_test_badge" } }), 1);
+});
+
+test("PostgreSQL serializes equipment against concurrent admin inventory removal", { skip: !enabled }, async (t) => {
+  const userId = "7" + randomUUID().replaceAll("-", "").slice(0, 16);
+  const actorUserId = "8" + randomUUID().replaceAll("-", "").slice(0, 16);
+  const guildId = "12345678901234567";
+  const globalGuildId = "__avero_global__";
+  t.after(async () => {
+    await prisma.adminEconomyAudit.deleteMany({ where: { guildId, targetUserId: userId, actorUserId } });
+    await prisma.memberProfile.deleteMany({ where: { guildId: globalGuildId, userId } });
+    await prisma.currencyPurchase.deleteMany({ where: { guildId: globalGuildId, userId } });
+  });
+  await prisma.currencyPurchase.create({ data: { guildId: globalGuildId, userId, itemId: "starter_badge" } });
+  const outcomes = await Promise.allSettled([
+    equipProfileBadge(prisma, guildId, userId, "starter_badge"),
+    adjustAdminInventory(prisma, guildId, userId, actorUserId, "starter_badge", "remove", "concurrency test")
+  ]);
+  assert.ok(outcomes.some((result) => result.status === "fulfilled"));
+  const [purchase, profile] = await Promise.all([
+    prisma.currencyPurchase.findUnique({ where: { guildId_userId_itemId: { guildId: globalGuildId, userId, itemId: "starter_badge" } } }),
+    prisma.memberProfile.findUnique({ where: { guildId_userId: { guildId: globalGuildId, userId } } })
+  ]);
+  if (!purchase) assert.notEqual(profile?.equippedBadgeItemId, "starter_badge");
 });
 
 test("PostgreSQL shares profiles, titles, and careers across guild contexts", { skip: !enabled }, async (t) => {

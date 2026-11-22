@@ -6,10 +6,9 @@ import { loadBotConfig, requireApplicationId } from "../src/bot/config.js";
 import { pingCommand } from "../src/bot/commands/ping.js";
 import { setupCommand } from "../src/bot/commands/setup.js";
 import { helpCommand } from "../src/bot/commands/help.js";
-import { profileCommand } from "../src/bot/commands/profile.js";
-import { leaderboardCommand } from "../src/bot/commands/leaderboard.js";
+import { profileCommand, profileEditCommand, handleProfileBioModal } from "../src/bot/commands/profile.js";
 import { commands } from "../src/bot/commands/index.js";
-import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory } from "../src/bot/game-ui.js";
+import { handleGameComponent, readComponentId, renderCollectionSets, renderGames, renderInventory, runCoinflip, runRps } from "../src/bot/game-ui.js";
 import { buildConfigPanel } from "../src/bot/commands/config.js";
 
 test("bot configuration requires a token without exposing its value", () => {
@@ -80,7 +79,7 @@ function panelText(response) {
 test("RPS is free to play and rewards wins without wagers", async () => {
   const { rpsCommand } = await import("../src/bot/commands/rps.js");
   let response;
-  const account = { guildId: "guild-1", userId: "user-1", balance: 0, lastGameRewardAt: null };
+  const account = { guildId: "12345678901234567", userId: "user-1", balance: 0, lastGameRewardAt: null };
   const transactions = [];
   const prisma = {
     $transaction: async (callback) => callback(prisma),
@@ -99,7 +98,7 @@ test("RPS is free to play and rewards wins without wagers", async () => {
     }
   };
   await rpsCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: { getString: () => "rock" },
     reply: async (payload) => { response = payload; }
@@ -129,7 +128,7 @@ test("RPS rejects direct messages and invalid choices", async () => {
     flags: MessageFlags.Ephemeral
   });
 
-  interaction.guildId = "guild-1";
+  interaction.guildId = "12345678901234567";
   await rpsCommand.execute(interaction);
   assert.deepEqual(replies[1], {
     content: "Choose rock, paper, or scissors.",
@@ -161,7 +160,7 @@ test("guess command rejects out-of-range input before touching the database", as
   const { guessCommand } = await import("../src/bot/commands/guess.js");
   let response;
   await guessCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: { getInteger: () => 6 },
     reply: async (payload) => { response = payload; }
@@ -177,8 +176,6 @@ test("global command list includes new economy features and has no duplicate nam
   const names = commands.map((command) => command.data.name);
   assert.ok(names.includes("games"));
   assert.ok(names.includes("profile"));
-  assert.ok(names.includes("rank"));
-  assert.ok(names.includes("leaderboard"));
   assert.ok(names.includes("help"));
   assert.equal(names.length, new Set(names).size);
   assert.ok(names.includes("work"));
@@ -192,6 +189,7 @@ test("global command list includes new economy features and has no duplicate nam
   assert.ok(names.includes("perks"));
   assert.ok(names.includes("titles"));
   assert.equal(names.length, 27);
+  assert.ok(names.includes("rep"));
   assert.ok(names.includes("collections"));
   assert.ok(names.includes("setup"));
 });
@@ -205,7 +203,7 @@ test("shop category select and pagination preserve the selected category", async
   const interaction = {
     customId: "avero|user-1|shop_category",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     values: ["gems"],
     isStringSelectMenu: () => true,
     reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); },
@@ -213,9 +211,9 @@ test("shop category select and pagination preserve the selected category", async
   };
   await handleGameComponent(interaction, { prisma });
   let panel = updated.components[0].toJSON();
-  let text = panel.components.filter((component) => component.type === 10).map((component) => component.content).join("\\n");
+  let text = panelText(updated);
   assert.match(text, /Aurora Frame/);
-  assert.doesNotMatch(text, /Glitch Gremlin/);
+  assert.doesNotMatch(text, /Avero Enamel Pin/);
   assert.ok(panel.components.some((component) => component.type === 1 && component.components.some((child) => child.type === 3 && child.options.some((option) => option.value === "gems" && option.default))));
 
   interaction.customId = "avero|user-1|shop_page|all:1";
@@ -224,6 +222,75 @@ test("shop category select and pagination preserve the selected category", async
   panel = updated.components[0].toJSON();
   const pageButtons = panel.components.filter((component) => component.type === 1).flatMap((row) => row.components);
   assert.ok(pageButtons.some((button) => button.custom_id === "avero|user-1|shop_page|all:0"));
+});
+
+test("legacy Guess, Coinflip, and RPS rounds do not award coins while currency is paused", async () => {
+  const ledger = [];
+  const prisma = {
+    currencyTransaction: {
+      create: async ({ data }) => { ledger.push(data); return data; }
+    },
+    $transaction: async () => {
+      throw new Error("A paused game must not attempt a currency reward transaction.");
+    }
+  };
+
+  await runCoinflip(prisma, "12345678901234567", "heads", "user-1", false);
+  await runRps(prisma, "12345678901234567", "rock", "user-1", false);
+  await handleGameComponent({
+    customId: "avero|user-1|guess|1",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    update: async () => {},
+    reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+  }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+  assert.equal(ledger.length, 3);
+  assert.ok(ledger.every((entry) => entry.amount === 0));
+  assert.ok(ledger.some((entry) => entry.type === "guess_win_play" || entry.type === "guess_loss"));
+  assert.ok(ledger.some((entry) => ["coinflip_win", "coinflip_loss"].includes(entry.type)));
+  assert.ok(ledger.some((entry) => ["rps_win", "rps_loss", "rps_tie"].includes(entry.type)));
+});
+
+test("new mini-games remain playable but do not award coins while server currency is paused", async () => {
+  for (const scenario of [
+    { action: "mine_pick", arg: "session-1:0", gameId: "mine", payload: { oreByTile: ["gold", ...Array(24).fill(null)], revealed: Array(25).fill(false) }, activityType: "mine_play" },
+    { action: "pick3", arg: "session-2:1", gameId: "pick3", payload: { star: 1 }, activityType: "pick3_play" }
+  ]) {
+    const ledger = [];
+    const sessionUpdates = [];
+    const prisma = {
+      gameSession: {
+        findFirst: async () => ({
+          id: scenario.gameId === "mine" ? "session-1" : "session-2",
+          gameId: scenario.gameId,
+          payload: scenario.payload
+        })
+      },
+      $transaction: async (callback) => callback({
+        gameSession: {
+          updateMany: async (args) => { sessionUpdates.push(args); return { count: 1 }; }
+        },
+        currencyTransaction: {
+          create: async (args) => { ledger.push(args.data); return args.data; }
+        }
+      })
+    };
+    let response;
+    await handleGameComponent({
+      customId: "avero|user-1|" + scenario.action + "|" + scenario.arg,
+      user: { id: "user-1" },
+      guildId: "12345678901234567",
+      update: async (payload) => { response = payload; },
+      reply: async (payload) => { throw new Error("Unexpected reply: " + payload.content); }
+    }, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+    assert.match(panelText(response), /Currency rewards are paused/);
+    assert.equal(sessionUpdates.length, 1);
+    assert.equal(sessionUpdates[0].data.status, "completed");
+    assert.deepEqual(ledger.map((entry) => entry.type), [scenario.activityType]);
+    assert.equal(ledger[0].amount, 0);
+  }
 });
 
 test("games hub uses a compact text-only Components V2 panel with all game controls", () => {
@@ -241,7 +308,7 @@ test("games hub uses a compact text-only Components V2 panel with all game contr
   assert.doesNotMatch(text, /one code attempt per UTC day/);
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 3);
-  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 12);
+  assert.equal(rows.reduce((count, row) => count + row.components.length, 0), 14);
 });
 
 test("help command groups the real commands into a compact Components V2 panel", async () => {
@@ -252,7 +319,7 @@ test("help command groups the real commands into a compact Components V2 panel",
   assert.match(text, /Avero commands/);
   assert.match(text, /collections/);
   assert.ok(text.includes("/balance"));
-  assert.ok(text.includes("/leaderboard"));
+  assert.doesNotMatch(text, /\/leaderboard|\/rank|\/activity/);
   assert.match(text, /achievements/);
   assert.match(text, /vault/);
 });
@@ -267,9 +334,9 @@ test("profile command combines wallet and collection data", async () => {
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
@@ -277,16 +344,13 @@ test("profile command combines wallet and collection data", async () => {
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   const text = panelText(response);
   assert.match(text, /Ada/);
-  assert.match(text, /Title/);
-  assert.match(text, /Frame/);
-  assert.equal(response.files.length, 2);
-  assert.deepEqual(response.files.map((file) => file.name).sort(), ["avero-professor.png", "profile-card.png"]);
+  assert.doesNotMatch(text, /Title|Frame/);
+  assert.equal(response.files.length, 1);
+  assert.deepEqual(response.files.map((file) => file.name), ["profile-card.png"]);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
   const selectorRows = response.components[0].toJSON().components.filter((component) => component.type === 1);
-  assert.equal(selectorRows.length, 5);
-  assert.deepEqual(selectorRows.map((row) => row.components[0].custom_id.split("|")[2]), [
-    "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"
-  ]);
+  assert.equal(selectorRows.length, 0);
+  assert.equal(selectorRows.length, 0);
 });
 
 
@@ -300,17 +364,17 @@ test("profile lists all owned badges but displays only the selected badge beside
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 2);
+  assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
-  assert.match(panelText(response), /Showcased badges.*Vault Rat/);
+  assert.match(panelText(response), /Archive Key/);
 });
 
 test("profile shows the actual equipped collectible artwork beside the username", async () => {
@@ -318,21 +382,22 @@ test("profile shows the actual equipped collectible artwork beside the username"
   const prisma = {
     currencyAccount: { findUnique: async () => ({ balance: 250 }) },
     currencyPurchase: { findMany: async () => [{ itemId: "neon_badge" }] },
+    guildMemberProgress: { findUnique: async () => null },
     memberProfile: { findUnique: async () => ({ equippedBadgeItemId: "neon_badge" }) },
     memberTitle: { findMany: async () => [] },
     currencyTransaction: { groupBy: async () => [] }
   };
   await profileCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     guild: { name: "Test Server" },
-    user: { id: "user-1", username: "Ada", displayAvatarURL: () => null },
+    user: { id: "22345678901234567", username: "Ada", displayAvatarURL: () => null },
     options: { getUser: () => null },
     reply: async (payload) => { response = payload; }
   }, { prisma });
 
   assert.equal(response.flags, MessageFlags.IsComponentsV2);
   assert.ok(response.components[0].toJSON().components.some((component) => component.type === 12));
-  assert.equal(response.files.length, 2);
+  assert.equal(response.files.length, 1);
   assert.equal(response.files[0].name, "profile-card.png");
   assert.match(panelText(response), /Ada/);
 });
@@ -341,12 +406,14 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   let profile = { profileAccentColor: 0x8b7cff, profileBanner: "midnight", profileShowcaseBadgeIds: [] };
   const ownedIds = new Set(["halo_ring", "aurora_frame", "neon_badge"]);
   const prisma = {
+    $transaction: async (callback) => callback(prisma),
     currencyAccount: { findUnique: async () => ({ balance: 250, dailyStreak: 2 }) },
     currencyPurchase: {
       findMany: async () => [...ownedIds].map((itemId) => ({ itemId })),
       findUnique: async ({ where }) => ownedIds.has(where.guildId_userId_itemId.itemId) ? { itemId: where.guildId_userId_itemId.itemId } : null
     },
     currencyTransaction: { groupBy: async () => [] },
+    guildMemberProgress: { findUnique: async () => null },
     memberProfile: {
       findUnique: async () => profile,
       upsert: async ({ create, update }) => { profile = { ...create, ...profile, ...update }; return profile; }
@@ -356,7 +423,7 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
       findUnique: async () => ({ titleId: "lobby_menace" })
     }
   };
-  const user = { id: "user-1", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
+  const user = { id: "22345678901234567", username: "Ada", globalName: "Ada", displayAvatarURL: () => null };
   const selections = [
     ["profile_accent_select", ["4380357"], () => assert.equal(profile.profileAccentColor, 0x42d6c5)],
     ["profile_banner_select", ["aurora"], () => { assert.equal(profile.profileBanner, "aurora"); assert.equal(profile.profileBannerImage, null); }],
@@ -369,9 +436,9 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   for (const [action, values, verify] of selections) {
     let response;
     const handled = await handleGameComponent({
-      customId: "avero|user-1|" + action,
+      customId: "avero|22345678901234567|" + action,
       user,
-      guildId: "guild-1",
+      guildId: "12345678901234567",
       values,
       isStringSelectMenu: () => true,
       update: async (payload) => { response = payload; },
@@ -384,41 +451,12 @@ test("profile editor selections persist and refresh accent, banner, frame, decor
   }
 });
 
-test("leaderboard sorts server members by the requested category", async () => {
-  let response;
-  const prisma = {
-    currencyAccount: {
-      findMany: async (query) => {
-        assert.equal(query.where.guildId, "__avero_global__");
-        assert.deepEqual(query.orderBy, { balance: "desc" });
-        return [
-          { userId: "user-1", balance: 900 },
-          { userId: "user-2", balance: 450 }
-        ];
-      }
-    },
-    memberProfile: { findMany: async () => { throw new Error("XP query should not run"); } }
-  };
-  await leaderboardCommand.execute({
-    guildId: "guild-1",
-    options: { getString: () => "coins" },
-    reply: async (payload) => { response = payload; }
-  }, { prisma });
-
-  assert.equal(response.flags, MessageFlags.IsComponentsV2);
-  const text = panelText(response);
-  assert.match(text, /Coin leaderboard/);
-  assert.ok(text.includes("<@user-1> — **900 coins**"));
-  assert.ok(text.includes("<@user-2> — **450 coins**"));
-});
-
-
 test("daily Vault button opens the current puzzle clues from the games hub", async () => {
   let response;
   const handled = await handleGameComponent({
     customId: "avero|user-1|vault",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     reply: async (payload) => { response = payload; },
     update: async (payload) => { response = payload; }
   }, { prisma: {} });
@@ -429,6 +467,19 @@ test("daily Vault button opens the current puzzle clues from the games hub", asy
 });
 
 
+test("daily Vault hub panel explains when currency rewards are paused", async () => {
+  let response;
+  await handleGameComponent({
+    customId: "avero|user-1|vault",
+    user: { id: "user-1" },
+    guildId: "12345678901234567",
+    reply: async (payload) => { response = payload; },
+    update: async (payload) => { response = payload; }
+  }, { prisma: {}, settings: { gamesEnabled: true, currencyEnabled: false } });
+  assert.match(panelText(response), /Currency rewards are paused/);
+  assert.doesNotMatch(panelText(response), /can earn 25 coins/);
+});
+
 test("collection atlas panel shows route-linked set progress", async () => {
   const response = await renderCollectionSets({
     currencyPurchase: {
@@ -437,8 +488,12 @@ test("collection atlas panel shows route-linked set progress", async () => {
         { itemId: "vault_badge" },
         { itemId: "avero_relic" }
       ]
+    },
+    memberTitle: {
+      findUnique: async () => null,
+      create: async ({ data }) => data
     }
-  }, "guild-1", "user-1");
+  }, "12345678901234567", "user-1");
   const text = panelText(response);
   assert.match(text, /The Collection Atlas/);
   assert.match(text, /1 \/ 3 themed sets completed/);
@@ -452,7 +507,7 @@ test("collection atlas button opens the member's set progress", async () => {
   const handled = await handleGameComponent({
     customId: "avero|user-1|collections",
     user: { id: "user-1" },
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     reply: async (payload) => { response = payload; },
     update: async (payload) => { response = payload; }
   }, {
@@ -474,7 +529,7 @@ test("inventory renders globally unique component IDs on empty and populated pag
       currencyPurchase: {
         findMany: async () => itemIds.map((itemId) => ({ itemId }))
       }
-    }, "guild-1", "user-1");
+    }, "12345678901234567", "user-1");
     const panel = response.components[0].toJSON();
     const customIds = panel.components
       .filter((component) => component.type === 1)
@@ -519,7 +574,7 @@ test("malformed, stale, and unknown game controls receive a private fallback res
     const handled = await handleGameComponent({
       customId,
       user: { id: "user-1" },
-      guildId: "guild-1",
+      guildId: "12345678901234567",
       reply: async (payload) => { response = payload; }
     }, { prisma: {} });
 
@@ -552,7 +607,7 @@ test("setup command reports channel permissions, feature status and first steps 
   assert.match(text, /Games.*Ready/);
   assert.match(text, /Currency.*Paused/);
   assert.match(text, /Message Content Intent/);
-  assert.match(text, /Voice State Intent/);
+  assert.doesNotMatch(text, /Voice State Intent|activity board|leaderboard/i);
 });
 
 
@@ -577,7 +632,7 @@ test("title purchases return a compact ephemeral Components V2 panel", async () 
   };
   const prisma = { $transaction: async (callback) => callback(tx) };
   await titlesCommand.execute({
-    guildId: "guild-1",
+    guildId: "12345678901234567",
     user: { id: "user-1" },
     options: {
       getString: (name) => name === "action" ? "buy" : "main_character"
@@ -610,9 +665,40 @@ test("config dashboard groups compact monochrome controls inside its Components 
   const rows = panel.components.filter((component) => component.type === 1);
   assert.equal(rows.length, 6);
   const buttons = rows.flatMap((row) => row.components);
-  assert.equal(buttons.length, 14);
+  assert.equal(buttons.length, 13);
   assert.ok(buttons.every((button) => button.style === 2));
-  assert.ok(buttons.some((button) => button.custom_id === "avero-config|activity"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|diagnostics"));
   assert.ok(buttons.some((button) => button.custom_id === "avero-config|theme|mono"));
+});
+
+
+test("profile bio modal cannot bypass a currency pause applied after opening the editor", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile customization must not write to the database."); } });
+  const handled = await handleProfileBioModal({
+    customId: "avero-profile-bio|user-1",
+    user: { id: "user-1" },
+    fields: { getTextInputValue: () => "Updated bio" },
+    reply: async (payload) => { response = payload; }
+  }, prisma, { currencyEnabled: false });
+  assert.equal(handled, true);
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
+});
+
+
+test("profile command blocks bio and banner edits while currency is paused but leaves viewing available", async () => {
+  let response;
+  const prisma = new Proxy({}, { get() { throw new Error("Paused profile edits must not access the database."); } });
+  await profileEditCommand.execute({
+    guildId: "guild-1", user: { id: "user-1" },
+    options: { getUser: () => null, getAttachment: () => null, getString: () => "New bio" },
+    reply: async (payload) => { response = payload; }
+  }, { prisma, settings: { currencyEnabled: false } });
+  assert.deepEqual(response, {
+    content: "Currency is paused by this server's admins. Profile customization is unavailable right now.",
+    flags: MessageFlags.Ephemeral
+  });
 });

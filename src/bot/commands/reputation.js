@@ -1,0 +1,264 @@
+import {
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags,
+  ModalBuilder, TextInputBuilder, TextInputStyle
+} from "discord.js";
+import {
+  giveReputation, getReputationSummary, getReputationHistory
+} from "../../db/reputation-repository.js";
+
+const DARK = 0x343840;
+const fmt = (value) => Number(value ?? 0).toLocaleString("en-US");
+const repId = (action, targetId = "") => ["avero-rep", action, targetId].filter(Boolean).join("|");
+
+function profilePayload(target, summary, note = "") {
+  const embed = new EmbedBuilder()
+    .setColor(DARK)
+    .setAuthor({ name: "AVERO • REPUTATION" })
+    .setTitle((target.globalName ?? target.username) + "'s reputation")
+    .setDescription([
+      note,
+      "**" + fmt(summary.net) + "** net reputation",
+      "",
+      "🟩 Positive received: **" + fmt(summary.positive) + "**",
+      "🟥 Negative received: **" + fmt(summary.negative) + "**",
+      "Total votes: **" + fmt(summary.total) + "**"
+    ].filter(Boolean).join("\n"))
+    .setThumbnail(target.displayAvatarURL({ size: 128 }))
+    .setFooter({ text: "One reputation vote per member every 24 hours • Server-scoped" });
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(repId("give", target.id)).setLabel("+ Give rep").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(repId("negative", target.id)).setLabel("− Give rep").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(repId("history", target.id)).setLabel("History").setStyle(ButtonStyle.Secondary)
+  );
+  return { embeds: [embed], components: [row], allowedMentions: { parse: [] } };
+}
+
+function historyPayload(target, history) {
+  const lines = history.length ? history.map((vote) =>
+    (vote.value > 0 ? "🟩 **+1**" : "🟥 **−1**") +
+    " from <@" + vote.giverId + ">" +
+    (vote.reason ? " — " + vote.reason : "") +
+    " · <t:" + Math.floor(vote.createdAt.getTime() / 1000) + ":R>"
+  ) : ["No reputation activity yet."];
+  return {
+    embeds: [new EmbedBuilder().setColor(DARK).setAuthor({ name: "AVERO • REPUTATION HISTORY" })
+      .setTitle((target.globalName ?? target.username) + "'s recent reputation")
+      .setDescription(lines.join("\n").slice(0, 4000))
+      .setFooter({ text: "Showing the latest " + history.length + " reputation votes" })],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(repId("profile", target.id)).setLabel("Back to profile").setStyle(ButtonStyle.Secondary)
+    )],
+    allowedMentions: { parse: [] }
+  };
+}
+
+async function resolveUser(interaction, userId) {
+  if (userId === interaction.user.id) return interaction.user;
+  return interaction.guild.members.fetch(userId).then((member) => member.user);
+}
+
+async function getTargetUser(interaction, optionName = "member") {
+  const selected = interaction.options.getUser(optionName);
+  const rawId = interaction.options.getString("user_id")?.trim();
+  if (selected && rawId) throw new TypeError("Choose either a member or a user ID, not both.");
+  const id = selected?.id ?? rawId;
+  if (!id) return interaction.user;
+  if (!/^[0-9]{15,22}$/.test(id)) throw new TypeError("Enter a valid Discord user ID (15–22 digits).");
+  const user = await interaction.client.users.fetch(id).catch(() => null);
+  if (!user) throw new RangeError("I couldn’t find a Discord account with that ID.");
+  return user;
+}
+
+function reputationConfirmation(giver, target, value, reason = null) {
+  const positive = value > 0;
+  return { embeds: [new EmbedBuilder().setColor(positive ? 0x38b779 : 0xc65c67)
+    .setAuthor({ name: "AVERO • REPUTATION UPDATE" })
+    .setTitle(positive ? "Reputation awarded" : "Reputation recorded")
+    .setDescription((positive ? "A positive reputation point has been awarded to " : "A negative reputation point has been recorded for ") + target + ".")
+    .addFields(
+      { name: "Given by", value: giver.toString(), inline: true },
+      { name: "Recipient", value: target.toString(), inline: true },
+      ...(reason ? [{ name: "Reason", value: reason }] : [])
+    )
+    .setFooter({ text: "Avero Reputation • One vote per member every 24 hours" })],
+    allowedMentions: { users: [target.id] }
+  };
+}
+
+async function showProfile(interaction, prisma, user) {
+  const summary = await getReputationSummary(prisma, interaction.guildId, user.id);
+  await interaction.reply(profilePayload(user, summary));
+}
+
+export const reputationCommand = Object.freeze({
+  data: Object.freeze({
+    name: "rep",
+    description: "Give, view, and explore server reputation.",
+    options: [
+      { type: 1, name: "profile", description: "View a member's reputation.", options: [
+        { type: 6, name: "member", description: "Member to inspect.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the member Discord ID.", required: false }
+      ] },
+      { type: 1, name: "give", description: "Give positive or negative reputation.", options: [
+        { type: 3, name: "type", description: "Choose positive or negative reputation.", required: true, choices: [
+          { name: "Positive (+1)", value: "positive" }, { name: "Negative (−1)", value: "negative" }
+        ] },
+        { type: 6, name: "member", description: "Member receiving reputation.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the recipient Discord ID.", required: false },
+        { type: 3, name: "reason", description: "Required for negative reputation; keep it respectful.", required: false, max_length: 180 }
+      ] },
+      { type: 1, name: "history", description: "View a member's recent reputation activity.", options: [
+        { type: 6, name: "member", description: "Member to inspect.", required: false },
+        { type: 3, name: "user_id", description: "Or enter the member Discord ID.", required: false }
+      ] },
+    ]
+  }),
+  async execute(interaction, { prisma } = {}) {
+    if (!prisma) throw new Error("Reputation requires a database connection.");
+    if (!interaction.guildId) {
+      await interaction.reply({ content: "Reputation is available inside a server.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const action = interaction.options.getSubcommand();
+    if (action === "profile") {
+      const target = await getTargetUser(interaction);
+      if (target.id !== interaction.user.id && !await interaction.guild.members.fetch(target.id).catch(() => null)) throw new RangeError("That account is not a member of this server.");
+      await showProfile(interaction, prisma, target);
+      return;
+    }
+    if (action === "give") {
+      const target = interaction.options.getUser("member");
+      const targetMember = await interaction.guild.members.fetch(target.id);
+      if (targetMember.user.bot) {
+        await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      const type = interaction.options.getString("type");
+      const value = type === "positive" ? 1 : -1;
+      let result;
+      try {
+        result = await giveReputation(prisma, {
+          guildId: interaction.guildId, giverId: interaction.user.id, receiverId: target.id,
+          value, reason: interaction.options.getString("reason")
+        });
+      } catch (error) {
+        if (error instanceof RangeError || error instanceof TypeError) {
+          await interaction.reply({ content: error.message, flags: MessageFlags.Ephemeral });
+          return;
+        }
+        throw error;
+      }
+      if (!result.ok) {
+        await interaction.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", flags: MessageFlags.Ephemeral });
+        return;
+      }
+      await interaction.reply(reputationConfirmation(interaction.user, target, value, interaction.options.getString("reason")));
+      return;
+    }
+    if (action === "history") {
+      const target = await getTargetUser(interaction);
+      await interaction.reply(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, target.id)));
+      return;
+    }
+
+  }
+});
+
+export async function handleReputationPrefix(message, prisma) {
+  if (!message.guildId || message.author.bot || message.webhookId) return false;
+  const match = String(message.content ?? "").trim().match(/^([+-])rep\s+(?:<@!?(\d{15,22})>|(\d{15,22}))(?:\s+([\s\S]+))?$/i);
+  if (!match) {
+    if (/^[+-]rep\b/i.test(String(message.content ?? "").trim())) {
+      await message.reply({ content: "Use `+rep @member` or `+rep USER_ID`; for negative reputation, add a short respectful reason.", allowedMentions: { parse: [] } });
+      return true;
+    }
+    return false;
+  }
+  const value = match[1] === "+" ? 1 : -1;
+  const receiverId = match[2] ?? match[3];
+  const reason = match[4]?.trim() ?? "";
+  try {
+    const member = await message.guild.members.fetch(receiverId);
+    if (member.user.bot) throw new RangeError("Bots cannot receive reputation.");
+    const result = await giveReputation(prisma, {
+      guildId: message.guildId, giverId: message.author.id, receiverId: member.id, value, reason
+    });
+    if (!result.ok) {
+      await message.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", allowedMentions: { parse: [] } });
+      return true;
+    }
+    await message.reply({
+      content: (value > 0 ? "🟩 " : "🟥 ") + message.author + " gave " + (value > 0 ? "positive" : "negative") +
+        " reputation to " + member + "." + (value < 0 ? "\nReason: " + reason : ""),
+      allowedMentions: { users: [message.author.id, member.id] }
+    });
+  } catch (error) {
+    const content = error instanceof RangeError || error instanceof TypeError
+      ? error.message
+      : "I couldn't find that server member or save the reputation vote.";
+    await message.reply({ content, allowedMentions: { parse: [] } }).catch(() => {});
+  }
+  return true;
+}
+
+export async function handleReputationComponent(interaction, prisma) {
+  const [, action, targetId] = interaction.customId.split("|");
+  if (action === "negative") {
+    const input = new TextInputBuilder().setCustomId("reason").setLabel("Why are you giving negative rep?")
+      .setStyle(TextInputStyle.Paragraph).setRequired(true).setMinLength(3).setMaxLength(180)
+      .setPlaceholder("Keep it factual and respectful.");
+    const modal = new ModalBuilder().setCustomId(repId("negative-submit", targetId)).setTitle("Give negative reputation")
+      .addComponents(new ActionRowBuilder().addComponents(input));
+    await interaction.showModal(modal);
+    return;
+  }
+  if (action === "negative-submit") return;
+  if (action === "give") {
+    const targetMember = await interaction.guild.members.fetch(targetId);
+    if (targetMember.user.bot) {
+      await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const result = await giveReputation(prisma, {
+      guildId: interaction.guildId, giverId: interaction.user.id, receiverId: targetId, value: 1
+    });
+    if (!result.ok) {
+      await interaction.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+    const target = await resolveUser(interaction, targetId);
+    await interaction.update(profilePayload(target, await getReputationSummary(prisma, interaction.guildId, targetId), "🟩 Your positive reputation was recorded."));
+    return;
+  }
+  if (action === "profile") {
+    const target = targetId ? await resolveUser(interaction, targetId) : interaction.user;
+    await interaction.update(profilePayload(target, await getReputationSummary(prisma, interaction.guildId, target.id)));
+    return;
+  }
+  if (action === "history") {
+    const target = await resolveUser(interaction, targetId);
+    await interaction.update(historyPayload(target, await getReputationHistory(prisma, interaction.guildId, targetId)));
+    return;
+  }
+}
+
+export async function handleReputationModal(interaction, prisma) {
+  const [, action, targetId] = interaction.customId.split("|");
+  if (action !== "negative-submit") return false;
+  const reason = interaction.fields.getTextInputValue("reason");
+  const targetMember = await interaction.guild.members.fetch(targetId);
+  if (targetMember.user.bot) {
+    await interaction.reply({ content: "Bots cannot receive reputation.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  const result = await giveReputation(prisma, {
+    guildId: interaction.guildId, giverId: interaction.user.id, receiverId: targetId, value: -1, reason
+  });
+  if (!result.ok) {
+    await interaction.reply({ content: "You've already given reputation recently. You can vote again <t:" + Math.floor(result.retryAt.getTime() / 1000) + ":R>.", flags: MessageFlags.Ephemeral });
+    return true;
+  }
+  const target = await resolveUser(interaction, targetId);
+  await interaction.reply({ content: "🟥 Negative reputation recorded for " + target + ". Reason: " + reason, allowedMentions: { users: [targetId] } });
+  return true;
+}

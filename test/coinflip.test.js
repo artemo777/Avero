@@ -57,6 +57,23 @@ test("coinflip is a free game that records its result and only rewards wins", as
   else assert.match(text, /no coins were lost/i);
 });
 
+test("coinflip slash command keeps free play but suppresses rewards when currency is paused", async () => {
+  const { interaction, getResponse } = makeInteraction();
+  const records = [];
+  const prisma = {
+    currencyTransaction: { create: async ({ data }) => { records.push(data); return data; } },
+    $transaction: async () => { throw new Error("Paused currency must not start a reward transaction."); },
+    currencyAccount: { upsert: async () => { throw new Error("Paused currency must not access the reward account."); } }
+  };
+
+  await coinflipCommand.execute(interaction, { prisma, settings: { gamesEnabled: true, currencyEnabled: false } });
+
+  assert.ok(getResponse().components?.length === 1);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].amount, 0);
+  assert.match(records[0].type, /^coinflip_(win|loss)$/);
+});
+
 test("coinflip rejects invalid calls without touching the database", async () => {
   const { interaction, getResponse } = makeInteraction({ call: "edge" });
   await coinflipCommand.execute(interaction);

@@ -19,6 +19,9 @@ function fakePrisma() {
       async updateMany({ where, data }) {
         if (!job) return { count: 0 };
         if (where.jobId && job.jobId !== where.jobId) return { count: 0 };
+        if (where.shifts !== undefined && job.shifts !== where.shifts) return { count: 0 };
+        if (where.promotions !== undefined && job.promotions !== where.promotions) return { count: 0 };
+        if (where.lastShiftAt !== undefined && job.lastShiftAt !== where.lastShiftAt) return { count: 0 };
         const allowed = where.OR
           ? where.OR.some((condition) => condition.lastShiftAt === null
             ? job.lastShiftAt === null
@@ -27,6 +30,8 @@ function fakePrisma() {
         if (!allowed) return { count: 0 };
         if (data.jobId !== undefined) job.jobId = data.jobId;
         if (data.shifts?.increment) job.shifts += data.shifts.increment;
+        if (data.careerShifts?.increment) job.careerShifts = (job.careerShifts ?? 0) + data.careerShifts.increment;
+        if (data.shifts !== undefined && typeof data.shifts === "number") job.shifts = data.shifts;
         if (data.promotions !== undefined) job.promotions = data.promotions;
         if (data.lastShiftAt) job.lastShiftAt = data.lastShiftAt;
         return { count: 1 };
@@ -89,6 +94,7 @@ test("resigning removes the active career and allows a new application", async (
   await runJobShift(prisma, "guild", "member", { now: firstShiftAt });
   assert.equal((await resignFromJob(prisma, "guild", "member")).resigned, true);
   assert.equal(await getMemberJob(prisma, "guild", "member"), null);
+  await prisma.memberJob.update({ data: { careerShifts: 15 } });
   const reapplied = await applyForJob(prisma, "guild", "member", "developer");
   assert.equal(reapplied.applied, true);
   const blocked = await runJobShift(prisma, "guild", "member", { now: new Date(firstShiftAt.getTime() + 1000) });
@@ -110,4 +116,13 @@ test("owned work tools add a small shift bonus and shorten cooldown without chan
   assert.equal(tooSoon.reason, "cooldown");
   const ready = await runJobShift(prisma, "guild", "member", { now: new Date(start.getTime() + 55 * 60 * 1000), cooldownMs: 55 * 60 * 1000 });
   assert.equal(ready.worked, true);
+});
+
+test("resignation cannot overwrite a career state that changed concurrently", async () => {
+  const prisma = fakePrisma();
+  await applyForJob(prisma, "guild", "member", "barista");
+  prisma.memberJob.updateMany = async () => ({ count: 0 });
+  const result = await resignFromJob(prisma, "guild", "member");
+  assert.equal(result.resigned, false);
+  assert.equal(result.reason, "state_changed");
 });

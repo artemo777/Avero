@@ -6,7 +6,6 @@ export const ICONS = Object.freeze({
   error: "×",
   info: "ⓘ",
   loading: "⋯",
-  level: "✦",
   trophy: "♜",
   game: "⌘",
   boost: "↗",

@@ -2,11 +2,11 @@
 
 A Node.js Discord bot with a shared AveroUI toolkit for consistent, polished Discord responses.
 
-Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Member-owned data is global across every server: each Discord user has one wallet, inventory, profile progression, career, title collection, cooldown set, and game history.
+Avero can operate in any Discord server where it is installed and has the required permissions. All slash commands are registered globally. Wallets, inventory, cosmetics, career, titles, cooldowns, reputation and game history are global or server-scoped according to each feature.
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer (the CI matrix verifies Node.js 22 and 24)
 - npm
 - A Discord application and bot token from the Discord Developer Portal
 - PostgreSQL for persistent member and currency data
@@ -49,12 +49,30 @@ Avero can operate in any Discord server where it is installed and has the requir
 
 The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_CLIENT_ID`. Database features need `DATABASE_URL`. Never commit real credentials or your local `.env` file. Always verify that `DATABASE_URL` points to a development/test database before applying migrations.
 
+## Natural-language prefix and AI assistant
+
+Members can use `avero` as a message prefix as well as the existing slash commands:
+
+- `avero help` — run the regular help command.
+- `avero balance` — run the matching Avero command.
+- `avero profile @member` — pass command options as positional arguments.
+- `avero` followed by a question — ask the Gemini-powered Avero assistant for command guidance.
+
+Prefix commands are routed to the same command implementations as slash commands, with the same server feature switches and command-level permission checks. Arguments are positional; quote multi-word values, for example `avero profile bio "Hello there"`. Commands requiring interactive Discord-only inputs or complex option types may still need their slash-command form.
+
+To enable AI answers, create a Gemini API key in Google AI Studio and set `GEMINI_API_KEY` in the bot's environment (never commit the key). The default model is `gemini-3.1-flash-lite`; `GEMINI_MODEL` can override it. If no key is configured, prefix command execution and `avero help` continue to work, while natural-language questions explain that AI setup is missing.
+
+The assistant receives the member's question and Avero's public command catalogue. Do not send passwords, private member information, or sensitive server data through it. Gemini's free tier may use submitted content to improve Google's products; review Google's current API terms and pricing before enabling it for a public server.
+
 ## Included commands
 
 - `/ping` — checks interaction and gateway latency.
 - `/help` — groups the available commands by category.
 - `/profile [member]` — combines wallet, per-game Arcade Mastery tiers, themed collection progress, and unlocked set titles.
-- `/leaderboard [category]` — shows global top coin, combined Games, Coinflip, Guess, Rock-paper-scissors, or Vault rankings. Game boards include wins, losses, ties where applicable, and win rate.
+- `/rep profile [member]` — view server reputation, with positive, negative, and net scores.
+- `/rep give member type [reason]` — give positive or negative reputation; negative votes require a short reason.
+- `/rep history [member]` — view the latest reputation activity.
+- `+rep @member` / `-rep @member reason` — quick positive and negative prefix commands. Each member can give one reputation vote per 24 hours per server; self-votes and bot targets are blocked.
 - `/achievements [member]` — tracks twelve global activity, game, coin, and collection milestones. No extra coin rewards are minted.
 - `/collections [member]` — view three themed collectible sets (Archive Protocol, Neon Circuit, Moonlit Relics), their matching expedition routes, completion progress, and cosmetic set titles.
 - `/balance` — shows your global Avero coin balance.
@@ -67,7 +85,7 @@ The bot needs `DISCORD_TOKEN`. Global command registration also needs `DISCORD_C
 - `/rps choice` — play rock-paper-scissors for free. Wins, losses, and ties are tracked; wins can earn 25 coins, sharing the 10-minute game-reward cooldown with `/guess`, `/coinflip`, and `/vault`. No entry fees or wagers.
 - `/vault [code]` — view the daily three-dial clues, then submit your solution. Clues are deterministic for each server and UTC date; each member gets one code submission per UTC day; a correct solve earns one 25-coin Vault reward when the shared 10-minute Guess/RPS/Coinflip cooldown is ready. Free play, no wagers.
 - `/games` — open the button-driven quick-play hub for Guess, RPS, Coinflip, and the daily Vault.
-- `/shop` — browse six collectible badges and relics with rarity labels and prices.
+- `/shop` — browse the full collectible catalogue in compact three-item pages, with original product artwork, ownership state, server emoji accents, and rotating weekly picks.
 - `/buy item` — purchase a collectible once; purchases are saved and coins are deducted atomically.
 - `/inventory` — browse your server collection with pagination, per-item detail panels, and collection milestones (First Find, Curator, Full Set); unowned collectibles can be unlocked directly from their detail view. Use `/collections` to track themed sets.
 
@@ -81,7 +99,7 @@ The collectible shop is the foundation for Avero profile customization. Member-o
 - **Customization inventory:** badges and cosmetic profile frames can be bought and equipped independently. Further profile themes, color accents and title styles remain planned.
 - **Free and premium-style unlocks:** some options will be free; others can be earned or bought with virtual coins. Any future donor, funder, voter, or server-booster perks should be granted from verified server/platform data, not self-declared text.
 - **Rendering:** games and currency panels use a shared canvas-rendered hero graphic. Profile cards can reuse this renderer later; keep the first profile-card version static before considering animated backgrounds.
-- **Server boundaries:** member balances, purchases, equipped cosmetics, careers, titles, and progression are global across servers. Guild-specific settings and role configuration remain server-scoped.
+- **Server boundaries:** member balances, purchases, equipped cosmetics, careers, and titles are global across servers. Guild-specific settings and role configuration remain server-scoped.
 
 Profile frames and badges are global member cosmetics. Open `/inventory`, select an owned badge or cosmetic, then use its Equip action. Only owned items can be equipped; the selected badge and frame are shown on `/profile`. Either selection can be removed from the same item detail panel.
 
@@ -95,12 +113,12 @@ Reusable visual assets live in one place instead of being scattered through comm
 
 - `averoui/icons.js` — small text-safe glyphs used in Discord UI.
 - `averoui/assets.js` — shared asset catalogue with IDs, intended uses, and source/licence notes for artwork. Import `ASSETS`, `getAsset(id)`, or `listAssets({ kind })`.
-- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, six individually illustrated shop collectibles, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
+- `assets/icons/` — original Avero SVGs for the coin, rarity gems, brand mark, the full shop catalogue, with a distinct original SVG illustration for every collectible, and the chibi-professor mascot. Use `loadRegisteredAsset("coin")` or `loadAssetBuffer("icons/coin.svg")` from `averoui/asset-loader.js`; paths are restricted to this folder.
 - `averoui/canvas.js` — generated artwork when a panel needs custom Avero-branded art rather than a static image.
 - `averoui/render-asset.js` — converts registered SVG files to PNG buffers for Discord attachments.
 - Economy UI consumes shared asset-symbol and rarity mappings in wallet, shop, item-detail, and inventory panels.
 
-This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For downloaded assets, record the source and licence before committing; original AI-generated or canvas-drawn Avero art is usually the simplest way to keep the visual style consistent. No external files are downloaded at runtime.
+This is intentionally a version-controlled asset library, not a new database table: static icons and artwork don't need database storage. For third-party assets, record the source and licence before committing. Prefer original, deliberately designed Avero product artwork with restrained material finishes and a consistent visual language. No external files are downloaded at runtime.
 
 ## HTTP health server
 
@@ -112,15 +130,18 @@ npm start
 
 It listens on port `3000` by default. Set `PORT` to change it; valid values are integers from 1 through 65535.
 
-- `GET /health` — returns JSON indicating that the service is running.
+- `GET /health` — liveness check; returns JSON while the HTTP process is running.
+- `GET /ready` — readiness check; verifies PostgreSQL with a lightweight query and returns `503` when the database is unavailable.
 - Any other route — returns a JSON `404 Not Found` response.
+
+The Test Avero GitHub Actions workflow runs the Node test suite on Node.js 22 and 24 against PostgreSQL 16 for pull requests and supported branch pushes. Stale runs are cancelled when a newer commit is queued, and maintainers can also start a run manually from GitHub Actions. The shop artwork is original, locally stored SVG product art; the bot renders it into Discord attachments at request time. Weekly picks rotate deterministically in UTC and do not change item IDs, prices, or ownership records.
 
 ## Shared AveroUI
 
 Import shared helpers from `averoui/index.js`. The toolkit centralizes:
 
 - A deep violet, teal, and slate color palette.
-- Unicode-only semantic glyphs instead of default emoji.
+- Semantic server custom emojis where available, with Unicode glyph fallbacks.
 - Components V2 panels with accent colors, text displays, and consistent separators.
 - Discord timestamps, Markdown escaping, validated mentions, HTTPS links, and embed payload validation.
 
@@ -142,15 +163,18 @@ Use /autoresponder milestones set to configure a celebration response at any 5,0
 
 ## Tests
 
-Run the built-in Node.js test suite:
+Run the dependency-free syntax check and the built-in Node.js test suite:
 
 PostgreSQL integration tests are skipped unless `CURRENCY_TEST_DATABASE_URL` points to a dedicated disposable test database. Never point this variable at Avero's live bot database; the integration tests create and clean up test records.
 
 
 ```sh
 npm run db:generate
+npm run check
 npm test
 ```
+
+`npm run check` walks the JavaScript source, UI toolkit, and tests, then runs Node's parser check on every `.js` file. CI runs this check before the test suite on both supported Node.js versions.
 
 ## Project structure
 
@@ -176,13 +200,4 @@ npm test
 └── test/
 ```
 
-RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, achievements, and Engauge-backed leveling are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.
-
-
-## Activity leaderboards
-
-Avero can maintain two persistent server-scoped Components V2 activity boards: daily and weekly. Message activity is counted once per Discord message ID; voice time is settled from persisted sessions while a non-bot member is unmuted and undeafened in a voice channel with the configured minimum number of humans. Voice-state events do not expose actual speaking activity, so this is an eligible-presence measure rather than proof that a member is speaking. The current Engauge server rates are mirrored with **8 XP per message** (one award per member per rolling 60 seconds) and **8 XP per complete eligible voice minute**. XP awards are persisted in an outbox, delivered to Engauge, and never blindly retried after an ambiguous response.
-
-Use **/rank [member]** for an Engauge-backed level card with separate total XP, message count, and voice minutes. Configure the boards from /config → **Activity leaderboards**. Set each text-channel ID, weighted message and voice-minute scores, timezone, weekly reset day, voice eligibility, and placement reward rules (daily and weekly positions 1–10). Configuring channels publishes the boards; subsequent updates edit the stored messages every five minutes, and missing messages are recreated. /activity shows a compact private summary.
-
-Reward claims are unique per guild, period, period key, and placement. Coin rewards are credited to the existing global wallet and logged as currency transactions; role delivery is retried when permissions or hierarchy prevent it. XP rewards are sent directly to Engauge through its member lookup and XP-award API, so Engauge remains the source of truth for its configured level formula. Set `ENGAUGE_API_TOKEN` as a server-side environment secret; the client defaults to `https://engau.ge` and Bearer authorization, with `ENGAUGE_API_BASE_URL`, `ENGAUGE_API_AUTH_HEADER`, and `ENGAUGE_API_AUTH_SCHEME` available for deployments using a different API host or token header format. A documented Engauge HTTP 502 after the XP POST is treated as committed; ambiguous network/5xx outcomes are held for manual verification rather than automatically paid twice. Voice tracking requires the GuildVoiceStates gateway intent. Avero needs View Channel and Send Messages in each configured board channel, and Manage Server to edit activity settings.
+RPS is part of the free-play Duel Deck. Daily Contracts, The Vault, Coinflip, route-based expeditions, and achievements are implemented. See [the games and currency finish plan](docs/games-currency-roadmap.md) for current scope and remaining work.

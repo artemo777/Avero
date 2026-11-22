@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ContainerBuilder, Events, GatewayIntentBits, MessageFlags, TextDisplayBuilder } from "discord.js";
-import { createEmbed, ICONS, THEME } from "../averoui/index.js";
+import { createEmbed, ICONS, THEME, setServerEmojis } from "../averoui/index.js";
 import { createCommandMap } from "./bot/command-registry.js";
 import { commands } from "./bot/commands/index.js";
 import { loadBotConfig } from "./bot/config.js";
@@ -11,8 +11,9 @@ import { handleMoneyRequestButton } from "./bot/ask-ui.js";
 import { handleAutoReactionMessage } from "./bot/auto-reactions.js";
 import { handleAutoResponseMessage } from "./bot/autoresponder/engine.js";
 import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js";
-import { recordMessageActivity, handleVoiceStateUpdate, startActivityRuntime } from "./bot/activity-leaderboards.js";
 import { handleProfileBioModal } from "./bot/commands/profile.js";
+import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
+import { handleReputationPrefix, handleReputationComponent, handleReputationModal } from "./bot/commands/reputation.js";
 
 let config;
 try {
@@ -23,13 +24,27 @@ try {
 }
 
 const commandMap = createCommandMap(commands);
+let serverEmojiRefresh = Promise.resolve();
 const gameCommandNames = new Set(["games", "coinflip", "guess", "rps", "vault"]);
 const currencyCommandNames = new Set(["ask", "balance", "daily", "work", "scavenge", "shop", "buy", "inventory", "contracts", "perks"]);
+async function refreshAveroServerEmojis(client) {
+  const results = await Promise.all([...client.guilds.cache.values()].map(async (guild) => {
+    const emojis = await guild.emojis.fetch().catch((error) => {
+      console.warn("Could not fetch custom emojis for guild " + guild.id + ":", error.message);
+      return [];
+    });
+    return [...emojis.values()];
+  }));
+  const count = setServerEmojis(results.flat());
+  console.log("Avero loaded " + count + " available custom emoji(s) from shared servers.");
+  return count;
+}
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-client.once(Events.ClientReady, (readyClient) => {
+client.once(Events.ClientReady, async (readyClient) => {
   readyClient.user.setPresence({
     activities: [{
       name: "Avero",
@@ -39,17 +54,12 @@ client.once(Events.ClientReady, (readyClient) => {
     status: "online"
   });
   console.log("Avero Discord bot connected as " + readyClient.user.tag);
-  startActivityRuntime(readyClient, getPrismaClient());
+  serverEmojiRefresh = refreshAveroServerEmojis(readyClient);
+  await serverEmojiRefresh;
 });
 
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guildId || message.author.bot || message.webhookId) return;
-
-  try {
-    await recordMessageActivity(message, getPrismaClient());
-  } catch (error) {
-    console.error("Activity message tracking failed:", error);
-  }
 
   try {
     await handleAutoReactionMessage(message, getPrismaClient());
@@ -86,19 +96,35 @@ client.on(Events.MessageCreate, async (message) => {
 
 });
 
-client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
+client.on(Events.MessageCreate, async (message) => {
+  await serverEmojiRefresh.catch(() => {});
   try {
-    await handleVoiceStateUpdate(getPrismaClient(), oldState, newState);
+    if (await handleReputationPrefix(message, getPrismaClient())) return;
+    await handleAveroPrefixMessage(message, commands);
   } catch (error) {
-    console.error("Activity voice tracking failed:", error);
+    console.error("Avero prefix router failed:", error);
   }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  await serverEmojiRefresh.catch(() => {});
+  if (interaction.isButton() && interaction.customId.startsWith("avero-rep|")) {
+    try {
+      await handleReputationComponent(interaction, getPrismaClient());
+    } catch (error) {
+      console.error("Reputation component failed:", error);
+      const payload = { content: "Avero couldn't process that reputation action. Please try again.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
   if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isRoleSelectMenu()) {
     if (interaction.isButton() && interaction.customId.startsWith("avero-ask|")) {
       try {
-        await handleMoneyRequestButton(interaction, getPrismaClient());
+        const prisma = getPrismaClient();
+        const settings = await getGuildSettings(prisma, interaction.guildId);
+        await handleMoneyRequestButton(interaction, prisma, settings);
       } catch (error) {
         console.error("Money request response failed:", error);
         await interaction.reply({ content: "Avero could not process that request. Please try again.", flags: MessageFlags.Ephemeral }).catch(() => {});
@@ -140,8 +166,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const prisma = getPrismaClient();
       const settings = await getGuildSettings(prisma, interaction.guildId);
       const action = interaction.customId.split("|")[2];
-      const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault"]);
-      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame", "equip_avatar_decoration", "unequip_avatar_decoration", "profile_accent", "profile_banner", "profile_avatar", "profile_frame", "profile_badges", "profile_bio", "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_title_select", "profile_badges_select"]);
+      const gameActions = new Set(["games", "guess", "coinflip", "rps", "vault", "pick3_start", "pick3", "mine_start", "mine_pick"]);
+      const currencyActions = new Set(["balance", "daily", "work", "scavenge", "shop", "shop_page", "shop_category", "buy", "inventory", "collections", "collections_page", "work_page", "collection_page", "collection_first", "collection_prev", "collection_next", "collection_last", "item", "equip_badge", "unequip_badge", "equip_frame", "unequip_frame", "equip_avatar_decoration", "unequip_avatar_decoration", "profile_accent", "profile_banner", "profile_avatar", "profile_frame", "profile_badges", "profile_bio", "profile_accent_select", "profile_banner_select", "profile_style_select", "profile_badges_select"]);
       if (gameActions.has(action) && !settings.gamesEnabled) {
         await interaction.reply({ content: "Games are paused by this server's admins.", flags: MessageFlags.Ephemeral });
         return;
@@ -159,13 +185,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
     return;
   }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith("avero-rep|")) {
+    try {
+      await handleReputationModal(interaction, getPrismaClient());
+    } catch (error) {
+      console.error("Reputation modal failed:", error);
+      const payload = { content: error instanceof RangeError || error instanceof TypeError ? error.message : "Avero couldn't save that reputation vote.", flags: MessageFlags.Ephemeral };
+      if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
+      else await interaction.reply(payload).catch(() => {});
+    }
+    return;
+  }
   if (interaction.isModalSubmit() && interaction.customId.startsWith("avero-profile-bio|")) {
     try {
       if (!interaction.guildId) {
         await interaction.reply({ content: "Profile customization is available inside a server.", flags: MessageFlags.Ephemeral });
         return;
       }
-      await handleProfileBioModal(interaction, getPrismaClient());
+      const prisma = getPrismaClient();
+      const settings = await getGuildSettings(prisma, interaction.guildId);
+      await handleProfileBioModal(interaction, prisma, settings);
     } catch (error) {
       console.error("Profile bio update failed:", error);
       const payload = { content: "Avero couldn't save your profile bio. Please try again.", flags: MessageFlags.Ephemeral };
@@ -207,9 +246,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   try {
-    // Database-backed commands receive a shared Prisma client; API-only rank lookup does not need one.
-    // Keep this explicit so newly added economy/profile commands cannot silently miss injection.
-    const needsDatabase = !["ping", "help", "rank"].includes(interaction.commandName);
+    // Database-backed commands receive a shared Prisma client. Keep this explicit so newly added economy/profile commands cannot silently miss injection.
+    const needsDatabase = !["ping", "help"].includes(interaction.commandName);
     const prisma = needsDatabase ? getPrismaClient() : undefined;
     const settings = needsDatabase ? await getGuildSettings(prisma, interaction.guildId) : undefined;
     if (gameCommandNames.has(interaction.commandName) && !settings.gamesEnabled) {
@@ -242,6 +280,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 });
+
+client.on(Events.GuildCreate, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
+client.on(Events.GuildDelete, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
+client.on(Events.GuildEmojisUpdate, () => { serverEmojiRefresh = refreshAveroServerEmojis(client); });
 
 client.on(Events.Error, (error) => {
   console.error("Discord client error:", error);

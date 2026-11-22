@@ -13,7 +13,7 @@ export const coinflipCommand = Object.freeze({
       choices: [{ name: "Heads", value: "heads" }, { name: "Tails", value: "tails" }]
     }]
   }),
-  async execute(interaction, { prisma } = {}) {
+  async execute(interaction, { prisma, settings } = {}) {
     if (!interaction.guildId) {
       await interaction.reply({ content: "Coinflip is available inside a server.", flags: MessageFlags.Ephemeral });
       return;
@@ -24,6 +24,6 @@ export const coinflipCommand = Object.freeze({
       return;
     }
     if (!prisma) throw new Error("Coinflip requires a database client.");
-    await interaction.reply(await runCoinflip(prisma, interaction.guildId, call, interaction.user.id));
+    await interaction.reply(await runCoinflip(prisma, interaction.guildId, call, interaction.user.id, settings?.currencyEnabled !== false));
   }
 });

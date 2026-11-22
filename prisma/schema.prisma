@@ -13,9 +13,6 @@ model MemberProfile {
   id               String   @id @default(cuid())
   guildId          String
   userId           String
-  xp               Int      @default(0)
-  level            Int      @default(0)
-  lastMessageXpAt  DateTime?
   equippedBadgeItemId String?
   equippedFrameItemId String?
   equippedTitleId     String?
@@ -30,7 +27,6 @@ model MemberProfile {
   updatedAt        DateTime @updatedAt
 
   @@unique([guildId, userId])
-  @@index([guildId, xp])
 }
 
 model CurrencyAccount {
@@ -241,6 +237,7 @@ model MemberJob {
   userId       String
   jobId        String
   shifts       Int      @default(0)
+  careerShifts Int      @default(0)
   promotions   Int      @default(0)
   lastShiftAt  DateTime?
   createdAt    DateTime @default(now())
@@ -265,114 +262,57 @@ model MoneyRequest {
   @@index([guildId, requesterId, createdAt])
 }
 
-model ActivityBoardSetting {
-  guildId                 String   @id
-  dailyChannelId          String?
-  dailyMessageId          String?
-  weeklyChannelId         String?
-  weeklyMessageId         String?
-  messageWeight           Float    @default(1)
-  voiceWeight             Float    @default(1)
-  timezone                String   @default("UTC")
-  weeklyResetDay          Int      @default(1)
-  updateIntervalSeconds   Int      @default(300)
-  voiceMinParticipants    Int      @default(2)
-  ignoredChannelIds       String[] @default([])
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-}
-
-model ActivityStat {
+model ReputationVote {
   id          String   @id @default(cuid())
   guildId     String
-  userId      String
-  periodType  String
-  periodKey   String
-  messages    Int      @default(0)
-  voiceSeconds Int     @default(0)
+  giverId     String
+  receiverId  String
+  value       Int
+  reason      String?  @db.VarChar(180)
+  createdAt   DateTime @default(now())
+  reversedAt  DateTime?
+  reversedById String?
+
+  @@index([guildId, receiverId, createdAt])
+  @@index([guildId, giverId, createdAt])
+}
+
+model ReputationCooldown {
+  id          String   @id @default(cuid())
+  guildId     String
+  giverId     String
+  lastGivenAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([guildId, userId, periodType, periodKey])
-  @@index([guildId, periodType, periodKey])
+  @@unique([guildId, giverId])
 }
 
-model ActivityMessageReceipt {
-  messageId String   @id
-  guildId   String
-  userId    String
-  createdAt DateTime @default(now())
+model AdminEconomyAudit {
+  id           String   @id @default(cuid())
+  guildId      String
+  targetUserId String
+  actorUserId  String
+  action       String   @db.VarChar(40)
+  itemId       String?  @db.VarChar(40)
+  reason       String?  @db.VarChar(200)
+  createdAt    DateTime @default(now())
 
-  @@index([createdAt])
+  @@index([guildId, targetUserId, createdAt])
+  @@index([guildId, actorUserId, createdAt])
 }
 
-model ActivityVoiceSession {
-  id                 String   @id @default(cuid())
-  guildId            String
-  userId             String
-  channelId          String
-  lastSettledAt DateTime @default(now())
-  createdAt     DateTime @default(now())
-
-  @@unique([guildId, userId])
-}
-
-model ActivityXpThrottle {
-  guildId         String
-  userId          String
-  lastMessageXpAt       DateTime?
-  voiceRemainderSeconds Int      @default(0)
-  voiceMinutesAwarded   Int      @default(0)
-
-  @@id([guildId, userId])
-}
-
-model ActivityXpAward {
+model GameSession {
   id        String   @id @default(cuid())
-  dedupeKey String   @unique
   guildId   String
   userId    String
-  source    String
-  amount    Int
-  status    String   @default("pending")
+  gameId    String   @db.VarChar(40)
+  status    String   @default("active") @db.VarChar(20)
+  payload   Json
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  completedAt DateTime?
 
-  @@index([status, createdAt])
-  @@index([guildId, userId, createdAt])
-}
-
-model ActivityRewardRule {
-  id         String   @id @default(cuid())
-  guildId    String
-  periodType String
-  position   Int
-  roleId     String?
-  coins      Int      @default(0)
-  xp         Int      @default(0)
-  enabled    Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([guildId, periodType, position])
-  @@index([guildId, periodType, enabled])
-}
-
-model ActivityRewardClaim {
-  id          String   @id @default(cuid())
-  guildId     String
-  periodType  String
-  periodKey   String
-  userId      String
-  position    Int
-  roleId      String?
-  coins       Int      @default(0)
-  xp          Int      @default(0)
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deliveredAt DateTime?
-
-  @@unique([guildId, periodType, periodKey, position])
-  @@index([guildId, periodType, periodKey])
+  @@index([guildId, userId, status])
+  @@index([expiresAt])
 }
