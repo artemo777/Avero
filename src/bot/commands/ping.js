@@ -13,8 +13,8 @@ export const pingCommand = Object.freeze({
     const gatewayStatus = gatewayLatency >= 0 ? gatewayLatency + " ms" : "connecting";
 
     const panel = createPanel({
-      title: ICONS.brand + "  Pong",
-      description: ICONS.success + "  **Online**  ·  Interaction `" + interactionLatency +
+      title: getServerEmoji("brand-mark-svg", ICONS.brand) + "  Pong",
+      description: getServerEmoji("success", ICONS.success) + "  **Online**  ·  Interaction `" + interactionLatency +
         " ms`  ·  Gateway `" + gatewayStatus + "`",
       accentColor: THEME.colors.success
     });
