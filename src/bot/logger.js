@@ -1,5 +1,5 @@
 const ANSI = { gray:"\x1b[90m", blue:"\x1b[36m", green:"\x1b[32m", yellow:"\x1b[33m", red:"\x1b[31m", reset:"\x1b[0m" };
-const labels = { log:"INFO", info:"INFO", warn:"WARN", error:"ERR", debug:"DBG" };
+const labels = { log:"INFO", info:"INFO", system:"SYS", ok:"OK", warn:"WARN", error:"ERR", debug:"DBG" };
 let installed = false;
 const original = {};
 function stamp() { return new Date().toLocaleTimeString("en-GB", { hour12:false }); }
@@ -10,7 +10,7 @@ function safe(value) {
 }
 function emit(level, args) {
   const label = labels[level] || "INFO";
-  const color = level === "error" ? ANSI.red : level === "warn" ? ANSI.yellow : level === "debug" ? ANSI.gray : level === "info" ? ANSI.blue : ANSI.green;
+  const color = level === "error" ? ANSI.red : level === "warn" ? ANSI.yellow : level === "debug" ? ANSI.gray : level === "info" ? ANSI.blue : level === "ok" ? ANSI.green : level === "system" ? ANSI.gray : ANSI.green;
   const msg = args.map(safe).join(" ");
   original.log(`${ANSI.gray}[${stamp()}]${ANSI.reset} ${color}${label.padEnd(4)}${ANSI.reset} ${msg}`);
 }
@@ -23,9 +23,9 @@ export function installConsoleLogger() {
   }
 }
 export const log = {
-  system: (...args) => emit("log", ["SYS", ...args]),
+  system: (...args) => emit("system", args),
   info: (...args) => emit("info", args),
-  ok: (...args) => emit("log", ["OK", ...args]),
+  ok: (...args) => emit("ok", args),
   warn: (...args) => emit("warn", args),
   error: (...args) => emit("error", args),
   debug: (...args) => emit("debug", args)
