@@ -2,6 +2,10 @@ import { REST, Routes } from "discord.js";
 import { commands } from "./bot/commands/index.js";
 import { findGuildCommandDuplicates, getCommandDefinitions } from "./bot/command-registry.js";
 import { loadBotConfig, requireApplicationId } from "./bot/config.js";
+import { installConsoleLogger, log } from "./bot/logger.js";
+
+installConsoleLogger();
+log.system("Slash-command registration starting");
 
 let config;
 try {
@@ -17,10 +21,7 @@ const body = getCommandDefinitions(commands);
 
 try {
   await rest.put(Routes.applicationCommands(config.clientId), { body });
-  console.log(
-    "Registered " + body.length + " Avero global slash command(s): " +
-    body.map((command) => "/" + command.name).join(", ") + "."
-  );
+  log.ok("Registered", body.length, "global slash commands");
   if (config.guildId) {
     const legacyGuildCommands = await rest.get(
       Routes.applicationGuildCommands(config.clientId, config.guildId)
@@ -31,11 +32,11 @@ try {
         Routes.applicationGuildCommand(config.clientId, config.guildId, command.id)
       );
     }
-    console.log("Removed " + duplicates.length + " legacy guild-scoped command duplicate(s) from DISCORD_GUILD_ID.");
+    log.info("Removed", duplicates.length, "legacy guild-command duplicates");
   } else {
-    console.log("No DISCORD_GUILD_ID configured; legacy guild-scoped command cleanup was skipped.");
+    log.info("Guild-scoped cleanup skipped (DISCORD_GUILD_ID unset)");
   }
-  console.log("The global application command set was replaced. Global updates can take time to appear.");
+  log.ok("Command registration complete; global propagation may take time");
 } catch (error) {
   const status = Number(error?.status ?? error?.httpStatus ?? 0);
   const discordCode = String(error?.code ?? error?.rawError?.code ?? "");
