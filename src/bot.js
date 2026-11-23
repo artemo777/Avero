@@ -14,6 +14,11 @@ import { handleMemberMessageMilestone } from "./bot/autoresponder/milestones.js"
 import { handleProfileBioModal } from "./bot/commands/profile.js";
 import { handleAveroPrefixMessage } from "./bot/prefix-router.js";
 import { handleReputationPrefix, handleReputationComponent, handleReputationModal } from "./bot/commands/reputation.js";
+import { installConsoleLogger, log } from "./bot/logger.js";
+
+installConsoleLogger();
+const bootStartedAt = Date.now();
+log.system("Avero starting", "Node", process.version);
 
 let config;
 try {
@@ -36,8 +41,7 @@ async function refreshAveroServerEmojis(client) {
     return [...emojis.values()];
   }));
   const count = setServerEmojis(results.flat());
-  console.log("Avero loaded " + count + " available custom emoji(s) from shared servers.");
-  console.log("Avero shared emoji registry:", listServerEmojis().map((emoji) => emoji.name + ":" + emoji.id + (emoji.animated ? " (animated)" : "")).join(", ") || "(none)");
+  log.ok("Emoji registry:", count, "loaded");
   return count;
 }
 
@@ -54,7 +58,8 @@ client.once(Events.ClientReady, async (readyClient) => {
     }],
     status: "online"
   });
-  console.log("Avero Discord bot connected as " + readyClient.user.tag);
+  log.ok("Gateway connected", readyClient.user.tag);
+  log.ok("Startup complete in", ((Date.now() - bootStartedAt) / 1000).toFixed(2) + "s", "|", commandMap.size, "commands");
   serverEmojiRefresh = refreshAveroServerEmojis(readyClient);
   await serverEmojiRefresh;
 });
@@ -259,7 +264,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.reply({ content: "Currency is paused by this server's admins.", flags: MessageFlags.Ephemeral });
       return;
     }
+    const commandStartedAt = Date.now();
     await command.execute(interaction, { prisma, settings });
+    log.info("/" + interaction.commandName, ((Date.now() - commandStartedAt) + "ms"), "guild:" + interaction.guildId);
   } catch (error) {
     console.error("Command execution failed (" + interaction.commandName + "):", error);
     const payload = {
@@ -291,7 +298,7 @@ client.on(Events.Error, (error) => {
 });
 
 const shutdown = async (signal) => {
-  console.log("Avero received " + signal + "; shutting down.");
+  log.system("Shutdown signal", signal);
   client.destroy();
   await disconnectPrismaClient().catch((error) => console.error("Database disconnect failed:", error));
   process.exit(0);
