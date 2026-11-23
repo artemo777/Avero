@@ -1,6 +1,10 @@
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { disconnectPrismaClient, getPrismaClient } from "./db/client.js";
+import { installConsoleLogger, log } from "./bot/logger.js";
+
+installConsoleLogger();
+log.system("Health server starting");
 
 let config;
 try {
@@ -18,7 +22,7 @@ const server = createApp({
 });
 
 server.listen(config.port, "0.0.0.0", () => {
-  console.log(`Avero listening on http://localhost:${config.port}`);
+  log.ok("Health server listening", "port:" + config.port);
 });
 
 const SHUTDOWN_GRACE_PERIOD_MS = 10_000;
@@ -27,7 +31,7 @@ let shuttingDown = false;
 function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`Received ${signal}; shutting down...`);
+  log.system("Shutdown signal", signal);
 
   const forceCloseTimer = setTimeout(() => {
     console.error("HTTP shutdown grace period expired; closing remaining connections.");
