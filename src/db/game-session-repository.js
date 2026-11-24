@@ -54,10 +54,7 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
   if (!Number.isSafeInteger(amount) || amount <= 0) throw new TypeError("Reward amount must be a positive safe integer.");
   if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) throw new TypeError("Invalid reward type.");
   if (activityType !== null && (typeof activityType !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(activityType))) throw new TypeError("Invalid activity type.");
-  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) throw new TypeError("Invalid reward cooldown.");
   validDate(now);
-  const cooldownCutoff = new Date(now.getTime() - cooldownMs);
-  if (Number.isNaN(cooldownCutoff.getTime())) throw new TypeError("Cooldown window is out of range.");
   return prisma.$transaction(async (tx) => {
     const key = { guildId: GLOBAL_SCOPE_ID, userId };
     await tx.currencyAccount.upsert({ where: { guildId_userId: key }, create: key, update: {} });
@@ -67,13 +64,10 @@ export async function settleGameSessionReward(prisma, guildId, userId, sessionId
     });
     if (sessionClaim.count !== 1) return { awarded: false, reason: "session_unavailable" };
     const accountClaim = await tx.currencyAccount.updateMany({
-      where: { ...key, OR: [{ lastGameRewardAt: null }, { lastGameRewardAt: { lte: cooldownCutoff } }] },
-      data: { balance: { increment: amount }, lastGameRewardAt: now }
+      where: { ...key },
+      data: { balance: { increment: amount } }
     });
-    if (accountClaim.count !== 1) {
-      await tx.gameSession.updateMany({ where: { id: sessionId, guildId, userId, status: "claimed" }, data: { status: "active", completedAt: null } });
-      return { awarded: false, reason: "cooldown" };
-    }
+    if (accountClaim.count !== 1) throw new Error("Could not update the currency account for the game reward.");
     await tx.currencyTransaction.create({ data: { ...key, amount, type, createdAt: now } });
     if (activityType) await tx.currencyTransaction.create({ data: { ...key, amount: 0, type: activityType, createdAt: now } });
     const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
