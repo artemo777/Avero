@@ -611,8 +611,19 @@ export async function claimDailyContract(prisma, guildId, userId, contractId, { 
       await tx.currencyTransaction.create({
         data: { ...key, amount: contract.reward, type: "contract_reward", createdAt: now }
       });
+      const contractClaimsToday = await tx.dailyContractClaim.count({
+        where: { ...key, contractDate: day.contractDate, contractId: { in: DAILY_CONTRACTS.map((entry) => entry.id) } }
+      });
+      let gemsAwarded = 0;
+      if (contractClaimsToday >= 3) {
+        await tx.currencyAccount.updateMany({ where: key, data: { gemBalance: { increment: 1 } } });
+        await tx.currencyTransaction.create({
+          data: { ...key, amount: 1, currency: "gems", type: "daily_contract_set_gem", createdAt: now }
+        });
+        gemsAwarded = 1;
+      }
       const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-      return { claimed: true, contractId, amount: contract.reward, account };
+      return { claimed: true, contractId, amount: contract.reward, gemsAwarded, account };
     });
   } catch (error) {
     if (error?.code !== "P2002") throw error;
