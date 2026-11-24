@@ -1,5 +1,10 @@
 import { createCanvas, loadImage } from "@napi-rs/canvas";
-import { GIFEncoder, quantize, applyPalette } from "gifenc";
+import * as gifencModule from "gifenc";
+
+const gifenc = gifencModule.default ?? gifencModule;
+const GIFEncoder = gifencModule.GIFEncoder ?? gifenc.GIFEncoder;
+const quantize = gifencModule.quantize ?? gifenc.quantize;
+const applyPalette = gifencModule.applyPalette ?? gifenc.applyPalette;
 
 const WIDTH = 1200;
 const HEIGHT = 620;
