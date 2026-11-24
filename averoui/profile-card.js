@@ -313,38 +313,38 @@ export async function renderAnimatedProfileCard(options = {}) {
   const colorMap = { aurora_frame: "#70e4d0", nebula_cape: "#bd9cff", cobalt_frame: "#4c9dff", frost_frame: "#b7e4ff", ember_frame: "#ff986c", starlight_frame: "#b8a7ff", blueprint_frame: "#74baff", mono_frame: "#aeb5c0", chibi_frame: "#78b8ff", pixel_cape: "#a8b7ff", paper_crown: "#e8d7a6", comet_trail: "#ffad82", mossy_mug: "#9bd29c", cloud_specs: "#d5e8ff", moonlit_token: "#9bd5ff", prism_crown: "#f3d477" };
   const accent = colorMap[frameId] ?? colorHex(options.accentColor);
   const encoder = GIFEncoder();
-  const frames = 12;
+  const frames = 8;
+  const gifWidth = 600, gifHeight = 310;
   for (let frameIndex = 0; frameIndex < frames; frameIndex++) {
-    const canvas = createCanvas(WIDTH, HEIGHT);
+    const canvas = createCanvas(gifWidth, gifHeight);
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0);
+    ctx.drawImage(image, 0, 0, gifWidth, gifHeight);
     const phase = frameIndex / frames * Math.PI * 2;
     ctx.save();
     ctx.strokeStyle = accent;
-    ctx.globalAlpha = 0.35 + 0.5 * ((Math.sin(phase) + 1) / 2);
-    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.4 + 0.45 * ((Math.sin(phase) + 1) / 2);
+    ctx.lineWidth = 3;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 24;
-    rounded(ctx, 24, 24, WIDTH - 48, HEIGHT - 48, 30);
+    ctx.shadowBlur = 12;
+    rounded(ctx, 12, 12, gifWidth - 24, gifHeight - 24, 15);
     ctx.stroke();
     ctx.restore();
-    // Animated glints drift along the card perimeter; frames are true GIF frames.
     ctx.fillStyle = accent;
-    for (let i = 0; i < 8; i++) {
-      const t = (i / 8 + frameIndex / frames) % 1;
+    for (let i = 0; i < 6; i++) {
+      const t = (i / 6 + frameIndex / frames) % 1;
       let x, y;
-      if (t < 0.25) { x = 42 + (WIDTH - 84) * (t * 4); y = 42; }
-      else if (t < 0.5) { x = WIDTH - 42; y = 42 + (HEIGHT - 84) * ((t - 0.25) * 4); }
-      else if (t < 0.75) { x = WIDTH - 42 - (WIDTH - 84) * ((t - 0.5) * 4); y = HEIGHT - 42; }
-      else { x = 42; y = HEIGHT - 42 - (HEIGHT - 84) * ((t - 0.75) * 4); }
-      ctx.globalAlpha = 0.35 + 0.65 * ((Math.sin(phase + i) + 1) / 2);
-      ctx.beginPath(); ctx.arc(x, y, 3 + (i % 2), 0, Math.PI * 2); ctx.fill();
+      if (t < 0.25) { x = 21 + (gifWidth - 42) * (t * 4); y = 21; }
+      else if (t < 0.5) { x = gifWidth - 21; y = 21 + (gifHeight - 42) * ((t - 0.25) * 4); }
+      else if (t < 0.75) { x = gifWidth - 21 - (gifWidth - 42) * ((t - 0.5) * 4); y = gifHeight - 21; }
+      else { x = 21; y = gifHeight - 21 - (gifHeight - 42) * ((t - 0.75) * 4); }
+      ctx.globalAlpha = 0.45 + 0.55 * ((Math.sin(phase + i) + 1) / 2);
+      ctx.beginPath(); ctx.arc(x, y, 2 + (i % 2), 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    const pixels = ctx.getImageData(0, 0, WIDTH, HEIGHT).data;
-    const palette = quantize(pixels, 256);
+    const pixels = ctx.getImageData(0, 0, gifWidth, gifHeight).data;
+    const palette = quantize(pixels, 128);
     const indexed = applyPalette(pixels, palette);
-    encoder.writeFrame(indexed, palette, { delay: 100, repeat: 0 });
+    encoder.writeFrame(indexed, palette, { delay: 125, repeat: 0 });
   }
   encoder.finish();
   return Buffer.from(encoder.bytes());
