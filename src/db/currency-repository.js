@@ -228,9 +228,6 @@ export async function awardGameReward(
   if (typeof type !== "string" || !/^[a-z][a-z0-9_]{0,39}$/.test(type)) {
     throw new TypeError("Game reward type must be a simple lowercase identifier.");
   }
-  if (!Number.isSafeInteger(cooldownMs) || cooldownMs < 1) {
-    throw new TypeError("Game reward cooldown must be a positive safe integer.");
-  }
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
     throw new TypeError("now must be a valid Date.");
   }
@@ -242,17 +239,8 @@ export async function awardGameReward(
       update: {}
     });
     const updated = await tx.currencyAccount.updateMany({
-      where: {
-        ...key,
-        OR: [
-          { lastGameRewardAt: null },
-          { lastGameRewardAt: { lte: new Date(now.getTime() - cooldownMs) } }
-        ]
-      },
-      data: {
-        balance: { increment: amount },
-        lastGameRewardAt: now
-      }
+      where: { ...key },
+      data: { balance: { increment: amount } }
     });
     const account = await tx.currencyAccount.findUnique({
       where: { guildId_userId: key }
@@ -334,22 +322,10 @@ export async function submitDailyVaultAttempt(
         update: {}
       });
       const updated = await tx.currencyAccount.updateMany({
-        where: {
-          ...key,
-          OR: [
-            { lastGameRewardAt: null },
-            { lastGameRewardAt: { lte: new Date(now.getTime() - cooldownMs) } }
-          ]
-        },
-        data: {
-          balance: { increment: amount },
-          lastGameRewardAt: now
-        }
+        where: { ...key },
+        data: { balance: { increment: amount } }
       });
       const account = await tx.currencyAccount.findUnique({ where: { guildId_userId: key } });
-      if (updated.count === 0) {
-        return { submitted: true, reward: { awarded: false, reason: "cooldown", account } };
-      }
       if (updated.count !== 1) {
         throw new Error("Could not update the currency account for the Vault reward.");
       }
