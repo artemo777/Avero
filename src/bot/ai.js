@@ -3,7 +3,9 @@ import { listAiMemories, saveAiMemory, forgetAiMemory } from "../db/ai-memory-re
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const USER_COOLDOWN_MS = 8_000;
-const MAX_TOOL_ROUNDS = 3;
+const MAX_TOOL_ROUNDS = 2;
+const REQUEST_TIMEOUT_MS = 15_000;
+const RETRYABLE_STATUS = new Set([502, 503, 504]);
 const userCooldowns = new Map();
 
 function commandGuide(commands) {
@@ -106,11 +108,22 @@ async function runMemoryTool(prisma, userId, name, args) {
   }
 }
 
+function retrySecondsFromResponse(response, detail) {
+  const header = response.headers?.get?.("retry-after");
+  if (header) { const n = Number(header); if (Number.isFinite(n)) return n; const date = Date.parse(header); if (Number.isFinite(date)) return Math.max(0, (date-Date.now())/1000); }
+  try { const data = JSON.parse(detail); const delay = data?.error?.details?.find?.((item) => item?.["@type"]?.includes("RetryInfo"))?.retryDelay; const match = typeof delay === "string" && delay.match(/^([\\d.]+)s$/); if (match) return Number(match[1]); } catch {}
+  return null;
+}
+function limitMessage(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "I've reached the AI provider's current usage limit. Please try again later.";
+  const mins=Math.max(1,Math.ceil(seconds/60)); const wait=mins<60?mins+" minutes":Math.floor(mins/60)+" hours"+(mins%60?" and "+(mins%60)+" minutes":"");
+  return "I've reached the AI provider's current usage limit. Please try again in about "+wait+".";
+}
 async function requestGemini({ apiKey, systemInstruction, contents, fetchImpl, prisma }) {
   return fetchImpl("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(GEMINI_MODEL) + ":generateContent", {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemInstruction }] },
       contents,
@@ -146,7 +159,7 @@ export async function answerAveroQuestion({ message, commands = [], env = proces
   }
   let memories = [];
   if (prisma) {
-    try { memories = await listAiMemories(prisma, userId); }
+    try { memories = await Promise.race([listAiMemories(prisma, userId), new Promise((_, reject) => setTimeout(() => reject(new Error("Memory retrieval timed out")), 3000))]); }
     catch (error) { console.error("Avero memory retrieval failed:", error?.message ?? error); }
   }
 
@@ -160,7 +173,9 @@ export async function answerAveroQuestion({ message, commands = [], env = proces
       if (!response.ok) {
         const detail = await response.text().catch(() => "");
         console.error("Gemini request failed:", response.status, detail.slice(0, 500));
-        if (response.status === 429) return "I've reached the AI provider's current usage limit. Try again a little later.";
+        if (response.status === 429) return limitMessage(retrySecondsFromResponse(response, detail));
+        if (RETRYABLE_STATUS.has(response.status) && round < MAX_TOOL_ROUNDS) { await new Promise((resolve) => setTimeout(resolve, 800)); continue; }
+        if (response.status === 503) return "The AI service is temporarily busy. Please try again in a few minutes.";
         return "I couldn't reach the AI assistant right now. Please try again shortly.";
       }
 
