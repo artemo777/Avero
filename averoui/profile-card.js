@@ -330,6 +330,14 @@ export async function renderAnimatedProfileCard(options = {}) {
     ctx.stroke();
     ctx.restore();
     ctx.fillStyle = accent;
+    if (["nebula_cape","comet_trail","cobalt_frame","starlight_frame","frost_frame"].includes(frameId)) {
+      ctx.save(); ctx.globalAlpha = 0.65;
+      ctx.beginPath(); ctx.ellipse(gifWidth / 2, gifHeight / 2, 210 + Math.sin(phase) * 12, 110 + Math.cos(phase) * 8, phase * 0.3, 0, Math.PI * 2); ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+    } else if (["pixel_cape","paper_crown","mono_frame","blueprint_frame"].includes(frameId)) {
+      for (let p = 0; p < 12; p++) { const px = 24 + ((p * 47 + frameIndex * 11) % (gifWidth - 48)); const py = 24 + ((p * 29 + frameIndex * 7) % (gifHeight - 48)); ctx.globalAlpha = 0.6; ctx.fillRect(px, py, 5, 5); }
+    } else if (["ember_frame","chibi_frame","mossy_mug"].includes(frameId)) {
+      for (let p = 0; p < 8; p++) { const px = 28 + ((p * 71 + frameIndex * 13) % (gifWidth - 56)); const py = 28 + ((p * 37 + frameIndex * 9) % (gifHeight - 56)); ctx.globalAlpha = 0.5 + Math.abs(Math.sin(phase + p)) * 0.4; ctx.beginPath(); ctx.arc(px, py, 3 + p % 3, 0, Math.PI * 2); ctx.fill(); }
+    }
     for (let i = 0; i < 6; i++) {
       const t = (i / 6 + frameIndex / frames) % 1;
       let x, y;
