@@ -469,7 +469,7 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
         owned ? [] : [button(userId, "buy", "Unlock · " + item.price, item.id, ButtonStyle.Primary)]),
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))])
     ]
-  }));
+  });
   return gamePayload(panel, previewFile ? [previewFile] : []);
 }
 export function renderScavenge(result, userId, route, item) {
