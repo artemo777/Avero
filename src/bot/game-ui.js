@@ -228,7 +228,7 @@ export function renderGames(userId) {
   ];
   return gamePayload(createGamePanel({
     title: "Choose your game",
-    description: getAssetSymbol("coin") + " **Coinflip** · heads or tails\n" + uiEmoji("guess", "🎯") + " **Guess** · pick 1–5\n" + uiEmoji("rock", "✊") + " **RPS** · choose your move\n" + uiEmoji("vault", "🔐") + " **Vault** · solve the daily code\n⛏️ **Mine Tiles** · uncover a tile for a small reward\n\n-# Free games · no wagers · eligible wins earn virtual coins on a shared cooldown.",
+    description: getAssetSymbol("coin") + " **Coinflip** · heads or tails\n" + uiEmoji("guess", "🎯") + " **Guess** · pick 1–5\n" + uiEmoji("rock", "✊") + " **RPS** · choose your move\n" + uiEmoji("vault", "🔐") + " **Vault** · solve the daily code\n⛏️ **Mine Tiles** · uncover a tile for a small reward\n\n-# Free games · no wagers · eligible wins earn coins with no shared reward cooldown.",
     eyebrow: "GAMES",
     footer: "QUICK PLAY • FREE TO PLAY • COLLECTION ATLAS",
     buttons: gameButtons,
@@ -588,7 +588,7 @@ export function renderVaultChallenge(challenge, userId, { hasNotebook = false, r
     description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       (hasNotebook ? "\n\n**Field Notebook hint:** the three digits add up to **" + challenge.code.split("").reduce((sum, digit) => sum + Number(digit), 0) + "**." : "") +
       "\n\nSubmit your three-digit solution with `/vault code:000`.\n-# One code submission per member per UTC day. " +
-      (rewardsEnabled ? "A correct solve can earn 25 coins when the shared 10-minute Guess/RPS cooldown is ready. " : "Currency rewards are paused in this server. ") +
+      (rewardsEnabled ? "A correct solve earns 25 coins. " : "Currency rewards are paused in this server. ") +
       "Free play · No wagers.",
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
@@ -606,7 +606,7 @@ export function renderVault({ guess, challenge, won, reward, rewardsEnabled = tr
       : won && reward?.reason === "already_claimed"
         ? "\n\nYour Vault reward has already been claimed for today."
         : won
-          ? "\n\nVault solved! Your shared game-reward cooldown is active." + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
+          ? "\n\nVault solved! " + (nextReward ? "\nNext reward: <t:" + Math.floor(nextReward.getTime() / 1000) + ":R>" : "")
         : "\n\nNo coins lost. Your next Vault attempt is available at 00:00 UTC.";
   return gamePayload(createGamePanel({
     title: won ? "Vault unlocked" : uiEmoji("error", "🔒") + " Vault stays locked",
@@ -614,7 +614,7 @@ export function renderVault({ guess, challenge, won, reward, rewardsEnabled = tr
     description: "### " + uiEmoji("vault", "🔐") + " Daily three-dial puzzle\n" + challenge.clues.join("\n") +
       "\n\nYour code: **" + guess + "** · " + (won ? "Correct" : "Not quite") +
       (won ? "\nToday's code: **" + challenge.code + "**" : "") + outcome +
-      "\n\n-# One submission per member per UTC day. No entry fee or wager; rewards share the 10-minute Guess/RPS cooldown.",
+      "\n\n-# One submission per member per UTC day. No entry fee or wager; game wins award coins.",
     color: rewarded ? THEME.colors.success : won ? THEME.colors.primary : THEME.colors.warning,
     footer: "THE VAULT • SERVER DAILY PUZZLE • FREE PLAY",
     buttons: navButtons(userId, true).slice(0, 4)
@@ -625,7 +625,7 @@ export function renderCoinflip(call, result, reward, userId, rewardsEnabled = tr
   const outcome = won
     ? reward?.awarded
       ? uiEmoji("win", "🎉") + " **You won · +" + reward.amount + " coins**\nBalance: **" + reward.account.balance.toLocaleString("en-US") + " coins**"
-      : uiEmoji("win", "🎉") + " **You won!**\n" + (rewardsEnabled ? "Your shared 10-minute game-reward cooldown is active, so no coins were added." : "Currency rewards are paused in this server, so no coins were added.")
+      : uiEmoji("win", "🎉") + " **You won!**\n" + (rewardsEnabled ? "" : "Currency rewards are paused in this server, so no coins were added.")
     : "Not this time — no coins were lost. Try again whenever you like.";
   return gamePayload(createGamePanel({
     title: won ? "A clean call!" : "The coin landed",
@@ -645,7 +645,7 @@ export function renderRps(playerChoice, botChoice, userId, reward = null, reward
   const rewardText = reward?.awarded
     ? "\n\n✦ **+" + GUESS_REWARD + " coins** · Balance: **" + reward.account.balance.toLocaleString("en-US") + "**."
     : won
-      ? "\n\n" + (rewardsEnabled ? "You won, but your shared game-reward cooldown is active. No coins were lost." : "You won, but currency rewards are paused in this server. No coins were added.")
+      ? "\n\n" + (rewardsEnabled ? "" : "You won, but currency rewards are paused in this server. No coins were added.")
       : "\n\nNo coins were lost. No wagers.";
   const outcome = (tie ? "It's a tie!" : won ? uiEmoji("win", "✦") + " **You win this round!**" : "**Avero wins this round.**") + rewardText;
   const symbols = { rock: "✊", paper: "✋", scissors: "✌️" };
@@ -1025,7 +1025,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = gamePayload(createGamePanel({
         title: rewardValue > 0 ? "Ore uncovered!" : "Empty tile",
         eyebrow: "MINE TILES",
-        description: rewardValue > 0 ? "**" + turn.ore + "** ore! " + (result.awarded ? "**+" + rewardValue + " coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "Your reward cooldown is active; no coins were added.") : "No ore here. No coins lost.",
+        description: rewardValue > 0 ? "**" + turn.ore + "** ore! " + (result.awarded ? "**+" + rewardValue + " coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "") : "No ore here. No coins lost.",
         footer: "FREE PLAY • NO WAGERS",
         buttons: [button(interaction.user.id, "mine_start", "Mine again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
       }));
@@ -1071,7 +1071,7 @@ export async function handleGameComponent(interaction, { prisma, settings } = {}
       payload = gamePayload(createGamePanel({
         title: won ? "Star found!" : "Empty door",
         eyebrow: "PICK THE STAR",
-        description: won ? "You found the star! " + (awarded ? "**+8 coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "Your reward cooldown is active; no coins were added.") : "No star behind that door. No coins lost.",
+        description: won ? "You found the star! " + (awarded ? "**+8 coins** added to your wallet." : !rewardsEnabled ? "Currency rewards are paused in this server; no coins were added." : "") : "No star behind that door. No coins lost.",
         footer: "FREE PLAY • NO WAGERS",
         buttons: [button(interaction.user.id, "pick3_start", "Play again", "", ButtonStyle.Primary), ...navButtons(interaction.user.id, true).slice(0, 2)]
       }));
