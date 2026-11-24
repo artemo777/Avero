@@ -1,4 +1,5 @@
 import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { GIFEncoder, quantize, applyPalette } from "gifenc";
 
 const WIDTH = 1200;
 const HEIGHT = 620;
@@ -280,6 +281,21 @@ export async function renderProfileCard({
     });
   }
 
+  // Profile frames now wrap the full card, not the avatar ring.
+  if (frame) {
+    const frameColor = frameColors[frame] ?? accent;
+    ctx.save();
+    ctx.strokeStyle = frameColor;
+    ctx.lineWidth = 8;
+    rounded(ctx, 24, 24, WIDTH - 48, HEIGHT - 48, 30);
+    ctx.stroke();
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 2;
+    rounded(ctx, 38, 38, WIDTH - 76, HEIGHT - 76, 24);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   ctx.textAlign = "right";
   ctx.fillStyle = "rgba(255,255,255,0.36)";
   ctx.font = "600 14px sans-serif";
@@ -288,3 +304,48 @@ export async function renderProfileCard({
 }
 
 export const PROFILE_BANNERS = Object.freeze(Object.keys(BANNERS));
+
+
+export async function renderAnimatedProfileCard(options = {}) {
+  const base = await renderProfileCard(options);
+  const image = await loadImage(base);
+  const frameId = options.frame ?? "starlight_frame";
+  const colorMap = { aurora_frame: "#70e4d0", nebula_cape: "#bd9cff", cobalt_frame: "#4c9dff", frost_frame: "#b7e4ff", ember_frame: "#ff986c", starlight_frame: "#b8a7ff", blueprint_frame: "#74baff", mono_frame: "#aeb5c0", chibi_frame: "#78b8ff", pixel_cape: "#a8b7ff", paper_crown: "#e8d7a6", comet_trail: "#ffad82", mossy_mug: "#9bd29c", cloud_specs: "#d5e8ff", moonlit_token: "#9bd5ff", prism_crown: "#f3d477 };
+  const accent = colorMap[frameId] ?? colorHex(options.accentColor);
+  const encoder = GIFEncoder();
+  const frames = 12;
+  for (let frameIndex = 0; frameIndex < frames; frameIndex++) {
+    const canvas = createCanvas(WIDTH, HEIGHT);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    const phase = frameIndex / frames * Math.PI * 2;
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.35 + 0.5 * ((Math.sin(phase) + 1) / 2);
+    ctx.lineWidth = 4;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 24;
+    rounded(ctx, 24, 24, WIDTH - 48, HEIGHT - 48, 30);
+    ctx.stroke();
+    ctx.restore();
+    // Animated glints drift along the card perimeter; frames are true GIF frames.
+    ctx.fillStyle = accent;
+    for (let i = 0; i < 8; i++) {
+      const t = (i / 8 + frameIndex / frames) % 1;
+      let x, y;
+      if (t < 0.25) { x = 42 + (WIDTH - 84) * (t * 4); y = 42; }
+      else if (t < 0.5) { x = WIDTH - 42; y = 42 + (HEIGHT - 84) * ((t - 0.25) * 4); }
+      else if (t < 0.75) { x = WIDTH - 42 - (WIDTH - 84) * ((t - 0.5) * 4); y = HEIGHT - 42; }
+      else { x = 42; y = HEIGHT - 42 - (HEIGHT - 84) * ((t - 0.75) * 4); }
+      ctx.globalAlpha = 0.35 + 0.65 * ((Math.sin(phase + i) + 1) / 2);
+      ctx.beginPath(); ctx.arc(x, y, 3 + (i % 2), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const pixels = ctx.getImageData(0, 0, WIDTH, HEIGHT).data;
+    const palette = quantize(pixels, 256);
+    const indexed = applyPalette(pixels, palette);
+    encoder.writeFrame(indexed, palette, { delay: 100, repeat: 0 });
+  }
+  encoder.finish();
+  return Buffer.from(encoder.bytes());
+}
