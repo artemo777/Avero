@@ -453,6 +453,8 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
   const panel = createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
+    sections: previewFile ? ["**Live item preview**\nA sample profile card showing this collectible style."] : [],
+    sectionThumbnails: previewFile ? ["avero-item-preview.png"] : [],
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
       (owned ? "✓ **In your collection**" : "◇ **Not collected yet**") + (equipped ? "\n✦ **Equipped badge**" : "") + (frameEquipped ? "\n▧ **Equipped profile frame**" : "") + (avatarDecorationEquipped ? "\n✧ **Equipped avatar decoration**" : "") +
       "\nCatalog price: **" + item.price.toLocaleString("en-US") + " " + (item.currency === "gems" ? "gems" : "coins") + "**" +
@@ -468,9 +470,6 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))])
     ]
   }));
-  if (previewFile) {
-    panel.addMediaGalleryComponents();
-  }
   return gamePayload(panel, previewFile ? [previewFile] : []);
 }
 export function renderScavenge(result, userId, route, item) {
