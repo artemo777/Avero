@@ -357,7 +357,7 @@ export async function renderAnimatedProfileCard(options = {}) {
     const pixels = ctx.getImageData(0, 0, gifWidth, gifHeight).data;
     const palette = quantize(pixels, 128);
     const indexed = applyPalette(pixels, palette);
-    encoder.writeFrame(indexed, palette, { delay: 125, repeat: 0 });
+    encoder.writeFrame(indexed, gifWidth, gifHeight, { palette, delay: 125, repeat: 0 });
   }
   encoder.finish();
   return Buffer.from(encoder.bytes());
