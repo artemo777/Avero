@@ -12,7 +12,7 @@ import { renderRegisteredAsset } from "../../averoui/render-asset.js";
 import { awardGameReward, claimDailyReward, claimScavengeReward, getCurrencyAccount, getCurrencyPurchases, purchaseCurrencyItem, recordGuessResult, recordGameResult } from "../db/currency-repository.js";
 import { equipProfileBadge, equipProfileFrame, getMemberProfile, unequipProfileBadge, unequipProfileFrame, updateProfileCustomization } from "../db/member-repository.js";
 import { renderProfilePayload, showProfileBioModal, PROFILE_ACCENTS, PROFILE_DECORATIONS, PROFILE_FRAME_IDS } from "./commands/profile.js";
-import { PROFILE_BANNERS } from "../../averoui/profile-card.js";
+import { PROFILE_BANNERS, renderProfileCard } from "../../averoui/profile-card.js";
 import { runJobShift } from "../db/work-repository.js";
 import { SHOP_ITEMS, SHOP_CATEGORIES, getWeeklyFeaturedItems } from "./shop-catalog.js";
 import { WORK_JOBS } from "./work-catalog.js";
@@ -435,7 +435,22 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
     : profile?.equippedBadgeItemId === item.id);
   const frameEquipped = owned && profile?.equippedFrameItemId === item.id;
   const avatarDecorationEquipped = owned && profile?.equippedAvatarDecorationId === item.id;
-  return gamePayload(createGamePanel({
+  let previewFile = null;
+  if (item.category === "cosmetics" || item.category === "badges") {
+    try {
+      const previewBuffer = await renderProfileCard({
+        username: "Avero Preview",
+        title: item.category === "badges" ? item.name : "Cosmetic preview",
+        accentColor: 0x8b7cff,
+        frame: item.category === "cosmetics" ? item.id : null,
+        avatarDecoration: AVATAR_DECORATION_IDS.has(item.id) ? item.id : null,
+        badges: item.category === "badges" ? [{ name: item.name, icon: item.icon }] : [],
+        coins: 1200, collectionCount: 8, gamesPlayed: 24, dailyStreak: 3
+      });
+      previewFile = new AttachmentBuilder(previewBuffer, { name: "avero-item-preview.png" });
+    } catch { previewFile = null; }
+  }
+  const panel = createGamePanel({
     title: collectibleIcon(item) + " " + item.name,
     eyebrow: "ITEM DETAILS",
     description: "### " + item.rarity + " COLLECTIBLE\n" + item.description + "\n\n" +
@@ -453,6 +468,10 @@ export async function renderItemDetails(prisma, guildId, userId, itemId, page = 
       ...(source === "shop" ? [] : [button(userId, "shop", "Browse shop", "", ButtonStyle.Secondary, uiEmoji("shop", "🛍️"))])
     ]
   }));
+  if (previewFile) {
+    panel.addMediaGalleryComponents();
+  }
+  return gamePayload(panel, previewFile ? [previewFile] : []);
 }
 export function renderScavenge(result, userId, route, item) {
   if (!result.claimed) {
