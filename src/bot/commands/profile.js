@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { loadImage } from "@napi-rs/canvas";
 import { renderRegisteredAsset } from "../../../averoui/render-asset.js";
-import { renderProfileCard, PROFILE_BANNERS } from "../../../averoui/profile-card.js";
+import { renderProfileCard, renderAnimatedProfileCard, PROFILE_BANNERS } from "../../../averoui/profile-card.js";
 import { getCurrencyAccount, getCurrencyPurchases, getCurrencyStats } from "../../db/currency-repository.js";
 import { getMemberProfile, updateProfileCustomization } from "../../db/member-repository.js";
 import { getMemberTitles } from "../../db/title-repository.js";
@@ -83,7 +83,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   const badges = selectedBadgeIds.map((id) => ownedBadges.find((item) => item.id === id)).filter(Boolean);
   const accent = profile?.profileAccentColor ?? PROFILE_ACCENTS[0];
   const banner = PROFILE_BANNERS.includes(profile?.profileBanner) ? profile.profileBanner : "midnight";
-  const card = await renderProfileCard({
+  const cardOptions = {
     username: target.globalName ?? target.username,
     avatarUrl: target.displayAvatarURL({ extension: "png", size: 256 }),
     title: equippedTitle?.name ?? null,
@@ -98,14 +98,16 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
     collectionCount: ownedItems.length,
     gamesPlayed: stats.gamesPlayed,
     dailyStreak: account?.dailyStreak ?? 0
-  });
+  };
+  const card = equippedFrame ? await renderAnimatedProfileCard(cardOptions) : await renderProfileCard(cardOptions);
+  const cardFilename = equippedFrame ? "profile-card.gif" : "profile-card.png";
   const container = new ContainerBuilder().setAccentColor(accent);
   const equippedBadge = ownedBadges.find((item) => item.id === profile?.equippedBadgeItemId);
   container.addTextDisplayComponents(new TextDisplayBuilder().setContent(
     "-# AVERO / MEMBER PROFILE\n## " + (target.globalName ?? target.username) + (equippedBadge ? "  " + (equippedBadge.icon ?? "✦") + " **" + equippedBadge.name + "**" : "") + "\nA customizable snapshot of your Avero identity."
   ));
   container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
-    new MediaGalleryItemBuilder().setURL("attachment://profile-card.png").setDescription("Avero member profile card")
+    new MediaGalleryItemBuilder().setURL("attachment://" + cardFilename).setDescription("Avero member profile card")
   ));
   if (editable) container.addTextDisplayComponents(new TextDisplayBuilder().setContent([
     "**Title** · " + (equippedTitle?.name ?? "None"),
@@ -163,7 +165,7 @@ export async function renderProfilePayload(prisma, guildId, target, viewerId = t
   return {
     flags: MessageFlags.IsComponentsV2,
     components: [container],
-    files: [new AttachmentBuilder(card, { name: "profile-card.png" })],
+    files: [new AttachmentBuilder(card, { name: cardFilename })],
     allowedMentions: { parse: [] }
   };
 }
