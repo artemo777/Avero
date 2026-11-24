@@ -227,7 +227,11 @@ export async function handleAveroPrefixMessage(message, commands) {
     }
   }
 
+  let typingTimer;
   try {
+    await message.channel.sendTyping().catch(() => {});
+    typingTimer = setInterval(() => { message.channel.sendTyping().catch(() => {}); }, 8000);
+    typingTimer.unref?.();
     const answer = await answerAveroQuestion({ message, commands });
     await message.reply({ content: answer.slice(0, 1900), allowedMentions: { parse: [], repliedUser: false } });
   } catch (error) {
@@ -236,6 +240,8 @@ export async function handleAveroPrefixMessage(message, commands) {
       content: "I couldn't answer that right now. Try `avero help` to see available commands.",
       allowedMentions: { parse: [], repliedUser: false }
     }).catch(() => {});
+  } finally {
+    if (typingTimer) clearInterval(typingTimer);
   }
   return true;
 }
