@@ -159,8 +159,20 @@ export async function answerAveroQuestion({ message, commands = [], env = proces
   }
   let memories = [];
   if (prisma) {
-    try { memories = await Promise.race([listAiMemories(prisma, userId), new Promise((_, reject) => setTimeout(() => reject(new Error("Memory retrieval timed out")), 3000))]); }
-    catch (error) { console.error("Avero memory retrieval failed:", error?.message ?? error); }
+    let timeout;
+    try {
+      memories = await Promise.race([
+        listAiMemories(prisma, userId),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("Memory retrieval timed out")), 3000);
+          timeout.unref?.();
+        })
+      ]);
+    } catch (error) {
+      console.warn("[Avero AI] Memory retrieval skipped; continuing without saved memories:", error?.message ?? error);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
   }
 
   const prompt = String(message.content ?? "").replace(/^avero\s*/i, "").trim().slice(0, 1800) || "What can you help me with?";
